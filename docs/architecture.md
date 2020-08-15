@@ -11,7 +11,7 @@
 3. Reboot, make sure the user's kernel is booted. Make sure boot order is changed in some way so the management kernel doesn't load again. (ipmi?)
 
 # Management kernel's jobs:
-
+z
 1. Check the system integrity
 2. Clear disk
 3. Repartition based on the user's needs (image definition)
