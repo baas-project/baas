@@ -28,7 +28,7 @@ exec /bin/sh
 
 EOF
 
-chmod +x "$SCRIPT_PATH/extract/init.sh"
+chmod +x "$SCRIPT_PATH/extract/init"
 pushd .
 
 cd "$SCRIPT_PATH/extract/"
@@ -45,7 +45,8 @@ cd "$SCRIPT_PATH/kernel/"
 git clone --depth 1 git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git || true
 cd linux
 
-cp "$SCRIPT_PATH/KERNEL_CONFIG" .config
+#cp "$SCRIPT_PATH/KERNEL_CONFIG" .config
+make defconfig
 
 make -j $(nproc)
 
