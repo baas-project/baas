@@ -8,4 +8,4 @@
 
 # Building
 
-run the [`build_management_kernel.sh`](../management_kernel/build_management_kernel.sh) file 
+run the [`build_management_kernel.sh`](../management_os/build/build_management_kernel.sh) file 

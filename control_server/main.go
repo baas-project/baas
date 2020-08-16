@@ -42,10 +42,9 @@ func api(w http.ResponseWriter, r *http.Request) {
 		I []string	`json:"initrd"`
 		//C string	`json:"cmdline"`
 	}{
-		K: "http://localhost:8000/static/",
+		K: "http://localhost:4242/static/vmlinuz/",
 		I: []string{
-			"http://localhost:8000/initramfs",
-			//"http://localhost:8000/modloop-lts",
+			"http://localhost:4242/static/initramfs",
 		},
 		//C: "squashfs,sd-mod,usb-storage quiet nomodeset",
 	}

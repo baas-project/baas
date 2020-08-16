@@ -1,0 +1,4 @@
+# this file is simply so docker build doesn't need to send the entire build context (which includes the huge linux/ directory)
+# every time the management initramfs is built
+
+build/linux

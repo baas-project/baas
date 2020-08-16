@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  pixiecore:
+    image: pixiecore/pixiecore:master
+    command: ["api", "http://127.0.0.1:4242"]
+    network_mode: "host"
+
+  control_server:
+    build: control_server
+    image: control_server
+    command: ["-static=/static"]
+    volumes:
+      - ./static:/static
+
+    network_mode: "host"
