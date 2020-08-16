@@ -24,14 +24,16 @@ func main() {
 func api(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Serving boot config for %s", filepath.Base(r.URL.Path))
 	resp := struct {
-		K string   `json:"kernel"`
-		I []string `json:"initrd"`
+		K string	`json:"kernel"`
+		I []string	`json:"initrd"`
+		//C string	`json:"cmdline"`
 	}{
-		K: "http://localhost:8000/vmlinuz64",
+		K: "http://localhost:8000/vmlinuz",
 		I: []string{
-			"http://localhost:8000/rootfs.gz",
-			"http://localhost:8000/modules64.gz",
+			"http://localhost:8000/initramfs",
+			//"http://localhost:8000/modloop-lts",
 		},
+		//C: "squashfs,sd-mod,usb-storage quiet nomodeset",
 	}
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
