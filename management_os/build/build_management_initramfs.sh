@@ -1,7 +1,7 @@
 #!/bin/bash
-set -e
+set -ex
 
-SCRIPT_PATH=$(dirname "$0")
+SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # Build the docker container
 pushd .
@@ -37,4 +37,4 @@ rm -rf "$SCRIPT_PATH/extract"
 rm "$SCRIPT_PATH/management_kernel_initramfs.tar"
 
 # Rename initramfs
-mv "$SCRIPT_PATH/initramfs.cpio.gz" "$SCRIPT_PATH/initramfs"
+mv "$SCRIPT_PATH/initramfs.cpio.gz" "$SCRIPT_PATH/../../static/initramfs"
