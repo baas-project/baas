@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/krolaw/dhcp4"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -32,7 +34,63 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
+	go listenDhcp()
+
 	log.Fatal(srv.ListenAndServe())
+}
+
+type DhcpHandler struct {
+
+}
+
+func (DhcpHandler) ServeDHCP(req dhcp4.Packet, msgType dhcp4.MessageType, options dhcp4.Options) dhcp4.Packet {
+	arch := options[dhcp4.OptionClientArchitecture]
+	mac := req.CHAddr()
+	num := req.XId()
+
+	fmt.Printf("Architecture: %v, mac address: %v (num: %v)", arch, mac, num)
+
+	return dhcp4.Packet{}
+}
+
+func listenDhcp() {
+	err := dhcp4.ListenAndServe(DhcpHandler{})
+	if err != nil {
+		println(err.Error())
+	}
+
+	//for {
+	//	conn, err := net.ListenUDP("udp", &net.UDPAddr{
+	//		IP:   net.ParseIP("0.0.0.0"),
+	//		Port: 67,
+	//	})
+	//
+	//	if err != nil {
+	//		println(err.Error())
+	//		continue
+	//	}
+	//
+	//	println("Received DHCP packet")
+	//
+	//	bytes := make([]byte, 512)
+	//	_, addr, err := conn.ReadFromUDP(bytes)
+	//	fmt.Printf("address: %v", addr)
+	//	if err != nil {
+	//		println(err.Error())
+	//		continue
+	//	}
+	//
+	//	println("Read dhcp packet")
+	//	println(string(bytes))
+	//
+	//	err = conn.Close()
+	//	if err != nil {
+	//		println(err.Error())
+	//		continue
+	//	}
+	//
+	//	dhcp4.pa
+	//}
 }
 
 func api(w http.ResponseWriter, r *http.Request) {
