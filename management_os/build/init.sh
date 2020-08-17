@@ -3,7 +3,7 @@
 mount -t proc none /proc
 mount -t sysfs none /sys
 
-echo Booted succesfully!
+echo Booted succesfully! $(cut -d' ' -f1 /proc/uptime) seconds
 
 # Run this as a child of init
 env PYTHONHASHSEED=1234 python3 /programs/main.py

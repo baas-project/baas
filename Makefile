@@ -9,7 +9,7 @@ management_initramfs:
 management_kernel:
 	@$(mkfile_dir)/management_os/build/build_management_kernel.sh
 
-control_server_docker: management_initramfs
+control_server_docker:
 	@docker-compose -f $(mkfile_dir)/docker-compose.yml up --build
 
 control_server: management_initramfs
