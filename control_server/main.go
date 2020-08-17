@@ -1,14 +1,12 @@
 package main
 
 import (
+	"control_server/machines"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/krolaw/dhcp4"
 	"log"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -22,8 +20,14 @@ var (
 func main() {
 	flag.Parse()
 
+	machineStore := machines.InMemoryStore()
+
+	go machines.WatchArchitecturesDhcp(&machineStore)
+
 	r := mux.NewRouter()
-	r.HandleFunc("/v1/boot/{mac}", api)
+	r.Handle("/v1/boot/{mac}", pixieCoreHandler {
+		&machineStore,
+	})
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(*static))))
 
 	srv := &http.Server{
@@ -34,80 +38,51 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	go listenDhcp()
-
 	log.Fatal(srv.ListenAndServe())
 }
 
-type DhcpHandler struct {
 
+type pixieCoreHandler struct {
+	machineStore machines.MachineStore
 }
 
-func (DhcpHandler) ServeDHCP(req dhcp4.Packet, msgType dhcp4.MessageType, options dhcp4.Options) dhcp4.Packet {
-	arch := options[dhcp4.OptionClientArchitecture]
-	mac := req.CHAddr()
-	num := req.XId()
+func (p pixieCoreHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	mac := vars["mac"]
 
-	fmt.Printf("Architecture: %v, mac address: %v (num: %v)", arch, mac, num)
+	log.Printf("Serving boot config for %v", mac)
 
-	return dhcp4.Packet{}
-}
-
-func listenDhcp() {
-	err := dhcp4.ListenAndServe(DhcpHandler{})
+	m, err := p.machineStore.GetMachine(mac)
 	if err != nil {
-		println(err.Error())
+		log.Printf("An error occured: %v", err)
+		return
 	}
 
-	//for {
-	//	conn, err := net.ListenUDP("udp", &net.UDPAddr{
-	//		IP:   net.ParseIP("0.0.0.0"),
-	//		Port: 67,
-	//	})
-	//
-	//	if err != nil {
-	//		println(err.Error())
-	//		continue
-	//	}
-	//
-	//	println("Received DHCP packet")
-	//
-	//	bytes := make([]byte, 512)
-	//	_, addr, err := conn.ReadFromUDP(bytes)
-	//	fmt.Printf("address: %v", addr)
-	//	if err != nil {
-	//		println(err.Error())
-	//		continue
-	//	}
-	//
-	//	println("Read dhcp packet")
-	//	println(string(bytes))
-	//
-	//	err = conn.Close()
-	//	if err != nil {
-	//		println(err.Error())
-	//		continue
-	//	}
-	//
-	//	dhcp4.pa
-	//}
-}
-
-func api(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Serving boot config for %s", filepath.Base(r.URL.Path))
-	resp := struct {
+	type pixieCoreResponse struct {
 		K string	`json:"kernel"`
 		I []string	`json:"initrd"`
-		//C string	`json:"cmdline"`
-	}{
-		K: "http://localhost:4242/static/vmlinuz/",
-		I: []string{
-			"http://localhost:4242/static/initramfs",
-		},
-		//C: "squashfs,sd-mod,usb-storage quiet nomodeset",
 	}
 
-	if err := json.NewEncoder(w).Encode(&resp); err != nil {
+	var resp pixieCoreResponse
+
+	switch m.Architecture {
+	case machines.X86_64:
+		resp = pixieCoreResponse {
+			K: "http://localhost:4242/static/vmlinuz/",
+			I: []string{
+				"http://localhost:4242/static/initramfs",
+			},
+		}
+	case machines.Arm64:
+		fallthrough
+	case machines.Unknown:
+		writer.WriteHeader(404)
+		return
+	}
+
+
+	if err := json.NewEncoder(writer).Encode(&resp); err != nil {
 		panic(err)
 	}
 }
+

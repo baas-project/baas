@@ -12,6 +12,11 @@
 // the machine boots, this can be used to verify image sent to it. If a
 package machines
 
+import (
+	"fmt"
+	"sync"
+)
+
 type MachineStore interface {
 	// GetMachine Gets the machine identified by this mac address.
 	// Returns a new Machine struct with the requested mac address in it
@@ -26,22 +31,34 @@ type MachineStore interface {
 }
 
 type InMemoryMachineStore struct {
+	lock sync.Mutex
 	machines map[string]Machine
 }
 
-func (i InMemoryMachineStore) GetMachine(macAddress string) (Machine, error) {
+func InMemoryStore() InMemoryMachineStore {
+	return InMemoryMachineStore{
+		machines: make(map[string]Machine),
+	}
+}
+
+func (i *InMemoryMachineStore) GetMachine(macAddress string) (Machine, error) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
 	machine, ok := i.machines[macAddress]
 	if !ok {
-		return Machine{
-			MacAddress: macAddress,
-		}, nil
+		return Machine{}, fmt.Errorf("machine with mac address %v not found", macAddress)
 	}
 
 	return machine, nil
 }
 
-func (i InMemoryMachineStore) UpdateMachine(machine Machine) error {
+func (i *InMemoryMachineStore) UpdateMachine(machine Machine) error {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+
 	macAddress := machine.MacAddress
+
 	i.machines[macAddress] = machine
 
 	return nil

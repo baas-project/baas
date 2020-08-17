@@ -2,7 +2,7 @@ package machines
 
 type Machine struct {
 	MacAddress string
-	Architecture *SystemArchitecture
+	Architecture SystemArchitecture
 	Info *MachineInfo
 }
 
