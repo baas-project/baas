@@ -1,9 +1,12 @@
 package machines
 
+import "net"
+
 type Machine struct {
-	MacAddress string
-	Architecture *SystemArchitecture
-	Info *MachineInfo
+	MacAddress         string
+	LastKnownIpAddress net.IPAddr
+	Architecture       SystemArchitecture
+	Info               *MachineInfo
 }
 
 type MachineInfo struct {

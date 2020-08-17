@@ -7,7 +7,7 @@ echo "building docker container"
 
 # Build the docker container
 pushd .
-cd "$SCRIPT_PATH"/..
+cd "$SCRIPT_PATH"/../..
 docker build -t management_kernel -f "$SCRIPT_PATH/Dockerfile" .
 popd
 
@@ -45,4 +45,4 @@ rm -rf "$SCRIPT_PATH/extract"
 rm "$SCRIPT_PATH/management_kernel_initramfs.tar"
 
 # Rename initramfs
-mv "$SCRIPT_PATH/initramfs.cpio.gz" "$SCRIPT_PATH/../../static/initramfs"
+mv "$SCRIPT_PATH/initramfs.cpio.gz" "$SCRIPT_PATH/../../control_server/static/initramfs"
