@@ -1,5 +1,7 @@
 # BAAS documentation index
 
+[Overall architecture](./architecture.md)
+
 ## Management operating system
 
 [building the management kernel](./building_management_kernel.md)
