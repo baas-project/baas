@@ -6,11 +6,11 @@ WORKDIR /build
 ENV GO111MODULE=on
 
 # Cache dependencies
-COPY programs/go.* ./
+COPY go.* ./
 RUN go mod download
 
 # Build project
-COPY programs .
+COPY management_os/programs .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o programs
 
 # ---------------------

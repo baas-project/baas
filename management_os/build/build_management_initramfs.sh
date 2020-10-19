@@ -7,7 +7,7 @@ echo "building docker container"
 
 # Build the docker container
 pushd .
-cd "$SCRIPT_PATH"/..
+cd "$SCRIPT_PATH"/../..
 docker build -t management_kernel -f "$SCRIPT_PATH/Dockerfile" .
 popd
 

@@ -8,4 +8,5 @@
 
 # Building
 
-run the [`build_management_kernel.sh`](../management_os/build/build_management_kernel.sh) file 
+run the [`build_management_kernel.sh`](../management_os/build/build_management_kernel.sh) file
+or run `make management_kernel` from the project root.  
