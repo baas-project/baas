@@ -55,6 +55,7 @@ func (handler dhcpHandler) ServeDHCP(req dhcp4.Packet, _ dhcp4.MessageType, opti
 }
 
 func WatchArchitecturesDhcp(store MachineStore) {
+	log.Printf("Starting Architecture Watcher")
 	err := dhcp4.ListenAndServe(dhcpHandler{
 		store,
 	})

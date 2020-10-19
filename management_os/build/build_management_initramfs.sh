@@ -26,7 +26,13 @@ mkdir -p "$SCRIPT_PATH/extract"
 tar -C "$SCRIPT_PATH/extract" -xf "$SCRIPT_PATH/management_kernel_initramfs.tar"
 
 # Place the init script in the extracted folder
+echo "placing init script"
 cp "$SCRIPT_PATH/init.sh" "$SCRIPT_PATH/extract/init"
+
+CONTROL_SERVER_IP=$(cat $SCRIPT_PATH/hosts | grep -vE "^#|^$" | awk -F " " "{print \$1}")
+printf "placing /etc/hosts file \033[0;31m(control_server ip set to: $CONTROL_SERVER_IP)\033[0m\n"
+cp "$SCRIPT_PATH/hosts" "$SCRIPT_PATH/extract/etc/hosts"
+
 
 # make `init` exec
 chmod +x "$SCRIPT_PATH/extract/init"

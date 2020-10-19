@@ -14,5 +14,5 @@ control_server_docker:
 
 .PHONY: control_server
 
-control_server: management_initramfs
+control_server:
 	cd $(mkfile_dir) && sudo env GO111MODULE=on go run ./control_server

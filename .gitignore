@@ -271,6 +271,5 @@ tags
 
 # for me (jonathan) because I need to run a dhcp server to test things and I put files for that here
 dhcp
-docs/logo/
 
 # End of https://www.toptal.com/developers/gitignore/api/go,intellij+all,python,vim

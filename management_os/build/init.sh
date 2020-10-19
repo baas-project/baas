@@ -1,7 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 mount -t proc none /proc
 mount -t sysfs none /sys
+
+echo Requesting IP address
+
+dhcpcd
 
 echo Booted succesfully! $(cut -d' ' -f1 /proc/uptime) seconds
 
@@ -10,4 +14,4 @@ echo Booted succesfully! $(cut -d' ' -f1 /proc/uptime) seconds
 
 # if go ever exists (which it shouldn't)
 # run sh replacing init, to debug
-exec sh
+exec bash
