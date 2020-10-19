@@ -2,7 +2,7 @@ version: "3.8"
 services:
   pixiecore:
     image: pixiecore/pixiecore:master
-    command: ["api", "http://127.0.0.1:4242"]
+    command: ["api", "http://192.168.0.142:4848", "--dhcp-no-bind"]
     network_mode: "host"
 
   control_server:
@@ -13,7 +13,7 @@ services:
       - ./static:/static
 
     ports:
-    - 4242:4242
+    - 4848:4848
 
 networks:
   default:

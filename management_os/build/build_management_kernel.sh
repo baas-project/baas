@@ -15,6 +15,6 @@ make olddefconfig
 # Build the kernel
 make -j "$(nproc)"
 
-mv "arch/x86/boot/bzImage" "$SCRIPT_PATH/../../static/vmlinuz"
+mv "arch/x86/boot/bzImage" "$SCRIPT_PATH/../../control_server/static/vmlinuz"
 
 popd

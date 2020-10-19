@@ -31,12 +31,12 @@ type MachineStore interface {
 }
 
 type InMemoryMachineStore struct {
-	lock sync.Mutex
+	lock     sync.Mutex
 	machines map[string]Machine
 }
 
-func InMemoryStore() InMemoryMachineStore {
-	return InMemoryMachineStore{
+func InMemoryStore() *InMemoryMachineStore {
+	return &InMemoryMachineStore{
 		machines: make(map[string]Machine),
 	}
 }
