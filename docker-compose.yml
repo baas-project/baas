@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  control_server:
+    build:
+      dockerfile: control_server/Dockerfile
+      context: .
+    image: control_server
+    command: ["-static=/static"]
+    volumes:
+      - ./control_server/static:/static
+
+    network_mode: "host"
+

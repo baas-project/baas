@@ -122,7 +122,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -267,5 +266,10 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
+
+.floo
+
+# for me (jonathan) because I need to run a dhcp server to test things and I put files for that here
+dhcp
 
 # End of https://www.toptal.com/developers/gitignore/api/go,intellij+all,python,vim

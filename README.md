@@ -11,6 +11,10 @@ Disclaimer: this system is custom-built for the needs of the TU Delft. It is ope
 but it is unlikely that it will completely fit your needs without changes. We are open to pull requests, 
 but we might not implement suggestions ourselves which are outside the scope of the requirements for the TU Delft.
 
+# Documentation
+
+Some documentation about the systems, and building these systems is provided [here](./docs/index.md)
+
 # License
 
 // TODO
