@@ -1,7 +1,3 @@
 [submodule "management_os/build/linux"]
 	path = management_os/build/linux
 	url = git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-
-[submodule "control_server/ipxe"]
-	path = control_server/ipxe
-	url = https://github.com/ipxe/ipxe/
