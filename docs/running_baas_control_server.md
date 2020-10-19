@@ -3,7 +3,7 @@
 
 ## prerequisites
 
-1. Make sure the management kernel and initramfs have been generated and exist [here](../control_server/static)
+1. Make sure the management kernel and initramfs have been generated and exist here: [`/control_server/static`](../control_server/static)
 
 ### Running in docker
 
@@ -35,11 +35,11 @@ The first thing the management kernel will do when booted is to set up communica
 the system based on directions given by the control server.
 
 
-### in a Virtual machine
+### Baas in a bridged virtual machine
 
-When running BAAS in a virtual machine, it may be necessary to run this command:
+When using BAAS to provision a local VM that's connected via a bridge network, it may be necessary to run this command:
 ```bash
 /usr/bin/iptables -A FORWARD -p all -i virtual_machine_bridge -j ACCEPT
 ```
-This is necessary because docker enables some kernel options which apply to all bridge networks, including those of your
+This is necessary because docker enables some iptable rules which apply to all bridge networks, including those of your
 virtual machines. This stops network boot (and probably more things) from working inside the virtual machine

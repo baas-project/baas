@@ -50,6 +50,7 @@ type pixieCoreHandler struct {
 }
 
 func (p pixieCoreHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+
 	vars := mux.Vars(request)
 	mac := vars["mac"]
 	addr, _, err := net.SplitHostPort(request.RemoteAddr)
@@ -58,7 +59,6 @@ func (p pixieCoreHandler) ServeHTTP(writer http.ResponseWriter, request *http.Re
 		return
 	}
 	// Remove port
-
 	log.Printf("Serving boot config for %v at ip: %v", mac, addr)
 
 	m, err := p.machineStore.GetMachine(mac)
