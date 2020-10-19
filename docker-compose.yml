@@ -1,21 +1,13 @@
 version: "3.8"
 services:
-  pixiecore:
-    image: pixiecore/pixiecore:master
-    command: ["api", "http://192.168.0.142:4848", "--dhcp-no-bind"]
-    network_mode: "host"
-
   control_server:
-    build: control_server
+    build:
+      dockerfile: control_server/Dockerfile
+      context: .
     image: control_server
     command: ["-static=/static"]
     volumes:
-      - ./static:/static
+      - ./control_server/static:/static
 
-    ports:
-    - 4848:4848
+    network_mode: "host"
 
-networks:
-  default:
-    external:
-      name: dockerbridge

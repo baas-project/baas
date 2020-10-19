@@ -26,7 +26,7 @@ func main() {
 	log.Printf("Started Architecture Watcher")
 	go machines.WatchArchitecturesDhcp(machineStore)
 
-	go pixieserver.StartPixiecore("http://192.168.0.4:4848")
+	go pixieserver.StartPixiecore("http://localhost:4848")
 
 	r := mux.NewRouter()
 	r.Handle("/v1/boot/{mac}", pixieCoreHandler{
@@ -77,9 +77,9 @@ func (p pixieCoreHandler) ServeHTTP(writer http.ResponseWriter, request *http.Re
 	switch m.Architecture {
 	case machines.X86_64:
 		resp = pixieCoreResponse{
-			K: "http://192.168.0.4:4848/static/vmlinuz",
+			K: "http://localhost:4848/static/vmlinuz",
 			I: []string{
-				"http://192.168.0.4:4848/static/initramfs",
+				"http://localhost:4848/static/initramfs",
 			},
 		}
 	case machines.Arm64:

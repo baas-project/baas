@@ -16,6 +16,8 @@ func StartPixiecore(url string) {
 	Ipxe[pixiecore.FirmwareEFIBC] = ipxe.MustAsset("third_party/ipxe/src/bin-x86_64-efi/ipxe.efi")
 	Ipxe[pixiecore.FirmwareX86Ipxe] = ipxe.MustAsset("third_party/ipxe/src/bin/ipxe.pxe")
 
+	log.Printf("Starting pixiecore")
+
 	b, err := pixiecore.APIBooter(url, time.Second*5)
 	if err != nil {
 		log.Fatalf("Couldn't create booter %v", err)
