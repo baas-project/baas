@@ -1,12 +1,13 @@
 package main
 
 import (
-	"baas/control_server/httpserver"
-	"baas/control_server/machines"
-	"baas/control_server/pixieserver"
 	"flag"
 	"fmt"
 	"strconv"
+
+	"baas/control_server/httpserver"
+	"baas/control_server/machines"
+	"baas/control_server/pixieserver"
 )
 
 var (
@@ -23,5 +24,3 @@ func main() {
 	go pixieserver.StartPixiecore(fmt.Sprintf("http://localhost:%s", strconv.Itoa(*port)))
 	httpserver.StartServer(machineStore, *static, "0.0.0.0", *port)
 }
-
-

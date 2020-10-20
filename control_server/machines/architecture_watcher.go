@@ -1,16 +1,17 @@
 package machines
 
 import (
-	"github.com/krolaw/dhcp4"
 	"log"
+
+	"github.com/krolaw/dhcp4"
 )
 
 type dhcpHandler struct {
 	machineStore MachineStore
 }
 
+// ServeDHCP does the actual work explained at the WatchArchitecturesDhcp documentation.
 func (handler dhcpHandler) ServeDHCP(req dhcp4.Packet, _ dhcp4.MessageType, options dhcp4.Options) dhcp4.Packet {
-
 	arch := options[dhcp4.OptionClientArchitecture]
 	if len(arch) != 2 {
 		// commented because this happens quite often
@@ -18,18 +19,18 @@ func (handler dhcpHandler) ServeDHCP(req dhcp4.Packet, _ dhcp4.MessageType, opti
 		return dhcp4.Packet{}
 	}
 
-	archId := int(arch[0])<<8 | int(arch[1])
+	archID := int(arch[0])<<8 | int(arch[1])
 
 	mac := req.CHAddr()
 
 	var systemArchitecture SystemArchitecture
 
 	// From https://www.ietf.org/assignments/dhcpv6-parameters/dhcpv6-parameters.xml#processor-architecture
-	switch archId {
+	switch archID {
 	case 0:
-		systemArchitecture = X86_64 // x86 with bios (32/64?)
+		systemArchitecture = X8664 // x86 with bios (32/64?)
 	case 6 | 7:
-		systemArchitecture = X86_64 // x86 with uefi (32/64?)
+		systemArchitecture = X8664 // x86 with uefi (32/64?)
 	case 10:
 		systemArchitecture = Unknown // Arm 32 bits with uefi (unknown because we dont support arm32 (yet))
 	case 11:
@@ -39,7 +40,7 @@ func (handler dhcpHandler) ServeDHCP(req dhcp4.Packet, _ dhcp4.MessageType, opti
 		systemArchitecture = Unknown
 	}
 
-	log.Printf("Identified mac address %v as architecture id %v (%v)\n", mac, archId, systemArchitecture.Name())
+	log.Printf("Identified mac address %v as architecture id %v (%v)\n", mac, archID, systemArchitecture.Name())
 
 	machine := Machine{
 		MacAddress:   mac.String(),
@@ -48,12 +49,15 @@ func (handler dhcpHandler) ServeDHCP(req dhcp4.Packet, _ dhcp4.MessageType, opti
 
 	err := handler.machineStore.UpdateMachine(machine)
 	if err != nil {
-		log.Printf("An error occured: %v\n", err)
+		log.Printf("An error occurred: %v\n", err)
 	}
 
 	return dhcp4.Packet{}
 }
 
+// WatchArchitecturesDhcp starts listening for dhcp requests.
+// In these requests, machines announce their architecture, which is stored
+// in the machine store, to be used when pixiecore requests what OS the machine should boot.
 func WatchArchitecturesDhcp(store MachineStore) {
 	log.Printf("Starting Architecture Watcher")
 	err := dhcp4.ListenAndServe(dhcpHandler{

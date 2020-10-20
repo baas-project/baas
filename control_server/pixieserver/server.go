@@ -1,13 +1,18 @@
+// Package pixieserver starts pixiecore. Usually pixiecore runs as a separate application,
+// but we just import and run it internally.
 package pixieserver
 
 import (
-	"go.universe.tf/netboot/out/ipxe"
-	"go.universe.tf/netboot/pixiecore"
 	"log"
 	"time"
+
+	"go.universe.tf/netboot/out/ipxe"
+	"go.universe.tf/netboot/pixiecore"
 )
 
+// StartPixiecore starts the pixiecore server(s) (dhcp, tftp and http).
 func StartPixiecore(url string) {
+	// This is essentially the same as what pixiecore does when ran as a command line application.
 	Ipxe := map[pixiecore.Firmware][]byte{}
 
 	Ipxe[pixiecore.FirmwareX86PC] = ipxe.MustAsset("third_party/ipxe/src/bin/undionly.kpxe")

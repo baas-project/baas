@@ -6,22 +6,28 @@ import (
 	"net/http"
 )
 
+// TestRequest is just temporary until there's actually something to send.
 type TestRequest struct {
-	test string `json:"test"`
+	Test string `json:"test"`
 }
 
 func main() {
 	var buf bytes.Buffer
 
 	req := TestRequest{
-		test: "test",
+		Test: "test",
 	}
 
 	if err := json.NewEncoder(&buf).Encode(req); err != nil {
 		panic(err)
 	}
 
-	_, err := http.Post("http://control_server:4848/mmos/test", "application/json", &buf);
+	r, err := http.Post("http://control_server:4848/mmos/test", "application/json", &buf)
+	if err != nil {
+		panic(err)
+	}
+
+	err = r.Body.Close()
 	if err != nil {
 		panic(err)
 	}

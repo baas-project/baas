@@ -1,36 +1,41 @@
 package httpserver
 
 import (
-	"baas/control_server/machines"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"log"
 	"net"
 	"net/http"
+
+	"github.com/gorilla/mux"
+
+	"baas/control_server/machines"
 )
 
+// BootConfigHandler serves boot configurations (from the ServeBootConfigurations function)
+// to pixiecore, so it knows what os to boot.
 type BootConfigHandler struct {
+	// A different configuration needs to be served depending on the system architecture.
+	// The machine store stores this information.
 	MachineStore machines.MachineStore
 }
 
-
 type bootConfigResponse struct {
 	// Kernel to boot.
-	Kernel    string   `json:"kernel"`
+	Kernel string `json:"kernel"`
 
 	// Initramfs to boot.
 	Initramfs []string `json:"initrd"`
 
 	// Message to print before booting.
-	Message   string   `json:"message"`
+	Message string `json:"message"`
 
 	// Kernel command line parameters.
-	Cmdline   string   `json:"cmdline"`
+	Cmdline string `json:"cmdline"`
 }
 
 func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 	switch arch {
-	case machines.X86_64:
+	case machines.X8664:
 		return &bootConfigResponse{
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
@@ -48,14 +53,14 @@ func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 	}
 }
 
-func (p BootConfigHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-
+// ServeBootConfigurations actually responds to requests from pixiecore.
+func (p BootConfigHandler) ServeBootConfigurations(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	mac := vars["mac"]
 
 	addr, _, err := net.SplitHostPort(request.RemoteAddr)
 	if err != nil {
-		log.Printf("An error occured: %v", err)
+		log.Printf("An error occurred: %v", err)
 		writer.WriteHeader(500)
 		return
 	}
@@ -64,7 +69,7 @@ func (p BootConfigHandler) ServeHTTP(writer http.ResponseWriter, request *http.R
 
 	m, err := p.MachineStore.GetMachine(mac)
 	if err != nil {
-		log.Printf("An error occured: %v", err)
+		log.Printf("An error occurred: %v", err)
 		writer.WriteHeader(500)
 		return
 	}
