@@ -31,10 +31,19 @@ func CopyFile(from, to string) error {
 	buff := make([]byte, blocksize)
 
 	for i := int64(0); i < size; {
-		n, err := src.ReadAt(buff, blocksize)
+		// If size left is smaller than buffer make a new buffer for the remaining bytes
+		left := size - i
+		if left < blocksize {
+			buff = make([]byte, left)
+		}
+
+		// Read a block to the buffer
+		n, err := src.ReadAt(buff, i)
 		if err != nil {
 			return err
 		}
+
+		// Write the block to the dest file
 		if dn, err := dest.WriteAt(buff, i); err != nil || dn != n {
 			if err != nil {
 				return err
