@@ -35,7 +35,7 @@ type bootConfigResponse struct {
 
 func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 	switch arch {
-	case machines.X8664:
+	case machines.X86_64:
 		return &bootConfigResponse{
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
@@ -54,14 +54,14 @@ func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 }
 
 // ServeBootConfigurations actually responds to requests from pixiecore.
-func (p BootConfigHandler) ServeBootConfigurations(writer http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
+func (p *BootConfigHandler) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
 	mac := vars["mac"]
 
-	addr, _, err := net.SplitHostPort(request.RemoteAddr)
+	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		log.Printf("An error occurred: %v", err)
-		writer.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -70,20 +70,21 @@ func (p BootConfigHandler) ServeBootConfigurations(writer http.ResponseWriter, r
 	m, err := p.MachineStore.GetMachine(mac)
 	if err != nil {
 		log.Printf("An error occurred: %v", err)
-		writer.WriteHeader(500)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	resp := getBootConfig(m.Architecture)
 	if resp == nil {
 		log.Printf("Couldn't find appropriate bootconfig for this machine")
-		writer.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	log.Printf("Sending boot config %v", resp)
 
-	if err := json.NewEncoder(writer).Encode(&resp); err != nil {
-		panic(err)
+	if err := json.NewEncoder(w).Encode(&resp); err != nil {
+		log.Printf("Couldn't write bootconfig to network")
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }

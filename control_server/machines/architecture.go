@@ -6,8 +6,8 @@ type SystemArchitecture string
 const (
 	// Arm64 is the 64 bit Arm architecture
 	Arm64 SystemArchitecture = "Arm64"
-	// X8664 is the 64 bit x86 architecture
-	X8664 SystemArchitecture = "x86_64"
+	// X86_64 is the 64 bit x86 architecture
+	X86_64 SystemArchitecture = "x86_64" //nolint
 	// Unknown is any architecture which baas could not identify.
 	Unknown SystemArchitecture = "unknown"
 )

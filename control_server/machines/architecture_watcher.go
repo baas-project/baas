@@ -28,9 +28,9 @@ func (handler dhcpHandler) ServeDHCP(req dhcp4.Packet, _ dhcp4.MessageType, opti
 	// From https://www.ietf.org/assignments/dhcpv6-parameters/dhcpv6-parameters.xml#processor-architecture
 	switch archID {
 	case 0:
-		systemArchitecture = X8664 // x86 with bios (32/64?)
+		systemArchitecture = X86_64 // x86 with bios (32/64?)
 	case 6 | 7:
-		systemArchitecture = X8664 // x86 with uefi (32/64?)
+		systemArchitecture = X86_64 // x86 with uefi (32/64?)
 	case 10:
 		systemArchitecture = Unknown // Arm 32 bits with uefi (unknown because we dont support arm32 (yet))
 	case 11:

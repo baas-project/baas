@@ -14,17 +14,15 @@ type ManagementOsHandler struct {
 }
 
 // RespondToTestPostRequest is temporary to demonstrate communication.
-func (t ManagementOsHandler) RespondToTestPostRequest(writer http.ResponseWriter, request *http.Request) {
+func (t *ManagementOsHandler) RespondToTestPostRequest(w http.ResponseWriter, r *http.Request) {
 	var contents []byte
 
-	_, err := request.Body.Read(contents)
+	_, err := r.Body.Read(contents)
 	if err != nil {
 		log.Printf("An error occurred: %v", err)
-		writer.WriteHeader(500)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	log.Printf("%v", contents)
-
-	writer.WriteHeader(200)
 }

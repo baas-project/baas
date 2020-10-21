@@ -1,6 +1,11 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(shell dirname $(mkfile_path))
 
+# Change this to your own local ip address for testing,
+# or to the ip address of the control server when ~~testing~~ running in production.
+# This will be put in the hosts file.
+export CONTROL_SERVER_IP ?= 192.168.0.4
+
 lint_fix:
 	goimports -local baas -w **/*.go
 	golangci-lint run --fix
