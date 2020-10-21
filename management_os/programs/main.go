@@ -1,10 +1,11 @@
 package main
 
+import (
+	"log"
+)
+
 func main() {
-	//_, err := net.Listen("tcp", ":9000")
-	//if err != nil {
-	//	log.Fatalf("failed to listen: %v", err)
-	//}
-
-
+	if err := CopyFile("/tmp/test.img", "/tmp/test2.img"); err != nil {
+		log.Fatal(err)
+	}
 }
