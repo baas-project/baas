@@ -10,7 +10,6 @@ const blocksize int64 = 512
 
 // CopyFile is a function which copies a file, it is similar to dd in usage
 func CopyFile(from, to string) error {
-
 	src, err := os.OpenFile(from, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return err
@@ -45,11 +44,10 @@ func CopyFile(from, to string) error {
 
 		// Write the block to the dest file
 		if dn, err := dest.WriteAt(buff, i); err != nil || dn != n {
-			if err != nil {
-				return err
-			} else {
+			if err == nil {
 				return errors.New("partial copy")
 			}
+			return err
 		}
 
 		i += int64(n)
