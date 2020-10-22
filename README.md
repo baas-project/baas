@@ -13,7 +13,7 @@ but we might not implement suggestions ourselves which are outside the scope of 
 
 # Documentation
 
-Some documentation about the systems, and building these systems is provided [here](./docs/index.md)
+Some documentation about the systems, and building these systems is provided [here](https://baas-project.github.io/baas/)
 
 # License
 
