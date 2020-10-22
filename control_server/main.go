@@ -1,8 +1,10 @@
 package main
 
 import (
+	"baas/pkg/api"
 	"flag"
 	"fmt"
+	"log"
 	"strconv"
 
 	"baas/control_server/httpserver"
@@ -11,7 +13,6 @@ import (
 )
 
 var (
-	port   = flag.Int("port", 4848, "Port to listen on")
 	static = flag.String("static", "control_server/static", "Static file dir to server under /static/")
 )
 
@@ -19,8 +20,14 @@ func main() {
 	flag.Parse()
 
 	machineStore := machines.InMemoryStore()
+	err := machineStore.UpdateMachine(machines.Machine{
+		MacAddress:   "06:99:2b:9b:3a:22",
+		Architecture: machines.X86_64,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	go machines.WatchArchitecturesDhcp(machineStore)
-	go pixieserver.StartPixiecore(fmt.Sprintf("http://localhost:%s", strconv.Itoa(*port)))
-	httpserver.StartServer(machineStore, *static, "0.0.0.0", *port)
+	go pixieserver.StartPixiecore(fmt.Sprintf("http://localhost:%s", strconv.Itoa(api.Port)))
+	httpserver.StartServer(machineStore, *static, "0.0.0.0", api.Port)
 }

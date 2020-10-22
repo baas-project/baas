@@ -7,6 +7,8 @@ echo Requesting IP address
 
 dhcpcd
 
+sleep 10
+
 echo Booted succesfully! $(cut -d' ' -f1 /proc/uptime) seconds
 
 # Run this as a child of init

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"io"
 	"os"
 )
 
@@ -20,38 +21,32 @@ func CopyFile(from, to string) error {
 		return err
 	}
 
-	stat, err := src.Stat()
-	if err != nil {
-		return err
-	}
+	return CopyStream(src, dest)
+}
 
-	size := stat.Size()
-
+// CopyStream is a function which copies a stream, it is similar to dd in usage
+func CopyStream(src io.ReaderAt, dest io.WriterAt) error {
 	buff := make([]byte, blocksize)
 
-	for i := int64(0); i < size; {
-		// If size left is smaller than buffer make a new buffer for the remaining bytes
-		left := size - i
-		if left < blocksize {
-			buff = make([]byte, left)
-		}
-
+	for i := int64(0); ; {
 		// Read a block to the buffer
-		n, err := src.ReadAt(buff, i)
-		if err != nil {
-			return err
+		n, errr := src.ReadAt(buff, i)
+		if errr != nil && errr != io.EOF {
+			return errr
 		}
 
 		// Write the block to the dest file
-		if dn, err := dest.WriteAt(buff, i); err != nil || dn != n {
-			if err == nil {
+		if dn, errw := dest.WriteAt(buff[:n], i); errw != nil || dn != n {
+			if errw == nil {
 				return errors.New("partial copy")
 			}
-			return err
+			return errw
+		}
+
+		if errr == io.EOF {
+			return nil
 		}
 
 		i += int64(n)
 	}
-
-	return nil
 }

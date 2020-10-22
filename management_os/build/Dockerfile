@@ -11,8 +11,8 @@ COPY go.* ./
 RUN go mod download
 
 # Build project
-COPY management_os/programs .
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o programs
+COPY . .
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" ./management_os/programs
 
 # ---------------------
 

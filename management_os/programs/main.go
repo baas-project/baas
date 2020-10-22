@@ -1,35 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"baas/pkg/api"
+	"fmt"
 	"log"
-	"net/http"
 )
 
-// TestRequest is just temporary until there's actually something to send.
-type TestRequest struct {
-	Test string `json:"test"`
-}
-
 func main() {
-	var buf bytes.Buffer
+	c := APIClient{baseURL: fmt.Sprintf("http://control_server:%d", api.Port)}
 
-	req := TestRequest{
-		Test: "test",
-	}
-
-	if err := json.NewEncoder(&buf).Encode(req); err != nil {
-		log.Fatal(err)
-	}
-
-	r, err := http.Post("http://control_server:4848/mmos/test", "application/json", &buf)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = r.Body.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Println(c.BootInform())
 }
