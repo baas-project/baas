@@ -28,7 +28,7 @@ func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request)
 
 	// Request data from database for what to do with this machine
 	uuid := "uuid"
-	location := "location"
+	location := "/dev/sda"
 
 	// Prepare response
 	resp := api.ReprovisioningInfo{

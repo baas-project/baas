@@ -16,7 +16,13 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" ./management
 
 # ---------------------
 
-FROM debian:buster
-RUN apt-get update
-RUN apt-get install -y dhcpcd5
+FROM archlinux
+RUN pacman -Syu dhcpcd --noconfirm
+RUN systemctl enable getty@tty1.service
+RUN systemctl enable dhcpcd
+RUN ln -sr /usr/lib/systemd/systemd /init
+
+RUN echo -e "toor\ntoor" | passwd
+RUN ln -s /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime
+
 COPY --from=build /build/programs programs

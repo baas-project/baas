@@ -17,10 +17,19 @@ const (
 	DiskTransferStrategyHTTP DiskTransferStrategy = iota
 )
 
+// DiskCompressionStrategy the various available disk compression strategies
+type DiskCompressionStrategy int
+
+const (
+	// DiskCompressionStrategyNone doesn't compress
+	DiskCompressionStrategyNone DiskCompressionStrategy = iota
+)
+
 // DiskImage describes a single disk image on the machine
 type DiskImage struct {
 	DiskType
 	DiskTransferStrategy
+	DiskCompressionStrategy
 	// Location is used to determine in combination with the DiskTransferStrategy how to retrieve the image
 	Location string
 }

@@ -10,5 +10,14 @@ import (
 func main() {
 	c := APIClient{baseURL: fmt.Sprintf("http://control_server:%d", api.Port)}
 
-	log.Println(c.BootInform())
+	prov, err := c.BootInform()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if !prov.Prev.Ephemeral {
+		log.Println("idk lp0 on fire i'm not a unix admin")
+	}
+
+	log.Fatal(WriteOutDisks(&c, prov.Next))
 }
