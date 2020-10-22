@@ -4,8 +4,8 @@
 
 ## Management operating system
 
-[building the management kernel](./building_management_kernel.md)
-[building the management initramfs](./building_management_initramfs.md)
+[building the management kernel](./building_management_kernel.md)  
+[building the management initramfs](./building_management_initramfs.md)  
 
 ## Control server
 

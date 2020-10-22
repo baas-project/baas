@@ -17,6 +17,10 @@ import (
 	"sync"
 )
 
+// MachineStore provides functions to operate on machine stores.
+// Machine stores store machine information (mac address, architecture etc)
+// which can be used to provide the right machines with the right data to boot
+// into the management OS, and to provide the management OS with disk images and other data.
 type MachineStore interface {
 	// GetMachine Gets the machine identified by this mac address.
 	// Returns a new Machine struct with the requested mac address in it
@@ -30,17 +34,20 @@ type MachineStore interface {
 	UpdateMachine(machine Machine) error
 }
 
+// InMemoryMachineStore stores machine information (mac address, architecture etc) in-memory.
 type InMemoryMachineStore struct {
 	lock     sync.Mutex
 	machines map[string]Machine
 }
 
+// InMemoryStore creates a new in-memory machine store.
 func InMemoryStore() *InMemoryMachineStore {
 	return &InMemoryMachineStore{
 		machines: make(map[string]Machine),
 	}
 }
 
+// GetMachine retrieves a machine in the machine store for the InMemoryMachineStore.
 func (i *InMemoryMachineStore) GetMachine(macAddress string) (Machine, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
@@ -53,6 +60,7 @@ func (i *InMemoryMachineStore) GetMachine(macAddress string) (Machine, error) {
 	return machine, nil
 }
 
+// UpdateMachine updates the machine in the machine store for the InMemoryMachineStore.
 func (i *InMemoryMachineStore) UpdateMachine(machine Machine) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
