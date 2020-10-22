@@ -1,0 +1,11 @@
+[Unit]
+Description=Management OS Userland Control Entrypoint Service
+Requires=network-online.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 3
+ExecStart=/entrypoint
+
+[Install]
+WantedBy=multi-user.target

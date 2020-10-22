@@ -19,5 +19,7 @@ func main() {
 		log.Println("idk lp0 on fire i'm not a unix admin")
 	}
 
-	log.Fatal(WriteOutDisks(&c, prov.Next))
+	if err := WriteOutDisks(&c, prov.Next); err != nil {
+		log.Fatal(err)
+	}
 }
