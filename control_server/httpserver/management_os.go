@@ -2,7 +2,6 @@ package httpserver
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"baas/control_server/machines"
@@ -14,20 +13,6 @@ import (
 // from the management OS. This struct holds state necessary for the request handlers.
 type ManagementOsHandler struct {
 	machineStore machines.MachineStore
-}
-
-// RespondToTestPostRequest is temporary to demonstrate communication.
-func (m *ManagementOsHandler) RespondToTestPostRequest(w http.ResponseWriter, r *http.Request) {
-	var contents []byte
-
-	_, err := r.Body.Read(contents)
-	if err != nil {
-		log.Printf("An error occurred: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	log.Printf("%v", contents)
 }
 
 // BootInform handles all incoming boot inform requests

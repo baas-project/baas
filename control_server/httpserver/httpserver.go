@@ -30,7 +30,6 @@ func StartServer(machineStore machines.MachineStore, staticDir string, address s
 	mmosh := ManagementOsHandler{machineStore}
 	mmosr := r.PathPrefix("/mmos").Subrouter()
 
-	mmosr.HandleFunc("/test", mmosh.RespondToTestPostRequest).Methods(http.MethodPost)
 	mmosr.HandleFunc("/inform", mmosh.BootInform).Methods(http.MethodPost)
 
 	srv := &http.Server{

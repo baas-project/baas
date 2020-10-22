@@ -1,9 +1,10 @@
 package main
 
 import (
-	"baas/pkg/api"
 	"fmt"
 	"log"
+
+	"baas/pkg/api"
 )
 
 func main() {
