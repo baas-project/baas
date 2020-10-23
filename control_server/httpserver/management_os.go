@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 
 	"baas/control_server/machines"
@@ -20,9 +21,12 @@ func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request)
 	var bootInform api.BootInformRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
+		log.Errorf("Error while parsing json: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+
+	log.Debug("Received BootInform request, serving Reprovisioning information")
 
 	// handle things based on bootinform
 
@@ -48,6 +52,7 @@ func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
+		log.Errorf("Error while serializing json: %v", err)
 		http.Error(w, "Error while serialising response json", http.StatusInternalServerError)
 		return
 	}

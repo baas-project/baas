@@ -14,6 +14,7 @@ package machines
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"strings"
 	"sync"
 )
@@ -69,6 +70,8 @@ func (i *InMemoryMachineStore) UpdateMachine(machine Machine) error {
 	defer i.lock.Unlock()
 
 	macAddress := strings.ToLower(machine.MacAddress)
+
+	log.Debugf("Updating machine with mac address %s and architecture %s", macAddress, machine.Architecture.Name())
 
 	i.machines[macAddress] = machine
 

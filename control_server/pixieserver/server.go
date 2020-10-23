@@ -3,7 +3,7 @@
 package pixieserver
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"go.universe.tf/netboot/out/ipxe"
@@ -21,7 +21,7 @@ func StartPixiecore(url string) {
 	Ipxe[pixiecore.FirmwareEFIBC] = ipxe.MustAsset("third_party/ipxe/src/bin-x86_64-efi/ipxe.efi")
 	Ipxe[pixiecore.FirmwareX86Ipxe] = ipxe.MustAsset("third_party/ipxe/src/bin/ipxe.pxe")
 
-	log.Printf("Starting pixiecore")
+	log.Info("Starting pixiecore")
 
 	b, err := pixiecore.APIBooter(url, time.Second*5)
 	if err != nil {
