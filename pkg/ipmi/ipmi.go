@@ -18,7 +18,7 @@ func NewConnection(ctx context.Context, addr, username, password string) (*Conne
 
 	session, err := dial.NewV2Session(ctx, &bmc.V2SessionOpts{
 		SessionOpts: bmc.SessionOpts{
-			Username: username,
+			Username:          username,
 			Password:          []byte(password),
 			MaxPrivilegeLevel: ipmi.PrivilegeLevelOperator,
 		},
@@ -32,8 +32,7 @@ func NewConnection(ctx context.Context, addr, username, password string) (*Conne
 	}, nil
 }
 
-
-func(c *Connection) ChassisStatus(ctx context.Context) (*ipmi.GetChassisStatusRsp, error) {
+func (c *Connection) ChassisStatus(ctx context.Context) (*ipmi.GetChassisStatusRsp, error) {
 	res, err := c.session.GetChassisStatus(ctx)
 	if err != nil {
 		return nil, err
@@ -42,6 +41,8 @@ func(c *Connection) ChassisStatus(ctx context.Context) (*ipmi.GetChassisStatusRs
 	return res, nil
 }
 
-func(c *Connection) Reboot(ctx context.Context) error {
+func (c *Connection) Reboot(ctx context.Context) error {
+	c.session.SendCommand()
+
 	return c.session.ChassisControl(ctx, ipmi.ChassisControlPowerCycle)
 }
