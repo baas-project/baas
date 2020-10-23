@@ -6,6 +6,7 @@ import (
 	"github.com/gebn/bmc/pkg/layerexts"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	log "github.com/sirupsen/logrus"
 )
 
 // IPMI Spec
@@ -110,7 +111,7 @@ type GetBootDevReq struct {
 	BlockSelector uint8
 }
 
-func (g GetBootDevReq) LayerType() gopacket.LayerType {
+func (*GetBootDevReq) LayerType() gopacket.LayerType {
 	return LayerTypeGetBootDevReq
 }
 
@@ -130,14 +131,13 @@ func (g GetBootDevReq) SerializeTo(b gopacket.SerializeBuffer, _ gopacket.Serial
 type GetBootDevRsp struct {
 	layers.BaseLayer
 
-	CompletionCode        ipmi.CompletionCode
 	ParameterNotSupported bool
 
 	ParameterVersion uint8
 
 	ParameterValid bool
 
-	BootOptionsParameterSelector uint8
+	ParameterSelector uint8
 
 	// Parameter0: Not implemented
 	// Parameter1: Not implemented
@@ -151,67 +151,74 @@ type GetBootDevRsp struct {
 	// Parameter7: Not implemented
 }
 
-func (g *GetBootDevRsp) LayerType() gopacket.LayerType {
-	return LayerTypeGetBootDevResp
-}
 
 func (g *GetBootDevRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	if len(data) < 4 {
+	if len(data) < 3 {
 		df.SetTruncated()
-		return fmt.Errorf("GetBootDevRsp must be at least 4 bytes; got %v", len(data))
+		return fmt.Errorf("GetBootDevRsp must be at least 3 bytes; got %v", len(data))
 	}
 
-	g.BaseLayer.Contents = data[:4]
-	g.BaseLayer.Payload = data[4:]
+	// TODO
+	// get_sensor_reading.go is a good example
+	log.Trace(data)
+	// output: [1 5 0 0 0 0 0]
 
 	// Header
-	g.CompletionCode = ipmi.CompletionCode(data[0])
-	g.ParameterNotSupported = data[0]&0x80 != 0
-	g.ParameterVersion = data[1]
-	g.ParameterValid = !(data[3]&0b10000000 != 0)
-	g.BootOptionsParameterSelector = data[3] & 0b01111111
+	g.ParameterVersion = data[0]
+	g.ParameterValid = !(data[1]&0b10000000 != 0)
+	g.ParameterSelector = data[1] & 0b01111111
+
+	log.Trace(g.ParameterSelector) // output: 5
 
 	// Parameter
-	switch g.BootOptionsParameterSelector {
+	switch g.ParameterSelector {
 	case 5:
-		// Byte 4+1
-		g.BootFlags.Valid = data[4]&(1<<7) != 0
-		g.BootFlags.Persistent = data[4]&(1<<6) != 0
-		g.BootFlags.UEFI = data[4]&(1<<5) != 0
+		// Data 1
+		g.BootFlags.Valid = data[2]&(1<<7) != 0
+		g.BootFlags.Persistent = data[2]&(1<<6) != 0
+		g.BootFlags.UEFI = data[2]&(1<<5) != 0
 
-		// Byte 4+2
-		g.BootFlags.ClearCMOS = data[6]&(1<<7) != 0
-		g.BootFlags.BootDevice = BootDevice((data[6] & 0b00111100) >> 2)
-		g.BootFlags.ScreenBlank = data[6]&(1<<1) != 0
-		g.BootFlags.LockOutResetButton = data[6]&(1<<0) != 0
+		// Data 2
+		g.BootFlags.ClearCMOS = data[3]&(1<<7) != 0
+		g.BootFlags.BootDevice = BootDevice((data[3] & 0b00111100) >> 2)
+		g.BootFlags.ScreenBlank = data[3]&(1<<1) != 0
+		g.BootFlags.LockOutResetButton = data[3]&(1<<0) != 0
 
-		// Byte 4+3
-		g.BootFlags.LockOutPowerButton = data[7]&(1<<7) != 0
-		g.BootFlags.FirmwareVerbosity = FirmwareVerbosity((data[7] & 0b01100000) >> 5)
-		g.BootFlags.ForceProgressEventTraps = data[7]&(1<<4) != 0
-		g.BootFlags.UserPasswordBypass = data[7]&(1<<3) != 0
-		g.BootFlags.LockOutSleepButton = data[7]&(1<<2) != 0
-		g.BootFlags.ConsoleRedirectionControl = ConsoleRedirectionControl(data[7] & 0b00000011)
+		// Data 3
+		g.BootFlags.LockOutPowerButton = data[4]&(1<<7) != 0
+		g.BootFlags.FirmwareVerbosity = FirmwareVerbosity((data[4] & 0b01100000) >> 5)
+		g.BootFlags.ForceProgressEventTraps = data[4]&(1<<4) != 0
+		g.BootFlags.UserPasswordBypass = data[4]&(1<<3) != 0
+		g.BootFlags.LockOutSleepButton = data[4]&(1<<2) != 0
+		g.BootFlags.ConsoleRedirectionControl = ConsoleRedirectionControl(data[4] & 0b00000011)
 
-		// Byte 4+4
-		g.BootFlags.BIOSSharedModeOverride = data[8]&(1<<3) != 0
-		g.BootFlags.BIOSMuxControlOverride = BIOSMuxControlOverride(data[8] & 0b00000011)
+		// Data 4
+		g.BootFlags.BIOSSharedModeOverride = data[5]&(1<<3) != 0
+		g.BootFlags.BIOSMuxControlOverride = BIOSMuxControlOverride(data[5] & 0b00000011)
 
-		// Byte 4+5
-		g.BootFlags.DeviceInstanceSelector = data[9] & 0b00011111
+		// Data 5
+		g.BootFlags.DeviceInstanceSelector = data[6] & 0b00011111
 
 	default:
-		return fmt.Errorf("unsupported parameter type %v", g.BootOptionsParameterSelector)
+		//return fmt.Errorf("unsupported parameter type %v", g.ParameterSelector)
 	}
 
+	g.BaseLayer.Contents = data[:3]
+	g.BaseLayer.Payload = data[3:]
+
 	return nil
+}
+
+
+func (*GetBootDevRsp) LayerType() gopacket.LayerType {
+	return LayerTypeGetBootDevResp
 }
 
 func (g *GetBootDevRsp) CanDecode() gopacket.LayerClass {
 	return g.LayerType()
 }
 
-func (g *GetBootDevRsp) NextLayerType() gopacket.LayerType {
+func (*GetBootDevRsp) NextLayerType() gopacket.LayerType {
 	return gopacket.LayerTypePayload
 }
 
@@ -235,10 +242,10 @@ func (GetBootDevCmd) Operation() *ipmi.Operation {
 	return &OperationGetBootDevReq
 }
 
-func (b GetBootDevCmd) Request() gopacket.SerializableLayer {
-	return &b.Req
+func (c GetBootDevCmd) Request() gopacket.SerializableLayer {
+	return &c.Req
 }
 
-func (b GetBootDevCmd) Response() gopacket.DecodingLayer {
-	return &b.Rsp
+func (c GetBootDevCmd) Response() gopacket.DecodingLayer {
+	return &c.Rsp
 }

@@ -4,10 +4,14 @@ import (
 	"baas/pkg/ipmi"
 	"context"
 	"encoding/json"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"time"
 )
+
+func init() {
+	log.SetLevel(log.TraceLevel)
+}
 
 func main() {
 	ctx := context.Background()

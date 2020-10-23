@@ -46,15 +46,15 @@ func (c *Connection) Reboot(ctx context.Context) error {
 }
 
 func (c *Connection) GetBootDev(ctx context.Context) (*GetBootDevRsp, error) {
-	a := GetBootDevCmd{
+	cmd := &GetBootDevCmd{
 		Req: GetBootDevReq{
 			ParameterSelector: 5,
 		},
 	}
 
-	if _, err := c.session.SendCommand(ctx, &a); err != nil {
-		return &a.Rsp, err
+	if err := bmc.ValidateResponse(c.session.SendCommand(ctx, cmd)); err != nil {
+		return nil, err
 	}
 
-	return &a.Rsp, nil
+	return &cmd.Rsp, nil
 }
