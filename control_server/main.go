@@ -20,9 +20,21 @@ var (
 )
 
 func init() {
+	lvlstring := os.Getenv("LOG_LEVEL")
+
+	loglevel, err := log.ParseLevel(lvlstring)
+	if err != nil {
+		loglevel = log.InfoLevel
+	}
+
 	log.SetFormatter(&log.TextFormatter{ForceColors: true})
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(loglevel)
+
+	// log error after the logger is initialised
+	if err != nil {
+		log.Errorf("loglevel string %s could not be parsed, defaulting to Info: %v", lvlstring, err)
+	}
 }
 
 func main() {
