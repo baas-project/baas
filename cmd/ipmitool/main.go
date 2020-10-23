@@ -3,6 +3,7 @@ package main
 import (
 	"baas/pkg/ipmi"
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"time"
@@ -19,5 +20,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Fatal(conn.Reboot(ctx))
+	res, err := conn.GetBootDev(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	jsonb, _ := json.Marshal(&res)
+
+	log.Println(string(jsonb))
 }

@@ -1,13 +1,33 @@
 package ipmi
 
 import (
+	"fmt"
 	"github.com/gebn/bmc/pkg/ipmi"
+	"github.com/gebn/bmc/pkg/layerexts"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 )
 
 // IPMI Spec
 // https://www.intel.com/content/dam/www/public/us/en/documents/product-briefs/ipmi-second-gen-interface-spec-v2-rev1-1.pdf
+
+var LayerTypeGetBootDevResp = gopacket.RegisterLayerType(
+	1999,
+	gopacket.LayerTypeMetadata{
+		Name: "Get Boot Device Response",
+		Decoder: layerexts.BuildDecoder(func() layerexts.LayerDecodingLayer {
+			return &GetBootDevRsp{}
+		}),
+	},
+)
+
+var LayerTypeGetBootDevReq = gopacket.RegisterLayerType(
+	1998,
+	gopacket.LayerTypeMetadata{
+		Name: "Get Boot Device Request",
+	},
+)
+
 
 type BootDevice uint8
 
@@ -58,11 +78,11 @@ type BootFlags struct {
 	UEFI       bool // Use UEFI or BIOS
 
 	// Byte 2
-	ClearCMOS           bool
-	LockKeyboard        bool
-	BootDevice          BootDevice
-	ScreenBlank         bool
-	LockOutResetButtons bool
+	ClearCMOS          bool
+	LockKeyboard       bool
+	BootDevice         BootDevice
+	ScreenBlank        bool
+	LockOutResetButton bool
 
 	// Byte 3
 	LockOutPowerButton        bool
@@ -80,7 +100,34 @@ type BootFlags struct {
 	DeviceInstanceSelector uint8
 }
 
-type GetBootDevResp struct {
+type GetBootDevReq struct {
+	layers.BaseLayer
+
+	ParameterSelector uint8
+
+	SetSelector uint8
+
+	BlockSelector uint8
+}
+
+func (g GetBootDevReq) LayerType() gopacket.LayerType {
+	return LayerTypeGetBootDevReq
+}
+
+func (g GetBootDevReq) SerializeTo(b gopacket.SerializeBuffer, _ gopacket.SerializeOptions) error {
+	bytes, err := b.PrependBytes(3)
+	if err != nil {
+		return err
+	}
+
+	bytes[0] = g.ParameterSelector
+	bytes[1] = g.SetSelector
+	bytes[2] = g.BlockSelector
+
+	return nil
+}
+
+type GetBootDevRsp struct {
 	layers.BaseLayer
 
 	CompletionCode        ipmi.CompletionCode
@@ -98,60 +145,100 @@ type GetBootDevResp struct {
 	// Parameter3: Not implemented
 	// Parameter4: Not implemented
 	// Parameter5: Boot Flags
-	BootFlags
+	BootFlags BootFlags
+
+	// Parameter6: Not implemented
+	// Parameter7: Not implemented
 }
 
-type GetBootDev struct {
-	Rsp GetBootDevResp
+func (g *GetBootDevRsp) LayerType() gopacket.LayerType {
+	return LayerTypeGetBootDevResp
 }
 
-func (b *GetBootDev) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
-	panic("implement me")
+func (g *GetBootDevRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+	if len(data) < 4 {
+		df.SetTruncated()
+		return fmt.Errorf("GetBootDevRsp must be at least 4 bytes; got %v", len(data))
+	}
+
+	g.BaseLayer.Contents = data[:4]
+	g.BaseLayer.Payload = data[4:]
+
+	// Header
+	g.CompletionCode = ipmi.CompletionCode(data[0])
+	g.ParameterNotSupported = data[0]&0x80 != 0
+	g.ParameterVersion = data[1]
+	g.ParameterValid = !(data[3]&0b10000000 != 0)
+	g.BootOptionsParameterSelector = data[3] & 0b01111111
+
+	// Parameter
+	switch g.BootOptionsParameterSelector {
+	case 5:
+		// Byte 4+1
+		g.BootFlags.Valid = data[4]&(1<<7) != 0
+		g.BootFlags.Persistent = data[4]&(1<<6) != 0
+		g.BootFlags.UEFI = data[4]&(1<<5) != 0
+
+		// Byte 4+2
+		g.BootFlags.ClearCMOS = data[6]&(1<<7) != 0
+		g.BootFlags.BootDevice = BootDevice((data[6] & 0b00111100) >> 2)
+		g.BootFlags.ScreenBlank = data[6]&(1<<1) != 0
+		g.BootFlags.LockOutResetButton = data[6]&(1<<0) != 0
+
+		// Byte 4+3
+		g.BootFlags.LockOutPowerButton = data[7]&(1<<7) != 0
+		g.BootFlags.FirmwareVerbosity = FirmwareVerbosity((data[7] & 0b01100000) >> 5)
+		g.BootFlags.ForceProgressEventTraps = data[7]&(1<<4) != 0
+		g.BootFlags.UserPasswordBypass = data[7]&(1<<3) != 0
+		g.BootFlags.LockOutSleepButton = data[7]&(1<<2) != 0
+		g.BootFlags.ConsoleRedirectionControl = ConsoleRedirectionControl(data[7] & 0b00000011)
+
+		// Byte 4+4
+		g.BootFlags.BIOSSharedModeOverride = data[8]&(1<<3) != 0
+		g.BootFlags.BIOSMuxControlOverride = BIOSMuxControlOverride(data[8] & 0b00000011)
+
+		// Byte 4+5
+		g.BootFlags.DeviceInstanceSelector = data[9] & 0b00011111
+
+	default:
+		return fmt.Errorf("unsupported parameter type %v", g.BootOptionsParameterSelector)
+	}
+
+	return nil
 }
 
-func (b *GetBootDev) CanDecode() gopacket.LayerClass {
-	panic("implement me")
+func (g *GetBootDevRsp) CanDecode() gopacket.LayerClass {
+	return g.LayerType()
 }
 
-func (b *GetBootDev) NextLayerType() gopacket.LayerType {
-	panic("implement me")
+func (g *GetBootDevRsp) NextLayerType() gopacket.LayerType {
+	return gopacket.LayerTypePayload
 }
 
-func (b *GetBootDev) LayerPayload() []byte {
-	panic("implement me")
+type GetBootDevCmd struct {
+	Req GetBootDevReq
+	Rsp GetBootDevRsp
 }
 
-//OperationGetChassisStatusReq
+// Name returns the name of the command, without request/response suffix
+// e.g. "Get Device ID". This is used for metrics.
+func (GetBootDevCmd) Name() string {
+	return "Change Boot Device"
+}
+
 var OperationGetBootDevReq = ipmi.Operation{
 	Function: ipmi.NetworkFunctionChassisReq,
 	Command:  0x09, // 0x09 == get (Appendix G)
 }
 
-// Name returns the name of the command, without request/response suffix
-// e.g. "Get Device ID". This is used for metrics.
-func (b *GetBootDev) Name() string {
-	return "Change Boot Device"
-}
-
-// Operation returns the operation parameters for the request. This should
-// avoid allocation, referencing a value in static memory. Technically, this
-// should be a member of a Request interface that embeds
-// gopacket.SerializableLayer, however it is here to allow Request() to
-// return nil for commands not requiring a request payload, which would
-// otherwise need to have a no-op layer created.
-func (b *GetBootDev) Operation() *ipmi.Operation {
+func (GetBootDevCmd) Operation() *ipmi.Operation {
 	return &OperationGetBootDevReq
 }
 
-// Request returns the possibly nil request layer that we send to the
-// managed system. This should not allocate any additional memory.
-func (b *GetBootDev) Request() gopacket.SerializableLayer {
-	return nil
+func (b GetBootDevCmd) Request() gopacket.SerializableLayer {
+	return &b.Req
 }
 
-// Response returns the possibly nil response layer that we expect back from
-// the managed system following our request. This should not allocate any
-// additional memory.
-func (b *GetBootDev) Response() gopacket.DecodingLayer {
-
+func (b GetBootDevCmd) Response() gopacket.DecodingLayer {
+	return &b.Rsp
 }

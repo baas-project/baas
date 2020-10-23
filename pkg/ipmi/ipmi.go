@@ -42,7 +42,19 @@ func (c *Connection) ChassisStatus(ctx context.Context) (*ipmi.GetChassisStatusR
 }
 
 func (c *Connection) Reboot(ctx context.Context) error {
-	c.session.SendCommand()
-
 	return c.session.ChassisControl(ctx, ipmi.ChassisControlPowerCycle)
+}
+
+func (c *Connection) GetBootDev(ctx context.Context) (*GetBootDevRsp, error) {
+	a := GetBootDevCmd{
+		Req: GetBootDevReq{
+			ParameterSelector: 5,
+		},
+	}
+
+	if _, err := c.session.SendCommand(ctx, &a); err != nil {
+		return &a.Rsp, err
+	}
+
+	return &a.Rsp, nil
 }
