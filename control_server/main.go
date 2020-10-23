@@ -8,10 +8,11 @@ import (
 
 	"baas/pkg/api"
 
+	log "github.com/sirupsen/logrus"
+
 	"baas/control_server/httpserver"
 	"baas/control_server/machines"
 	"baas/control_server/pixieserver"
-	log "github.com/sirupsen/logrus"
 )
 
 var (

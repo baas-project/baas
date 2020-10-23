@@ -14,9 +14,10 @@ package machines
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"strings"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // MachineStore provides functions to operate on machine stores.

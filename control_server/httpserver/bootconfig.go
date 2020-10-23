@@ -2,9 +2,10 @@ package httpserver
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 
