@@ -32,7 +32,7 @@ func init() {
 	log.SetLevel(loglevel)
 
 	// log error after the logger is initialised
-	if err != nil {
+	if err != nil && lvlstring != ""{
 		log.Errorf("loglevel string %s could not be parsed, defaulting to Info: %v", lvlstring, err)
 	}
 }

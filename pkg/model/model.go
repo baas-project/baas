@@ -37,6 +37,7 @@ type DiskImage struct {
 // DiskUUID is the linux by-uuid of a disk
 type DiskUUID = string
 
+
 // MachineSetup describes the setup for a machine during a session
 type MachineSetup struct {
 	// Ephemeral determines if we should save the state after the session ends
