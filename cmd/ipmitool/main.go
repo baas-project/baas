@@ -16,10 +16,14 @@ func init() {
 func main() {
 	ctx := context.Background()
 
+	if len(os.Args) < 2 {
+		log.Fatal("Needs at least 2 args")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 10 * time.Second)
 	defer cancel()
 
-	conn, err := ipmi.NewConnection(ctx, os.Args[1], "baas", os.Args[2])
+	conn, err := ipmi.NewConnection(ctx, os.Args[1], "root", os.Args[2])
 	if err != nil {
 		log.Fatal(err)
 	}

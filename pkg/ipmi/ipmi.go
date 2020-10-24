@@ -2,8 +2,8 @@ package ipmi
 
 import (
 	"context"
-	"github.com/gebn/bmc"
-	"github.com/gebn/bmc/pkg/ipmi"
+	"github.com/baas-project/bmc"
+	"github.com/baas-project/bmc/pkg/ipmi"
 )
 
 type Connection struct {
@@ -45,9 +45,9 @@ func (c *Connection) Reboot(ctx context.Context) error {
 	return c.session.ChassisControl(ctx, ipmi.ChassisControlPowerCycle)
 }
 
-func (c *Connection) GetBootDev(ctx context.Context) (*GetBootDevRsp, error) {
-	cmd := &GetBootDevCmd{
-		Req: GetBootDevReq{
+func (c *Connection) GetBootDev(ctx context.Context) (*ipmi.GetSystemBootOptionsRsp, error) {
+	cmd := &ipmi.GetSystemBootOptionsCmd{
+		Req: ipmi.GetSystemBootOptionsReq{
 			ParameterSelector: 5,
 		},
 	}
