@@ -14,6 +14,7 @@ package machines
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -30,7 +31,7 @@ type MachineStore interface {
 	// looking up values.
 	GetMachine(macAddress string) (Machine, error)
 
-	// UpdateMachine updates the machine identified by it's mac address.
+	// UpdateMachine creates or updates the machine identified by it's mac address.
 	UpdateMachine(machine Machine) error
 }
 
@@ -52,6 +53,8 @@ func (i *InMemoryMachineStore) GetMachine(macAddress string) (Machine, error) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
+	macAddress = strings.ToLower(macAddress)
+
 	machine, ok := i.machines[macAddress]
 	if !ok {
 		return Machine{}, fmt.Errorf("machine with mac address %v not found", macAddress)
@@ -65,7 +68,7 @@ func (i *InMemoryMachineStore) UpdateMachine(machine Machine) error {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 
-	macAddress := machine.MacAddress
+	macAddress := strings.ToLower(machine.MacAddress)
 
 	i.machines[macAddress] = machine
 

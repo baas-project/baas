@@ -26,11 +26,11 @@ func StartServer(machineStore machines.MachineStore, staticDir string, address s
 	// Serve static files (kernel, initramfs, disk images)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
-	// communicate with the management OS
+	// Routes for communicating with the management os
 	mmosh := ManagementOsHandler{machineStore}
+	mmosr := r.PathPrefix("/mmos").Subrouter()
 
-	// More functions can be added to mmosh and more handlefuncs can be added here
-	r.HandleFunc("/mmos/test", mmosh.RespondToTestPostRequest).Methods("POST")
+	mmosr.HandleFunc("/inform", mmosh.BootInform).Methods(http.MethodPost)
 
 	srv := &http.Server{
 		Handler: r,

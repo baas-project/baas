@@ -3,7 +3,7 @@
 
 ## prerequisites
 
-1. Make sure the management kernel and initramfs have been generated and exist here: [`/control_server/static`](../control_server/static)
+1. Make sure the management kernel and initramfs have been generated and exist here: [`/control_server/static`](../../control_server/static)
 
 ### Running in docker
 
@@ -20,7 +20,7 @@ docker-compose up
 
 ### Running outside of docker
 
-In the project root, run: 
+In the project root, run:
 ```bash
 sudo go run ./control_server
 ```
@@ -29,7 +29,7 @@ sudo is necesary here because BAAS listens on port 67 (dhcp)
 ## Usage
 
 When the control server is running, any computer or virtual machine running on the same network can attempt to boot using PXE.
-The control server will provide the machine with a management kernel based on its architecture. (Currently only tested on X86... #). 
+The control server will provide the machine with a management kernel based on its architecture. (Currently only tested on X86... #).
 
 The first thing the management kernel will do when booted is to set up communication with the control server, after which it will initialize
 the system based on directions given by the control server.

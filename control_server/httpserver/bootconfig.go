@@ -42,7 +42,7 @@ func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 				"http://localhost:4848/static/initramfs",
 			},
 			Message: "Booting into X86 management kernel.",
-			Cmdline: "",
+			Cmdline: "root=sr0",
 		}
 	case machines.Arm64:
 		fallthrough

@@ -1,10 +1,12 @@
 package httpserver
 
 import (
-	"log"
+	"encoding/json"
 	"net/http"
 
 	"baas/control_server/machines"
+	"baas/pkg/api"
+	"baas/pkg/model"
 )
 
 // ManagementOsHandler is a struct on which functions are defined that respond to requests
@@ -13,16 +15,42 @@ type ManagementOsHandler struct {
 	machineStore machines.MachineStore
 }
 
-// RespondToTestPostRequest is temporary to demonstrate communication.
-func (t *ManagementOsHandler) RespondToTestPostRequest(w http.ResponseWriter, r *http.Request) {
-	var contents []byte
+// BootInform handles all incoming boot inform requests
+func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request) {
+	var bootInform api.BootInformRequest
 
-	_, err := r.Body.Read(contents)
-	if err != nil {
-		log.Printf("An error occurred: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	log.Printf("%v", contents)
+	// handle things based on bootinform
+
+	// Request data from database for what to do with this machine
+	uuid := "uuid"
+	location := "/dev/sda"
+
+	// Prepare response
+	resp := api.ReprovisioningInfo{
+		Prev: model.MachineSetup{
+			Ephemeral: true,
+		},
+		Next: model.MachineSetup{
+			Ephemeral: true,
+			Disks: map[model.DiskUUID]model.DiskImage{
+				uuid: {
+					DiskType:             model.DiskTypeRaw,
+					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+					Location:             location,
+				},
+			},
+		},
+	}
+
+	if err := json.NewEncoder(w).Encode(&resp); err != nil {
+		http.Error(w, "Error while serialising response json", http.StatusInternalServerError)
+		return
+	}
+
+	r.Header.Set("content-type", "application/json")
 }

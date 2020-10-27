@@ -25,9 +25,7 @@ echo "extracting initial ramdisk"
 mkdir -p "$SCRIPT_PATH/extract"
 tar -C "$SCRIPT_PATH/extract" -xf "$SCRIPT_PATH/management_kernel_initramfs.tar"
 
-# Place the init script in the extracted folder
-echo "placing init script"
-cp "$SCRIPT_PATH/init.sh" "$SCRIPT_PATH/extract/init"
+
 
 cat > "$SCRIPT_PATH/hosts" << EOF
 # Put the ip address of the control server here so the management
@@ -38,6 +36,9 @@ EOF
 printf "placing /etc/hosts file \033[0;31m(control_server ip set to: $CONTROL_SERVER_IP)\033[0m. To change this edit the CONTROL_SERVER_IP envvar.\n"
 cp "$SCRIPT_PATH/hosts" "$SCRIPT_PATH/extract/etc/hosts"
 
+# Place the init script in the extracted folder
+echo "placing init script"
+#cp "$SCRIPT_PATH/init.sh" "$SCRIPT_PATH/extract/init"
 
 # make `init` exec
 chmod +x "$SCRIPT_PATH/extract/init"
@@ -47,13 +48,13 @@ echo "recompressing initial ramdisk to create initramfs"
 
 # Compress the extracted docker image into a cpio.gz archive for initramfs
 cd "$SCRIPT_PATH/extract/"
-find . -print0 | cpio --null -o --format=newc | gzip -9 > ../initramfs.cpio.gz
+find . -print0 | cpio --null -o --format=newc | gzip -1 > ../initramfs.cpio.gz
 
 popd
 
-# Cleanup
-rm -rf "$SCRIPT_PATH/extract"
-rm "$SCRIPT_PATH/management_kernel_initramfs.tar"
-
 # Rename initramfs
 mv "$SCRIPT_PATH/initramfs.cpio.gz" "$SCRIPT_PATH/../../control_server/static/initramfs"
+
+# Cleanup
+sudo rm -rf "$SCRIPT_PATH/extract"
+rm "$SCRIPT_PATH/management_kernel_initramfs.tar"
