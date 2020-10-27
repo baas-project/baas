@@ -20,7 +20,7 @@ func NewConnection(ctx context.Context, addr, username, password string) (*Conne
 		SessionOpts: bmc.SessionOpts{
 			Username:          username,
 			Password:          []byte(password),
-			MaxPrivilegeLevel: ipmi.PrivilegeLevelOperator,
+			MaxPrivilegeLevel: ipmi.PrivilegeLevelAdministrator,
 		},
 	})
 	if err != nil {
@@ -33,28 +33,17 @@ func NewConnection(ctx context.Context, addr, username, password string) (*Conne
 }
 
 func (c *Connection) ChassisStatus(ctx context.Context) (*ipmi.GetChassisStatusRsp, error) {
-	res, err := c.session.GetChassisStatus(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	return c.session.GetChassisStatus(ctx)
 }
 
 func (c *Connection) Reboot(ctx context.Context) error {
 	return c.session.ChassisControl(ctx, ipmi.ChassisControlPowerCycle)
 }
 
-func (c *Connection) GetBootDev(ctx context.Context) (*ipmi.GetSystemBootOptionsRsp, error) {
-	cmd := &ipmi.GetSystemBootOptionsCmd{
-		Req: ipmi.GetSystemBootOptionsReq{
-			ParameterSelector: 5,
-		},
-	}
+func (c *Connection) GetBootDev(ctx context.Context, req *ipmi.GetSystemBootOptionsReq) (*ipmi.GetSystemBootOptionsRsp, error) {
+	return c.session.GetSystemBootOptions(ctx, req)
+}
 
-	if err := bmc.ValidateResponse(c.session.SendCommand(ctx, cmd)); err != nil {
-		return nil, err
-	}
-
-	return &cmd.Rsp, nil
+func (c *Connection) SetBootDev(ctx context.Context, req *ipmi.SetSystemBootOptionsReq) error {
+	return c.session.SetSystemBootOptions(ctx, req)
 }

@@ -4,6 +4,7 @@ import (
 	"baas/pkg/ipmi"
 	"context"
 	"encoding/json"
+	ipmilib "github.com/baas-project/bmc/pkg/ipmi"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"time"
@@ -28,7 +29,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	res, err := conn.GetBootDev(ctx)
+	//res, err := conn.ChassisStatus(ctx)
+
+	res, err := conn.GetBootDev(ctx, &ipmilib.GetSystemBootOptionsReq{
+		ParameterSelector: 5,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
