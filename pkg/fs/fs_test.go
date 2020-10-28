@@ -57,7 +57,7 @@ func TestCopyFileLarge(t *testing.T) {
 	from, err := os.Create(fromFileName)
 	assert.NoError(t, err)
 
-	content := []byte(strings.Repeat("A", int(blocksize + 1)))
+	content := []byte(strings.Repeat("A", int(blocksize+1)))
 	assert.True(t, len(content) > int(blocksize))
 	n, err := from.Write(content)
 	assert.NoError(t, err)
