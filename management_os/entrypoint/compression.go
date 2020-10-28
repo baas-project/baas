@@ -17,8 +17,7 @@ func Decompress(reader io.Reader, image model.DiskImage) (io.Reader, error) {
 	case model.DiskCompressionStrategyNone:
 		return reader, nil
 	case model.DiskCompressionStrategyZSTD:
-		newreader := gozstd.NewReader(reader)
-		return newreader, nil
+		return gozstd.NewReader(reader), nil
 	default:
 		return nil, errors.New("unknown decompression strategy")
 	}
