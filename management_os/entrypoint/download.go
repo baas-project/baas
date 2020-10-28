@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
-	"strings"
 	"syscall"
+
+	"baas/pkg/fs"
 
 	"github.com/pkg/errors"
 
@@ -15,18 +15,18 @@ import (
 
 // WriteOutDisks Downloads, Decompresses and finally Writes a disk image to disk
 func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
-	for disk := range setup.Disks {
-		reader, err := DownloadDisk(api, disk, setup.Disks[disk])
+	for uuid, disk := range setup.Disks {
+		reader, err := DownloadDisk(api, uuid, disk)
 		if err != nil {
 			return errors.Wrap(err, "error downloading disk")
 		}
 
-		dec, err := Decompress(reader, setup.Disks[disk])
+		dec, err := Decompress(reader, disk)
 		if err != nil {
 			return errors.Wrap(err, "error decompressing disk")
 		}
 
-		err = WriteDisk(dec, setup.Disks[disk])
+		err = WriteDisk(dec, disk)
 		if err != nil {
 			return errors.Wrap(err, "error writing disk")
 		}
@@ -44,7 +44,7 @@ func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
 func DownloadDisk(api *APIClient, uuid model.DiskUUID, image model.DiskImage) (reader io.ReadCloser, _ error) {
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
-		return api.DownloadDiskHTTP(uuid, image)
+		return api.DownloadDiskHTTP(uuid)
 	default:
 		return nil, errors.New("unknown transfer strategy")
 	}
@@ -60,27 +60,18 @@ func Decompress(reader io.Reader, image model.DiskImage) (io.Reader, error) {
 	}
 }
 
-const diskfmt string = "/dev/disk/by-uuid/%s"
-
 // WriteDisk Writes an image to disk using an io reader and disk image definition
 func WriteDisk(reader io.Reader, image model.DiskImage) error {
-	path := func() string {
-		if strings.HasPrefix(image.Location, "/") {
-			return image.Location
-		}
-		return fmt.Sprintf(diskfmt, image.Location)
-	}()
-
-	file, err := os.OpenFile(path, syscall.O_RDWR, os.ModePerm)
+	file, err := os.OpenFile(image.Location, syscall.O_RDWR, os.ModePerm)
 	if err != nil {
-		return errors.Wrapf(err, "error opening path %s", path)
+		return errors.Wrapf(err, "error opening path %s", image.Location)
 	}
 	defer func() {
 		err = file.Close()
 		if err != nil {
-			log.Printf("error closing: %s %s", path, err.Error())
+			log.Printf("error closing: %s %s", image.Location, err.Error())
 		}
 	}()
 
-	return errors.Wrap(CopyStream(reader, file), "error copying stream")
+	return errors.Wrap(fs.CopyStream(reader, file), "error copying stream")
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -52,9 +53,10 @@ func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
 }
 
 // DownloadDiskHTTP Downloads a disk image from the control_server over HTTP
-func (a *APIClient) DownloadDiskHTTP(_ model.DiskUUID, _ model.DiskImage) (io.ReadCloser, error) {
+func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error) {
+	// TODO: add uuid in url, and change /static
 	//nolint we are returning a readcloser so the body will be closed later
-	resp, err := http.Get(a.baseURL + "/static/alpine-virt-3.12.1-x86_64.iso")
+	resp, err := http.Get(fmt.Sprintf("%s/mmos/disk/%s", a.baseURL, uuid))
 	if err != nil {
 		return nil, errors.Wrap(err, "error dl disk")
 	}
@@ -66,4 +68,33 @@ func (a *APIClient) DownloadDiskHTTP(_ model.DiskUUID, _ model.DiskImage) (io.Re
 	}
 
 	return resp.Body, nil
+}
+
+// UploadDiskHTTP uploads a disk image given the http strategy
+func (a *APIClient) UploadDiskHTTP(r io.ReadCloser, uuid model.DiskUUID) error {
+	defer func() {
+		if err := r.Close(); err != nil {
+			// TODO: Fix logging on client
+			log.Printf("Failed to close reader")
+		}
+	}()
+
+	resp, err := http.Post(fmt.Sprintf("%s/mmos/disk/%s", a.baseURL, uuid), "application/octet-stream", r)
+	if err != nil {
+		return errors.Wrap(err, "upload disk")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := ioutil.ReadAll(resp.Body)
+
+		return errors.Errorf("upload disk http (%s)", string(b))
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Failed to close reader")
+		}
+	}()
+
+	return nil
 }

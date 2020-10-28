@@ -2,9 +2,18 @@ package httpserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"syscall"
+
+	"github.com/gorilla/mux"
+
+	"baas/pkg/fs"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/google/uuid"
 
 	"baas/control_server/machines"
 	"baas/pkg/api"
@@ -15,6 +24,7 @@ import (
 // from the management OS. This struct holds state necessary for the request handlers.
 type ManagementOsHandler struct {
 	machineStore machines.MachineStore
+	diskpath     string
 }
 
 // BootInform handles all incoming boot inform requests
@@ -32,18 +42,26 @@ func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request)
 	// handle things based on bootinform
 
 	// Request data from database for what to do with this machine
-	uuid := "uuid"
+	uuid1 := "alpineresult.iso"
+	uuid2 := "alpine.iso"
 	location := "/dev/sda"
 
 	// Prepare response
 	resp := api.ReprovisioningInfo{
 		Prev: model.MachineSetup{
-			Ephemeral: true,
+			Ephemeral: false,
+			Disks: map[model.DiskUUID]model.DiskImage{
+				uuid1: {
+					DiskType:             model.DiskTypeRaw,
+					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+					Location:             location,
+				},
+			},
 		},
 		Next: model.MachineSetup{
-			Ephemeral: true,
+			Ephemeral: false,
 			Disks: map[model.DiskUUID]model.DiskImage{
-				uuid: {
+				uuid2: {
 					DiskType:             model.DiskTypeRaw,
 					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
 					Location:             location,
@@ -59,4 +77,66 @@ func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request)
 	}
 
 	r.Header.Set("content-type", "application/json")
+}
+
+// UploadDiskImage allows the management os to upload disk images
+func (m *ManagementOsHandler) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, ok := vars["uuid"]
+	if !ok || id == "" {
+		http.Error(w, "Invalid uuid", http.StatusBadRequest)
+		log.Error("Invalid uuid given")
+		return
+	}
+
+	path := fmt.Sprintf("%s/%s", m.diskpath, id)
+	temppath := path + "." + uuid.New().String() + ".tmp"
+
+	f, err := os.OpenFile(temppath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
+	if err != nil {
+		http.NotFound(w, r)
+		log.Errorf("failed to open/create disk image (%v)", err)
+		return
+	}
+
+	err = fs.CopyStream(r.Body, f)
+	if err != nil {
+		http.Error(w, "failed to write file", http.StatusInternalServerError)
+		log.Errorf("failed to write file (%v)", err)
+		return
+	}
+
+	err = os.Rename(temppath, path)
+	if err != nil {
+		http.Error(w, "failed to move file", http.StatusInternalServerError)
+		log.Errorf("failed to move file (%v)", err)
+		return
+	}
+}
+
+// DownloadDiskImage provides disk images for the management os to download
+func (m *ManagementOsHandler) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, ok := vars["uuid"]
+	if !ok || id == "" {
+		http.Error(w, "Invalid uuid", http.StatusBadRequest)
+		log.Error("Invalid uuid given")
+		return
+	}
+
+	f, err := os.OpenFile(fmt.Sprintf("%s/%s", m.diskpath, id), syscall.O_RDONLY, os.ModePerm)
+	if err != nil {
+		http.NotFound(w, r)
+		log.Errorf("failed to read disk image (%v)", err)
+		return
+	}
+
+	r.Header.Set("Content-Type", "application/octet-stream")
+
+	err = fs.CopyStream(f, w)
+	if err != nil {
+		http.Error(w, "failed to write file", http.StatusInternalServerError)
+		log.Errorf("failed to write file (%v)", err)
+		return
+	}
 }
