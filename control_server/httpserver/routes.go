@@ -27,6 +27,14 @@ type Routes struct {
 	diskpath     string
 }
 
+// NewRoutes creates a new Routes struct.
+func NewRoutes(store machines.MachineStore, diskpath string) *Routes {
+	return &Routes{
+		machineStore: store,
+		diskpath:     diskpath,
+	}
+}
+
 // BootInform handles all incoming boot inform requests
 func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 	var bootInform api.BootInformRequest
@@ -90,7 +98,7 @@ func (routes *Routes) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	path := fmt.Sprintf("%s/%s", routes.diskpath, id)
-	temppath := path + "." + uuid.New().String() + ".tmp"
+	temppath := fmt.Sprintf("%s.%s.tmp", path, uuid.New().String())
 
 	f, err := os.OpenFile(temppath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {

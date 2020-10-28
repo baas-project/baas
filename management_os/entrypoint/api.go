@@ -22,6 +22,13 @@ type APIClient struct {
 	baseURL string
 }
 
+// NewAPIClient creates a new APIClient struct
+func NewAPIClient(baseURL string) *APIClient {
+	return &APIClient{
+		baseURL: baseURL,
+	}
+}
+
 // BootInform informs the server that we have booted
 func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
 	log.Debug("Sending boot inform request")

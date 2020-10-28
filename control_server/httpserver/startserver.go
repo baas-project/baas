@@ -30,15 +30,15 @@ func StartServer(machineStore machines.MachineStore, staticDir string, diskpath 
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
 	// Routes for communicating with the management os
-	mmosh := Routes{machineStore, diskpath}
+	routes := NewRoutes(machineStore, diskpath)
 	mmosr := r.PathPrefix("/mmos").Subrouter()
 
 	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
-	r.HandleFunc("/v1/boot/{mac}", mmosh.ServeBootConfigurations)
+	r.HandleFunc("/v1/boot/{mac}", routes.ServeBootConfigurations)
 
-	mmosr.HandleFunc("/inform", mmosh.BootInform).Methods(http.MethodPost)
-	mmosr.HandleFunc("/disk/{uuid}", mmosh.UploadDiskImage).Methods(http.MethodPost)
-	mmosr.HandleFunc("/disk/{uuid}", mmosh.DownloadDiskImage).Methods(http.MethodGet)
+	mmosr.HandleFunc("/inform", routes.BootInform).Methods(http.MethodPost)
+	mmosr.HandleFunc("/disk/{uuid}", routes.UploadDiskImage).Methods(http.MethodPost)
+	mmosr.HandleFunc("/disk/{uuid}", routes.DownloadDiskImage).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Handler: r,

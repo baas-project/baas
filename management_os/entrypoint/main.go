@@ -13,11 +13,11 @@ import (
 var baseurl = fmt.Sprintf("http://control_server:%d", api.Port)
 
 func init() {
-	log.AddHook(httplog.NewLogHook(baseurl+"/log", "MMOS"))
+	log.AddHook(httplog.NewLogHook(fmt.Sprintf("%s/log", baseurl), "MMOS"))
 }
 
 func main() {
-	c := APIClient{baseURL: baseurl}
+	c := NewAPIClient(baseurl)
 
 	prov, err := c.BootInform()
 	if err != nil {
@@ -25,14 +25,14 @@ func main() {
 	}
 
 	if !prov.Prev.Ephemeral {
-		if err := ReadInDisks(&c, prov.Prev); err != nil {
+		if err := ReadInDisks(c, prov.Prev); err != nil {
 			log.Fatal(err)
 		}
 	} else {
 		log.Info("Not downloading any disk because previous session was ephemeral")
 	}
 
-	if err := WriteOutDisks(&c, prov.Next); err != nil {
+	if err := WriteOutDisks(c, prov.Next); err != nil {
 		log.Fatal(err)
 	}
 
