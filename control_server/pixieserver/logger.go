@@ -2,8 +2,9 @@ package pixieserver
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var logSync sync.Mutex

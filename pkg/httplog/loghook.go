@@ -3,32 +3,36 @@ package httplog
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
-type HttpLogHook struct {
-	url string
+// Hook is the actual struct which can be given to logrus.
+type Hook struct {
+	url    string
 	origin string
 }
 
-type LogMessage struct {
-	Level string
+type logMessage struct {
+	Level   string
 	Message string
-	Origin string
+	Origin  string
 }
 
-func (h HttpLogHook) Levels() []log.Level {
+// Levels implementation for the http log hook.
+func (h Hook) Levels() []log.Level {
 	return log.AllLevels
 }
 
-func (h HttpLogHook) Fire(entry *log.Entry) error {
-	res, err := json.Marshal(LogMessage {
-		Level: entry.Level.String(),
+// Fire implementation for the http log hook.
+func (h Hook) Fire(entry *log.Entry) error {
+	res, err := json.Marshal(logMessage{
+		Level:   entry.Level.String(),
 		Message: entry.Message,
-		Origin: h.origin,
+		Origin:  h.origin,
 	})
 
 	if err != nil {
@@ -53,9 +57,9 @@ func (h HttpLogHook) Fire(entry *log.Entry) error {
 	return nil
 }
 
-
-func NewLogHook(url, origin string) *HttpLogHook {
-	return &HttpLogHook{
+// NewLogHook Creates a new http log hook, to be given to logrus.
+func NewLogHook(url, origin string) *Hook {
+	return &Hook{
 		url,
 		origin,
 	}

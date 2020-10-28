@@ -4,10 +4,11 @@
 package httpserver
 
 import (
-	"baas/pkg/httplog"
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"baas/pkg/httplog"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -51,7 +52,7 @@ func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// We don't want to log the fact that we are logging.
 		if r.URL.Path != "/log" {
-			log.Infof("%s request on %s", r.Method, r.URL)
+			log.Debugf("%s request on %s", r.Method, r.URL)
 		}
 
 		// Call the next handler, which can be another middleware in the chain, or the final handler.

@@ -1,10 +1,11 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"syscall"
+
+	log "github.com/sirupsen/logrus"
 
 	"baas/pkg/fs"
 

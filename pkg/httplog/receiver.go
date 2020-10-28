@@ -1,14 +1,19 @@
+// Package httplog provides a log for logrus, which enables log lines to be sent
+// using http requests.
 package httplog
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
+// CreateLogHandler creates a new log handler. It takes a logger as parameter,
+// and returns a HandlerFunc which can be used with the go http framework.
 func CreateLogHandler(logger *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var l LogMessage
+		var l logMessage
 
 		err := json.NewDecoder(r.Body).Decode(&l)
 		if err != nil {
@@ -34,7 +39,3 @@ func CreateLogHandler(logger *log.Logger) http.HandlerFunc {
 		}
 	}
 }
-
-
-
-
