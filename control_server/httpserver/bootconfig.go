@@ -2,9 +2,10 @@ package httpserver
 
 import (
 	"encoding/json"
-	"log"
 	"net"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 
@@ -60,31 +61,31 @@ func (p *BootConfigHandler) ServeBootConfigurations(w http.ResponseWriter, r *ht
 
 	addr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		log.Printf("An error occurred: %v", err)
+		log.Errorf("Error while trying to get remote ip address: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("Serving boot config for %v at ip: %v", mac, addr)
+	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
 	m, err := p.MachineStore.GetMachine(mac)
 	if err != nil {
-		log.Printf("An error occurred: %v", err)
+		log.Errorf("Couldn't find machine in store: %v", err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	resp := getBootConfig(m.Architecture)
 	if resp == nil {
-		log.Printf("Couldn't find appropriate bootconfig for this machine")
+		log.Errorf("Couldn't find appropriate bootconfig for this machine")
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	log.Printf("Sending boot config %v", resp)
+	log.Debugf("Sending boot config %v", resp)
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
-		log.Printf("Couldn't write bootconfig to network")
+		log.Errorf("Couldn't write bootconfig to network")
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
