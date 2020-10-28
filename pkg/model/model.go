@@ -23,6 +23,8 @@ type DiskCompressionStrategy int
 const (
 	// DiskCompressionStrategyNone doesn't compress
 	DiskCompressionStrategyNone DiskCompressionStrategy = iota
+	// DiskCompressionStrategyZSTD compresses disk images with zstd.
+	DiskCompressionStrategyZSTD
 )
 
 // DiskImage describes a single disk image on the machine
