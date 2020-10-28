@@ -27,9 +27,7 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 			return errors.Wrapf(err, "compressing disk")
 		}
 
-		comc := com.(io.ReadCloser)
-
-		err = UploadDisk(api, comc, uuid, disk)
+		err = UploadDisk(api, com, uuid, disk)
 		if err != nil {
 			return errors.Wrapf(err, "uploading disk")
 		}
@@ -38,7 +36,7 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 }
 
 // UploadDisk uploads a disk to the control server given a transfer strategy.
-func UploadDisk(api *APIClient, reader io.ReadCloser, uuid model.DiskUUID, image model.DiskImage) error {
+func UploadDisk(api *APIClient, reader io.Reader, uuid model.DiskUUID, image model.DiskImage) error {
 	log.Debugf("Disk transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:

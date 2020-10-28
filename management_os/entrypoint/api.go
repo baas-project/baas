@@ -84,7 +84,7 @@ func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error)
 }
 
 // UploadDiskHTTP uploads a disk image given the http strategy
-func (a *APIClient) UploadDiskHTTP(r io.ReadCloser, uuid model.DiskUUID) error {
+func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid model.DiskUUID) error {
 	log.Debugf("uploading disk %v over http", uuid)
 
 	// Post closes r if able to, so no manual close is necessary
@@ -101,7 +101,7 @@ func (a *APIClient) UploadDiskHTTP(r io.ReadCloser, uuid model.DiskUUID) error {
 
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Error("Failed to close reader (%v)", err)
+			log.Errorf("Failed to close reader (%v)", err)
 		}
 	}()
 
