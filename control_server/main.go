@@ -25,7 +25,7 @@ func init() {
 
 	loglevel, err := log.ParseLevel(lvlstring)
 	if err != nil {
-		loglevel = log.InfoLevel
+		loglevel = log.DebugLevel
 	}
 
 	log.SetFormatter(&log.TextFormatter{ForceColors: true})

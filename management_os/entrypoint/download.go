@@ -2,9 +2,10 @@ package main
 
 import (
 	"io"
-	"log"
 	"os"
 	"syscall"
+
+	log "github.com/sirupsen/logrus"
 
 	"baas/pkg/fs"
 
@@ -15,7 +16,11 @@ import (
 
 // WriteOutDisks Downloads, Decompresses and finally Writes a disk image to disk
 func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
+	log.Info("Downloading and writing disks")
+
 	for uuid, disk := range setup.Disks {
+		log.Debugf("writing disk: %v", uuid)
+
 		reader, err := DownloadDisk(api, uuid, disk)
 		if err != nil {
 			return errors.Wrap(err, "error downloading disk")
@@ -42,6 +47,7 @@ func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
 
 // DownloadDisk downloads a disk from the network using the image's DiskTransferStrategy
 func DownloadDisk(api *APIClient, uuid model.DiskUUID, image model.DiskImage) (reader io.ReadCloser, _ error) {
+	log.Debugf("Disk transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
 		return api.DownloadDiskHTTP(uuid)
@@ -52,6 +58,7 @@ func DownloadDisk(api *APIClient, uuid model.DiskUUID, image model.DiskImage) (r
 
 // Decompress is a decorator to decompress a disk image stream
 func Decompress(reader io.Reader, image model.DiskImage) (io.Reader, error) {
+	log.Debugf("Disk compression strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskCompressionStrategy {
 	case model.DiskCompressionStrategyNone:
 		return reader, nil
@@ -69,7 +76,7 @@ func WriteDisk(reader io.Reader, image model.DiskImage) error {
 	defer func() {
 		err = file.Close()
 		if err != nil {
-			log.Printf("error closing: %s %s", image.Location, err.Error())
+			log.Errorf("error closing: %s %s", image.Location, err.Error())
 		}
 	}()
 

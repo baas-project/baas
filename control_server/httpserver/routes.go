@@ -20,15 +20,23 @@ import (
 	"baas/pkg/model"
 )
 
-// ManagementOsHandler is a struct on which functions are defined that respond to requests
+// Routes is a struct on which functions are defined that respond to requests
 // from the management OS. This struct holds state necessary for the request handlers.
-type ManagementOsHandler struct {
+type Routes struct {
 	machineStore machines.MachineStore
 	diskpath     string
 }
 
+// NewRoutes creates a new Routes struct.
+func NewRoutes(store machines.MachineStore, diskpath string) *Routes {
+	return &Routes{
+		machineStore: store,
+		diskpath:     diskpath,
+	}
+}
+
 // BootInform handles all incoming boot inform requests
-func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request) {
+func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 	var bootInform api.BootInformRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
@@ -80,7 +88,7 @@ func (m *ManagementOsHandler) BootInform(w http.ResponseWriter, r *http.Request)
 }
 
 // UploadDiskImage allows the management os to upload disk images
-func (m *ManagementOsHandler) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (routes *Routes) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -89,8 +97,8 @@ func (m *ManagementOsHandler) UploadDiskImage(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	path := fmt.Sprintf("%s/%s", m.diskpath, id)
-	temppath := path + "." + uuid.New().String() + ".tmp"
+	path := fmt.Sprintf("%s/%s", routes.diskpath, id)
+	temppath := fmt.Sprintf("%s.%s.tmp", path, uuid.New().String())
 
 	f, err := os.OpenFile(temppath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
@@ -115,7 +123,7 @@ func (m *ManagementOsHandler) UploadDiskImage(w http.ResponseWriter, r *http.Req
 }
 
 // DownloadDiskImage provides disk images for the management os to download
-func (m *ManagementOsHandler) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (routes *Routes) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -124,7 +132,7 @@ func (m *ManagementOsHandler) DownloadDiskImage(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	f, err := os.OpenFile(fmt.Sprintf("%s/%s", m.diskpath, id), syscall.O_RDONLY, os.ModePerm)
+	f, err := os.OpenFile(fmt.Sprintf("%s/%s", routes.diskpath, id), syscall.O_RDONLY, os.ModePerm)
 	if err != nil {
 		http.NotFound(w, r)
 		log.Errorf("failed to read disk image (%v)", err)

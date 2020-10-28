@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"baas/pkg/model"
 
@@ -21,8 +22,17 @@ type APIClient struct {
 	baseURL string
 }
 
+// NewAPIClient creates a new APIClient struct
+func NewAPIClient(baseURL string) *APIClient {
+	return &APIClient{
+		baseURL: baseURL,
+	}
+}
+
 // BootInform informs the server that we have booted
 func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
+	log.Debug("Sending boot inform request")
+
 	b, err := json.Marshal(&api.BootInformRequest{})
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't marshal boot inform json")
@@ -34,7 +44,7 @@ func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Print(err)
+			log.Error(err)
 		}
 	}()
 
@@ -54,7 +64,8 @@ func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
 
 // DownloadDiskHTTP Downloads a disk image from the control_server over HTTP
 func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error) {
-	// TODO: add uuid in url, and change /static
+	log.Debugf("downloading disk %v over http", uuid)
+
 	//nolint we are returning a readcloser so the body will be closed later
 	resp, err := http.Get(fmt.Sprintf("%s/mmos/disk/%s", a.baseURL, uuid))
 	if err != nil {
@@ -67,15 +78,18 @@ func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error)
 		return nil, errors.Errorf("http error while downloading disk (%s)", string(b))
 	}
 
+	log.Debugf("done downloading disk %v over http", uuid)
+
 	return resp.Body, nil
 }
 
 // UploadDiskHTTP uploads a disk image given the http strategy
 func (a *APIClient) UploadDiskHTTP(r io.ReadCloser, uuid model.DiskUUID) error {
+	log.Debugf("uploading disk %v over http", uuid)
+
 	defer func() {
 		if err := r.Close(); err != nil {
-			// TODO: Fix logging on client
-			log.Printf("Failed to close reader")
+			log.Error("Failed to close reader")
 		}
 	}()
 
@@ -92,9 +106,11 @@ func (a *APIClient) UploadDiskHTTP(r io.ReadCloser, uuid model.DiskUUID) error {
 
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Printf("Failed to close reader")
+			log.Error("Failed to close reader")
 		}
 	}()
+
+	log.Debugf("done uploading disk %v over http", uuid)
 
 	return nil
 }

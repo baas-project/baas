@@ -2,8 +2,9 @@ package pixieserver
 
 import (
 	"fmt"
-	"log"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var logSync sync.Mutex
@@ -11,7 +12,7 @@ var logSync sync.Mutex
 func logWithStdLog(subsys, msg string) {
 	logSync.Lock()
 	defer logSync.Unlock()
-	log.Printf("[%s] %s", subsys, msg)
+	log.Debugf("[%s] %s", subsys, msg)
 }
 
 func logWithStdFmt(subsys, msg string) {

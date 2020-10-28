@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"baas/pkg/httplog"
+
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
@@ -22,20 +24,21 @@ func StartServer(machineStore machines.MachineStore, staticDir string, diskpath 
 	r.StrictSlash(true)
 	r.Use(logging)
 
-	// Serve boot configurations to pixiecore
-	bch := BootConfigHandler{machineStore}
-	r.HandleFunc("/v1/boot/{mac}", bch.ServeBootConfigurations)
+	r.HandleFunc("/log", httplog.CreateLogHandler(log.StandardLogger()))
 
 	// Serve static files (kernel, initramfs, disk images)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
 	// Routes for communicating with the management os
-	mmosh := ManagementOsHandler{machineStore, diskpath}
+	routes := NewRoutes(machineStore, diskpath)
 	mmosr := r.PathPrefix("/mmos").Subrouter()
 
-	mmosr.HandleFunc("/inform", mmosh.BootInform).Methods(http.MethodPost)
-	mmosr.HandleFunc("/disk/{uuid}", mmosh.UploadDiskImage).Methods(http.MethodPost)
-	mmosr.HandleFunc("/disk/{uuid}", mmosh.DownloadDiskImage).Methods(http.MethodGet)
+	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
+	r.HandleFunc("/v1/boot/{mac}", routes.ServeBootConfigurations)
+
+	mmosr.HandleFunc("/inform", routes.BootInform).Methods(http.MethodPost)
+	mmosr.HandleFunc("/disk/{uuid}", routes.UploadDiskImage).Methods(http.MethodPost)
+	mmosr.HandleFunc("/disk/{uuid}", routes.DownloadDiskImage).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Handler: r,
@@ -47,7 +50,10 @@ func StartServer(machineStore machines.MachineStore, staticDir string, diskpath 
 
 func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Infof("%s request on %s", r.Method, r.URL)
+		// We don't want to log the fact that we are logging.
+		if r.URL.Path != "/log" {
+			log.Debugf("%s request on %s", r.Method, r.URL)
+		}
 
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		next.ServeHTTP(w, r)
