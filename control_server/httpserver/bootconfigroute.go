@@ -12,14 +12,6 @@ import (
 	"baas/control_server/machines"
 )
 
-// BootConfigHandler serves boot configurations (from the ServeBootConfigurations function)
-// to pixiecore, so it knows what os to boot.
-type BootConfigHandler struct {
-	// A different configuration needs to be served depending on the system architecture.
-	// The machine store stores this information.
-	MachineStore machines.MachineStore
-}
-
 type bootConfigResponse struct {
 	// Kernel to boot.
 	Kernel string `json:"kernel"`
@@ -55,7 +47,7 @@ func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 }
 
 // ServeBootConfigurations actually responds to requests from pixiecore.
-func (p *BootConfigHandler) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
+func (routes *Routes) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac := vars["mac"]
 
@@ -68,7 +60,7 @@ func (p *BootConfigHandler) ServeBootConfigurations(w http.ResponseWriter, r *ht
 
 	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
-	m, err := p.MachineStore.GetMachine(mac)
+	m, err := routes.machineStore.GetMachine(mac)
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)
 		w.WriteHeader(http.StatusNotFound)

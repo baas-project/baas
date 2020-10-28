@@ -4,6 +4,7 @@
 package httpserver
 
 import (
+	"baas/pkg/httplog"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -22,16 +23,17 @@ func StartServer(machineStore machines.MachineStore, staticDir string, diskpath 
 	r.StrictSlash(true)
 	r.Use(logging)
 
-	// Serve boot configurations to pixiecore
-	bch := BootConfigHandler{machineStore}
-	r.HandleFunc("/v1/boot/{mac}", bch.ServeBootConfigurations)
+	r.HandleFunc("/log", httplog.CreateLogHandler(log.StandardLogger()))
 
 	// Serve static files (kernel, initramfs, disk images)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
 	// Routes for communicating with the management os
-	mmosh := ManagementOsHandler{machineStore, diskpath}
+	mmosh := Routes{machineStore, diskpath}
 	mmosr := r.PathPrefix("/mmos").Subrouter()
+
+	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
+	r.HandleFunc("/v1/boot/{mac}", mmosh.ServeBootConfigurations)
 
 	mmosr.HandleFunc("/inform", mmosh.BootInform).Methods(http.MethodPost)
 	mmosr.HandleFunc("/disk/{uuid}", mmosh.UploadDiskImage).Methods(http.MethodPost)
@@ -47,7 +49,10 @@ func StartServer(machineStore machines.MachineStore, staticDir string, diskpath 
 
 func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Infof("%s request on %s", r.Method, r.URL)
+		// We don't want to log the fact that we are logging.
+		if r.URL.Path != "/log" {
+			log.Infof("%s request on %s", r.Method, r.URL)
+		}
 
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		next.ServeHTTP(w, r)
