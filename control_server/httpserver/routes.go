@@ -60,9 +60,10 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 			Ephemeral: false,
 			Disks: map[model.DiskUUID]model.DiskImage{
 				uuid1: {
-					DiskType:             model.DiskTypeRaw,
-					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					Location:             location,
+					DiskType:                model.DiskTypeRaw,
+					DiskTransferStrategy:    model.DiskTransferStrategyHTTP,
+					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+					Location:                location,
 				},
 			},
 		},
@@ -70,9 +71,10 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 			Ephemeral: false,
 			Disks: map[model.DiskUUID]model.DiskImage{
 				uuid2: {
-					DiskType:             model.DiskTypeRaw,
-					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					Location:             location,
+					DiskType:                model.DiskTypeRaw,
+					DiskTransferStrategy:    model.DiskTransferStrategyHTTP,
+					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+					Location:                location,
 				},
 			},
 		},

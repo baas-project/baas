@@ -44,7 +44,7 @@ func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Error(err)
+			log.Errorf("Failed to close body (%v)", err)
 		}
 	}()
 
@@ -87,12 +87,7 @@ func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error)
 func (a *APIClient) UploadDiskHTTP(r io.ReadCloser, uuid model.DiskUUID) error {
 	log.Debugf("uploading disk %v over http", uuid)
 
-	defer func() {
-		if err := r.Close(); err != nil {
-			log.Error("Failed to close reader")
-		}
-	}()
-
+	// Post closes r if able to, so no manual close is necessary
 	resp, err := http.Post(fmt.Sprintf("%s/mmos/disk/%s", a.baseURL, uuid), "application/octet-stream", r)
 	if err != nil {
 		return errors.Wrap(err, "upload disk")
@@ -106,7 +101,7 @@ func (a *APIClient) UploadDiskHTTP(r io.ReadCloser, uuid model.DiskUUID) error {
 
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			log.Error("Failed to close reader")
+			log.Error("Failed to close reader (%v)", err)
 		}
 	}()
 
