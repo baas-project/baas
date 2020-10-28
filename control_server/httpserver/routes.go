@@ -62,7 +62,8 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 				uuid1: {
 					DiskType:             model.DiskTypeRaw,
 					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					Location:             location,
+					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+					Location: location,
 				},
 			},
 		},
@@ -72,7 +73,8 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 				uuid2: {
 					DiskType:             model.DiskTypeRaw,
 					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					Location:             location,
+					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+					Location: location,
 				},
 			},
 		},

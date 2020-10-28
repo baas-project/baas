@@ -2,8 +2,6 @@ package main
 
 import (
 	"io"
-	"os"
-	"syscall"
 
 	log "github.com/sirupsen/logrus"
 
@@ -38,7 +36,7 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 }
 
 // UploadDisk uploads a disk to the control server given a transfer strategy.
-func UploadDisk(api *APIClient, reader io.ReadCloser, uuid model.DiskUUID, image model.DiskImage) error {
+func UploadDisk(api *APIClient, reader io.Reader, uuid model.DiskUUID, image model.DiskImage) error {
 	log.Debugf("Disk transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
@@ -46,25 +44,4 @@ func UploadDisk(api *APIClient, reader io.ReadCloser, uuid model.DiskUUID, image
 	default:
 		return errors.New("unknown transfer strategy")
 	}
-}
-
-// Compress is a decorator to compress a disk image stream
-func Compress(reader io.ReadCloser, image model.DiskImage) (io.ReadCloser, error) {
-	log.Debugf("Disk compression strategy: %v", image.DiskCompressionStrategy)
-	switch image.DiskCompressionStrategy {
-	case model.DiskCompressionStrategyNone:
-		return reader, nil
-	default:
-		return nil, errors.New("unknown decompression strategy")
-	}
-}
-
-// ReadDisk reads a disk from a file and returns a stream
-func ReadDisk(image model.DiskImage) (io.ReadCloser, error) {
-	file, err := os.OpenFile(image.Location, syscall.O_RDWR, os.ModePerm)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error opening path %s", image.Location)
-	}
-
-	return file, nil
 }

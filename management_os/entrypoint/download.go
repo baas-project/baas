@@ -2,12 +2,8 @@ package main
 
 import (
 	"io"
-	"os"
-	"syscall"
 
 	log "github.com/sirupsen/logrus"
-
-	"baas/pkg/fs"
 
 	"github.com/pkg/errors"
 
@@ -54,31 +50,4 @@ func DownloadDisk(api *APIClient, uuid model.DiskUUID, image model.DiskImage) (r
 	default:
 		return nil, errors.New("unknown transfer strategy")
 	}
-}
-
-// Decompress is a decorator to decompress a disk image stream
-func Decompress(reader io.Reader, image model.DiskImage) (io.Reader, error) {
-	log.Debugf("Disk compression strategy: %v", image.DiskTransferStrategy)
-	switch image.DiskCompressionStrategy {
-	case model.DiskCompressionStrategyNone:
-		return reader, nil
-	default:
-		return nil, errors.New("unknown decompression strategy")
-	}
-}
-
-// WriteDisk Writes an image to disk using an io reader and disk image definition
-func WriteDisk(reader io.Reader, image model.DiskImage) error {
-	file, err := os.OpenFile(image.Location, syscall.O_RDWR, os.ModePerm)
-	if err != nil {
-		return errors.Wrapf(err, "error opening path %s", image.Location)
-	}
-	defer func() {
-		err = file.Close()
-		if err != nil {
-			log.Errorf("error closing: %s %s", image.Location, err.Error())
-		}
-	}()
-
-	return errors.Wrap(fs.CopyStream(reader, file), "error copying stream")
 }
