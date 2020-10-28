@@ -1,4 +1,5 @@
-package main
+// Package fs provides utility functions for writing and reading from the filesystem in baas.
+package fs
 
 import (
 	"io"
@@ -8,7 +9,7 @@ import (
 )
 
 // Size with which to copy
-const blocksize int64 = 512
+const blocksize int64 = 1500
 
 // CopyFile is a function which copies a file, it is similar to dd in usage
 func CopyFile(from, to string) error {

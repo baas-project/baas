@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	static = flag.String("static", "control_server/static", "Static file dir to server under /static/")
+	static   = flag.String("static", "control_server/static", "Static file dir to server under /static/.")
+	diskpath = flag.String("disks", "control_server/disks", "Location to store disk images.")
 )
 
 func init() {
@@ -44,7 +45,7 @@ func main() {
 
 	machineStore := machines.InMemoryStore()
 	err := machineStore.UpdateMachine(machines.Machine{
-
+		MacAddress:   "52:54:00:ae:a3:b3",
 		Architecture: machines.X86_64,
 	})
 	if err != nil {
@@ -52,5 +53,5 @@ func main() {
 	}
 
 	go pixieserver.StartPixiecore(fmt.Sprintf("http://localhost:%s", strconv.Itoa(api.Port)))
-	httpserver.StartServer(machineStore, *static, "0.0.0.0", api.Port)
+	httpserver.StartServer(machineStore, *static, *diskpath, "0.0.0.0", api.Port)
 }

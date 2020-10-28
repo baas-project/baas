@@ -15,11 +15,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Printf("Starting upload")
+
 	if !prov.Prev.Ephemeral {
-		log.Println("idk lp0 on fire i'm not a unix admin")
+		if err := ReadInDisks(&c, prov.Prev); err != nil {
+			log.Fatal(err)
+		}
 	}
+
+	log.Printf("Starting Download")
 
 	if err := WriteOutDisks(&c, prov.Next); err != nil {
 		log.Fatal(err)
 	}
+
+	log.Printf("Done!")
 }
