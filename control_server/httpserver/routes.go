@@ -9,15 +9,15 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"baas/pkg/fs"
+	"github.com/baas-project/baas/pkg/fs"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/google/uuid"
 
-	"baas/control_server/machines"
-	"baas/pkg/api"
-	"baas/pkg/model"
+	"github.com/baas-project/baas/control_server/machines"
+	"github.com/baas-project/baas/pkg/api"
+	"github.com/baas-project/baas/pkg/model"
 )
 
 // Routes is a struct on which functions are defined that respond to requests

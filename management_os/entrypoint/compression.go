@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/gozstd"
 
-	"baas/pkg/model"
+	"github.com/baas-project/baas/pkg/model"
 )
 
 // Decompress is a decorator to decompress a disk image stream

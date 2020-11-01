@@ -5,9 +5,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"baas/pkg/httplog"
+	"github.com/baas-project/baas/pkg/httplog"
 
-	"baas/pkg/api"
+	"github.com/baas-project/baas/pkg/api"
 )
 
 var baseurl = fmt.Sprintf("http://control_server:%d", api.Port)

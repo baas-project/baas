@@ -10,11 +10,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"baas/pkg/model"
+	"github.com/baas-project/baas/pkg/model"
 
 	"github.com/pkg/errors"
 
-	"baas/pkg/api"
+	"github.com/baas-project/baas/pkg/api"
 )
 
 // APIClient is the client for all communication with the server

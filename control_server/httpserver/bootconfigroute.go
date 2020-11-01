@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"baas/control_server/machines"
+	"github.com/baas-project/baas/control_server/machines"
 )
 
 type bootConfigResponse struct {

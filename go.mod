@@ -1,4 +1,4 @@
-module baas
+module github.com/baas-project/baas
 
 go 1.15
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"baas/pkg/model"
+	"github.com/baas-project/baas/pkg/model"
 )
 
 // WriteOutDisks Downloads, Decompresses and finally Writes a disk image to disk

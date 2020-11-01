@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"baas/pkg/httplog"
+	"github.com/baas-project/baas/pkg/httplog"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"baas/control_server/machines"
+	"github.com/baas-project/baas/control_server/machines"
 )
 
 // StartServer defines all routes and then starts listening for HTTP requests.
