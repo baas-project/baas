@@ -6,13 +6,13 @@ import (
 	"os"
 	"strconv"
 
-	"baas/pkg/api"
+	"github.com/baas-project/baas/pkg/api"
 
 	log "github.com/sirupsen/logrus"
 
-	"baas/control_server/httpserver"
-	"baas/control_server/machines"
-	"baas/control_server/pixieserver"
+	"github.com/baas-project/baas/control_server/httpserver"
+	"github.com/baas-project/baas/control_server/machines"
+	"github.com/baas-project/baas/control_server/pixieserver"
 )
 
 var (

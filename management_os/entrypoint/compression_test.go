@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/gozstd"
 
-	"baas/pkg/model"
+	"github.com/baas-project/baas/pkg/model"
 )
 
 func TestCompressZSTD(t *testing.T) {

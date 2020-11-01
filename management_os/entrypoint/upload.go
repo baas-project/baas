@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"baas/pkg/model"
+	"github.com/baas-project/baas/pkg/model"
 )
 
 // ReadInDisks reads in all disks in the machine setup and uploads them to the control server.

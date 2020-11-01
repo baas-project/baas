@@ -8,8 +8,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"baas/pkg/fs"
-	"baas/pkg/model"
+	"github.com/baas-project/baas/pkg/fs"
+	"github.com/baas-project/baas/pkg/model"
 )
 
 // ReadDisk reads a disk from a file and returns a stream
