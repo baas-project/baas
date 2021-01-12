@@ -1,8 +1,9 @@
-package httpserver
+package api
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/database"
 	"net/http"
 	"os"
 	"syscall"
@@ -15,28 +16,28 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/baas-project/baas/control_server/machines"
 	"github.com/baas-project/baas/pkg/api"
 	"github.com/baas-project/baas/pkg/model"
 )
 
-// Routes is a struct on which functions are defined that respond to requests
-// from the management OS. This struct holds state necessary for the request handlers.
-type Routes struct {
-	machineStore machines.MachineStore
-	diskpath     string
+// Api is a struct on which functions are defined that respond to requests
+// from either the management OS, or the end user (through some kind of interface).
+//This struct holds state necessary for the request handlers.
+type Api struct {
+	store    database.Store
+	diskpath string
 }
 
-// NewRoutes creates a new Routes struct.
-func NewRoutes(store machines.MachineStore, diskpath string) *Routes {
-	return &Routes{
-		machineStore: store,
-		diskpath:     diskpath,
+// NewApi creates a new Api struct.
+func NewApi(store database.Store, diskpath string) *Api {
+	return &Api{
+		store:    store,
+		diskpath: diskpath,
 	}
 }
 
 // BootInform handles all incoming boot inform requests
-func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
+func (routes *Api) BootInform(w http.ResponseWriter, r *http.Request) {
 	var bootInform api.BootInformRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
@@ -90,7 +91,7 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 }
 
 // UploadDiskImage allows the management os to upload disk images
-func (routes *Routes) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (routes *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -125,7 +126,7 @@ func (routes *Routes) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // DownloadDiskImage provides disk images for the management os to download
-func (routes *Routes) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (routes *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {

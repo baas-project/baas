@@ -1,16 +1,15 @@
-package httpserver
+package api
 
 import (
 	"encoding/json"
+	"github.com/baas-project/baas/pkg/model"
 	"net"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
-
-	"github.com/baas-project/baas/control_server/machines"
-)
+	)
 
 type bootConfigResponse struct {
 	// Kernel to boot.
@@ -26,9 +25,9 @@ type bootConfigResponse struct {
 	Cmdline string `json:"cmdline"`
 }
 
-func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
+func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
 	switch arch {
-	case machines.X86_64:
+	case model.X86_64:
 		return &bootConfigResponse{
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
@@ -37,9 +36,10 @@ func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 			Message: "Booting into X86 management kernel.",
 			Cmdline: "root=sr0",
 		}
-	case machines.Arm64:
+	case model.Arm64:
+		log.Warn("Received request to boot an ARM64 machine, which has not been implemented yet.")
 		fallthrough
-	case machines.Unknown:
+	case model.Unknown:
 		fallthrough
 	default:
 		return nil
@@ -47,7 +47,7 @@ func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 }
 
 // ServeBootConfigurations actually responds to requests from pixiecore.
-func (routes *Routes) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
+func (routes *Api) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac := vars["mac"]
 
@@ -60,7 +60,7 @@ func (routes *Routes) ServeBootConfigurations(w http.ResponseWriter, r *http.Req
 
 	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
-	m, err := routes.machineStore.GetMachine(mac)
+	m, err := routes.store.GetMachineByMac(mac)
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)
 		w.WriteHeader(http.StatusNotFound)

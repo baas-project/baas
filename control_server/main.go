@@ -3,16 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/baas-project/baas/pkg/database"
+	"github.com/baas-project/baas/pkg/model"
 	"os"
 	"strconv"
 
-	"github.com/baas-project/baas/pkg/api"
-
 	log "github.com/sirupsen/logrus"
 
-	"github.com/baas-project/baas/control_server/httpserver"
-	"github.com/baas-project/baas/control_server/machines"
+	"github.com/baas-project/baas/control_server/api"
 	"github.com/baas-project/baas/control_server/pixieserver"
+	api_pkg "github.com/baas-project/baas/pkg/api"
 )
 
 var (
@@ -43,15 +43,15 @@ func main() {
 
 	log.Info("Starting BAAS control server")
 
-	machineStore := machines.InMemoryStore()
-	err := machineStore.UpdateMachine(machines.Machine{
+	store := database.NewInMemoryStore()
+	err := store.UpdateMachineByMac(model.Machine{
 		MacAddress:   "52:54:00:ae:a3:b3",
-		Architecture: machines.X86_64,
-	})
+		Architecture: model.X86_64,
+	}, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go pixieserver.StartPixiecore(fmt.Sprintf("http://localhost:%s", strconv.Itoa(api.Port)))
-	httpserver.StartServer(machineStore, *static, *diskpath, "0.0.0.0", api.Port)
+	go pixieserver.StartPixiecore(fmt.Sprintf("http://localhost:%s", strconv.Itoa(api_pkg.Port)))
+	api.StartServer(store, *static, *diskpath, "0.0.0.0", api_pkg.Port)
 }

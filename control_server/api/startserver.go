@@ -1,10 +1,11 @@
-// Package httpserver provides functions for handling http requests on the control server.
+// Package api provides functions for handling http requests on the control server.
 // This is used to respond to requests from pixiecore, to serve files (kernel, initramfs, disk images)
 // and to communicate with machines running the management os.
-package httpserver
+package api
 
 import (
 	"fmt"
+	"github.com/baas-project/baas/pkg/database"
 	"net/http"
 	"strconv"
 
@@ -12,13 +13,11 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/baas-project/baas/control_server/machines"
 )
 
 // StartServer defines all routes and then starts listening for HTTP requests.
 // TODO: Config struct
-func StartServer(machineStore machines.MachineStore, staticDir string, diskpath string, address string, port int) {
+func StartServer(machineStore database.Store, staticDir string, diskpath string, address string, port int) {
 	r := mux.NewRouter()
 
 	r.StrictSlash(true)
@@ -29,16 +28,16 @@ func StartServer(machineStore machines.MachineStore, staticDir string, diskpath 
 	// Serve static files (kernel, initramfs, disk images)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
-	// Routes for communicating with the management os
-	routes := NewRoutes(machineStore, diskpath)
+	// Api for communicating with the management os
+	api := NewApi(machineStore, diskpath)
 	mmosr := r.PathPrefix("/mmos").Subrouter()
 
 	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
-	r.HandleFunc("/v1/boot/{mac}", routes.ServeBootConfigurations)
+	r.HandleFunc("/v1/boot/{mac}", api.ServeBootConfigurations)
 
-	mmosr.HandleFunc("/inform", routes.BootInform).Methods(http.MethodPost)
-	mmosr.HandleFunc("/disk/{uuid}", routes.UploadDiskImage).Methods(http.MethodPost)
-	mmosr.HandleFunc("/disk/{uuid}", routes.DownloadDiskImage).Methods(http.MethodGet)
+	mmosr.HandleFunc("/inform", api.BootInform).Methods(http.MethodPost)
+	mmosr.HandleFunc("/disk/{uuid}", api.UploadDiskImage).Methods(http.MethodPost)
+	mmosr.HandleFunc("/disk/{uuid}", api.DownloadDiskImage).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Handler: r,
