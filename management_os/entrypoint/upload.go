@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/baas-project/baas/pkg/compression"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 			return errors.Wrapf(err, "read disk")
 		}
 
-		com, err := Compress(r, disk)
+		com, err := compression.Compress(r, disk)
 		if err != nil {
 			return errors.Wrapf(err, "compressing disk")
 		}

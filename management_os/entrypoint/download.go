@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/baas-project/baas/pkg/compression"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -22,7 +23,7 @@ func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
 			return errors.Wrap(err, "error downloading disk")
 		}
 
-		dec, err := Decompress(reader, disk)
+		dec, err := compression.Decompress(reader, disk)
 		if err != nil {
 			return errors.Wrap(err, "error decompressing disk")
 		}
