@@ -6,30 +6,39 @@ package api
 import (
 	"fmt"
 	"github.com/baas-project/baas/pkg/database"
-	"net/http"
-	"strconv"
-
 	"github.com/baas-project/baas/pkg/httplog"
+	"net/http"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
 
-// StartServer defines all routes and then starts listening for HTTP requests.
-// TODO: Config struct
-func StartServer(machineStore database.Store, staticDir string, diskpath string, address string, port int) {
+func getHandler(machineStore database.Store, staticDir string, diskpath string) http.Handler {
+	// Api for communicating with the management os
+	api := NewApi(machineStore, diskpath)
+
 	r := mux.NewRouter()
 
 	r.StrictSlash(true)
 	r.Use(logging)
 
+	// Applications (in particular, the management OS) can send logs here to be logged on the control server.
 	r.HandleFunc("/log", httplog.CreateLogHandler(log.StandardLogger()))
 
+	// TODO: we may want to split this up, especially the disk images part
+	// TODO: isn't this already the case?
 	// Serve static files (kernel, initramfs, disk images)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
-	// Api for communicating with the management os
-	api := NewApi(machineStore, diskpath)
+	{
+		r.HandleFunc("/machine/{mac}", api.GetMachine).Methods(http.MethodGet)
+		r.HandleFunc("/machines", api.GetMachines).Methods(http.MethodGet)
+		r.HandleFunc("/machine/{mac}", api.UpdateMachine).Methods(http.MethodPut)
+		r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
+	}
+
+
+
 	mmosr := r.PathPrefix("/mmos").Subrouter()
 
 	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
@@ -39,11 +48,17 @@ func StartServer(machineStore database.Store, staticDir string, diskpath string,
 	mmosr.HandleFunc("/disk/{uuid}", api.UploadDiskImage).Methods(http.MethodPost)
 	mmosr.HandleFunc("/disk/{uuid}", api.DownloadDiskImage).Methods(http.MethodGet)
 
-	srv := &http.Server{
-		Handler: r,
-		Addr:    fmt.Sprintf("%s:%s", address, strconv.Itoa(port)),
-	}
+	return r
+}
 
+
+// StartServer defines all routes and then starts listening for HTTP requests.
+// TODO: Config struct
+func StartServer(machineStore database.Store, staticDir string, diskpath string, address string, port int) {
+	srv := http.Server{
+		Handler: getHandler(machineStore, staticDir, diskpath),
+		Addr:    fmt.Sprintf("%s:%d", address, port),
+	}
 	log.Fatal(srv.ListenAndServe())
 }
 
