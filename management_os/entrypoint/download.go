@@ -44,7 +44,7 @@ func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
 
 // DownloadDisk downloads a disk from the network using the image's DiskTransferStrategy
 func DownloadDisk(api *APIClient, uuid model.DiskUUID, image model.DiskImage) (reader io.ReadCloser, _ error) {
-	log.Debugf("Disk transfer strategy: %v", image.DiskTransferStrategy)
+	log.Debugf("DiskUUID transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
 		return api.DownloadDiskHTTP(uuid)

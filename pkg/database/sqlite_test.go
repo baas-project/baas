@@ -30,24 +30,22 @@ func TestNewSqliteStore(t *testing.T) {
 	assert.NoError(t, err)
 
 	im := model.ImageModel{
-		Name:     "aaa",
+		Name: "aaa",
 		Versions: []model.Version{
 			{
 				Version: time.Now(),
-			},	{
+			}, {
 				Version: time.Now(),
-			},	{
+			}, {
 				Version: time.Now(),
 			},
 		},
-		Image:    "yeet",
-		Disk:     "yote",
+		UUID:     "yeet",
+		DiskUUID: "yote",
 	}
 
 	err = db.Create(&im).Error
 	assert.NoError(t, err)
-
-
 
 	imr := model.ImageModel{}
 	db.Preload(clause.Associations).First(&imr)

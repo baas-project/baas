@@ -45,10 +45,10 @@ type MachineModel struct {
 
 	// ShouldReprovision indicates if at bootinform time this machine should be (re)provisioned to NextSetup
 	ShouldReprovision bool
-	CurrentSetup MachineSetup `gorm:"foreignKey:ID"`
+	CurrentSetup      MachineSetup `gorm:"foreignKey:ID"`
 	// NextSetup stores the machine setup of what the machine should become after reprovisioning
 	// MUST be non-nil if ShouldReprovision is true else it MAY be nil
-	NextSetup	 *MachineSetup `gorm:"foreignKey:ID"`
+	NextSetup *MachineSetup `gorm:"foreignKey:ID"`
 }
 
 type DiskMappingModel struct {
@@ -56,7 +56,7 @@ type DiskMappingModel struct {
 
 	MachineSetupId uint
 
-	Uuid DiskUUID
+	Uuid  DiskUUID
 	Image DiskImage `gorm:"embedded"`
 }
 

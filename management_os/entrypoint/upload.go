@@ -38,7 +38,7 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 
 // UploadDisk uploads a disk to the control server given a transfer strategy.
 func UploadDisk(api *APIClient, reader io.Reader, uuid model.DiskUUID, image model.DiskImage) error {
-	log.Debugf("Disk transfer strategy: %v", image.DiskTransferStrategy)
+	log.Debugf("DiskUUID transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
 		return api.UploadDiskHTTP(reader, uuid)

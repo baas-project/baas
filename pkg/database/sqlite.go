@@ -7,10 +7,25 @@ import (
 )
 import "gorm.io/driver/sqlite"
 
-const InMemoryPath = "file::memory:?cache=shared"
+const InMemoryPath = "file::memory:"
 
 type SqliteStore struct {
 	*gorm.DB
+}
+
+func (s SqliteStore) CreateImage(username string, image model.ImageModel) error {
+	user, err := s.GetUserByName(username)
+	if err != nil {
+		return errors.Wrap(err, "get user by name")
+	}
+
+	return s.Model(user).Association("Images").Append(&image)
+}
+
+func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error) {
+	res := model.ImageModel{UUID: uuid}
+
+	return &res, s.Find(&res).Error
 }
 
 func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
@@ -68,14 +83,20 @@ func NewSqliteStore(dbpath string) (Store, error) {
 		return nil, errors.Wrap(err, "open db")
 	}
 
-	err = db.AutoMigrate(&model.Version{}, &model.ImageModel{}, &model.UserModel{}, &model.MachineModel{}, &model.DiskMappingModel{})
+	err = db.AutoMigrate(
+		&model.Version{},
+		&model.ImageModel{},
+		&model.UserModel{},
+		&model.MachineModel{},
+		&model.DiskMappingModel{},
+		&model.MachineSetup{},
+	)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "migrate")
 	}
 
-
-	return SqliteStore {
+	return SqliteStore{
 		db,
 	}, nil
 }
-

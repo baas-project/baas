@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
-	)
+)
 
 type bootConfigResponse struct {
 	// Kernel to boot.

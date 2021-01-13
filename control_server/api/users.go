@@ -20,7 +20,6 @@ func (api *Api) GetUsers(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(users)
 }
 
-
 func (api *Api) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user model.UserModel
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -38,7 +37,6 @@ func (api *Api) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func (api *Api) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name, ok := vars["name"]
@@ -47,7 +45,6 @@ func (api *Api) GetUser(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("name not provided in get user")
 		return
 	}
-
 
 	users, err := api.store.GetUserByName(name)
 

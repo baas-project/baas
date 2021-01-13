@@ -35,19 +35,15 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
 	r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
 
-
 	r.HandleFunc("/users", api.GetUsers).Methods(http.MethodGet)
 	r.HandleFunc("/user", api.CreateUser).Methods(http.MethodPost)
 	r.HandleFunc("/user/{name}", api.GetUser).Methods(http.MethodGet)
 	r.HandleFunc("/user/{name}/createimage", api.CreateImage).Methods(http.MethodPost)
 
-
 	// info about an image
-	//r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)
-	//r.HandleFunc("/image/{uuid}/{version}/download", api.DownloadImage).Methods(http.MethodGet)
-	//r.HandleFunc("/image/{uuid}/upload", api.UploadImage).Methods(http.MethodPost)
-
-
+	r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)
+	r.HandleFunc("/image/{uuid}/{version}/download", api.DownloadImage).Methods(http.MethodGet)
+	r.HandleFunc("/image/{uuid}/upload", api.UploadImage).Methods(http.MethodPost)
 
 	mmosr := r.PathPrefix("/mmos").Subrouter()
 
@@ -60,7 +56,6 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 
 	return r
 }
-
 
 // StartServer defines all routes and then starts listening for HTTP requests.
 // TODO: Config struct

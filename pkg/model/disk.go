@@ -35,8 +35,8 @@ const (
 type DiskImage struct {
 	gorm.Model
 
-	DiskType DiskType
-	DiskTransferStrategy DiskTransferStrategy
+	DiskType                DiskType
+	DiskTransferStrategy    DiskTransferStrategy
 	DiskCompressionStrategy DiskCompressionStrategy
 
 	// Location is the place on the booting system, where the disk should be written to.
@@ -46,14 +46,14 @@ type DiskImage struct {
 
 // DiskUUID is the linux by-uuid of a disk
 type DiskUUID = string
+
 // ImageUUID is a UUID distinguishing each disk image
 type ImageUUID string
-
 
 type Version struct {
 	gorm.Model
 
-	Version time.Time
+	Version      time.Time
 	ImageModelID uint
 }
 
@@ -69,16 +69,14 @@ type ImageModel struct {
 	Versions []Version
 
 	// ImageUUID is a universally unique identifier for images
-	Image ImageUUID `gorm:"uniqueIndex"`
+	UUID ImageUUID `gorm:"uniqueIndex"`
 
 	// DiskUUID is this disks linux by-uuid
-	Disk DiskUUID
+	DiskUUID DiskUUID
 
 	// Foreign key for gorm
 	UserModelID uint
 }
-
-
 
 /* Disk Layout on control_server
 
@@ -93,4 +91,4 @@ where 'abc' and 'cdf' are ImageUUIDs
 	/cdf
 		/1.img
 		/2.img
- */
+*/

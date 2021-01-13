@@ -22,5 +22,8 @@ type Store interface {
 
 	//
 	CreateUser(user *model.UserModel) error
-}
 
+	GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error)
+
+	CreateImage(username string, image model.ImageModel) error
+}

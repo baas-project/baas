@@ -96,7 +96,6 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	assert.EqualValues(t, m, &machine)
 }
 
-
 func TestApi_GetMachine(t *testing.T) {
 	store, err := database.NewSqliteStore(database.InMemoryPath)
 	assert.NoError(t, err)
@@ -118,7 +117,7 @@ func TestApi_GetMachine(t *testing.T) {
 	resp := httptest.NewRecorder()
 
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/machine/" + machine.MacAddress, nil))
+	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/machine/"+machine.MacAddress, nil))
 
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)

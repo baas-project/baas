@@ -12,7 +12,7 @@ import (
 
 // Decompress is a decorator to decompress a disk image stream
 func Decompress(reader io.Reader, image model.DiskImage) (io.Reader, error) {
-	log.Debugf("Disk compression strategy: %v", image.DiskCompressionStrategy)
+	log.Debugf("DiskUUID compression strategy: %v", image.DiskCompressionStrategy)
 	switch image.DiskCompressionStrategy {
 	case model.DiskCompressionStrategyNone:
 		return reader, nil
@@ -25,7 +25,7 @@ func Decompress(reader io.Reader, image model.DiskImage) (io.Reader, error) {
 
 // Compress is a decorator to compress a disk image stream
 func Compress(reader io.Reader, image model.DiskImage) (io.Reader, error) {
-	log.Debugf("Disk compression strategy: %v", image.DiskCompressionStrategy)
+	log.Debugf("DiskUUID compression strategy: %v", image.DiskCompressionStrategy)
 
 	switch image.DiskCompressionStrategy {
 	case model.DiskCompressionStrategyNone:
