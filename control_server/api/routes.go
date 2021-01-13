@@ -16,7 +16,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/baas-project/baas/pkg/api"
+	pkgapi "github.com/baas-project/baas/pkg/api"
 	"github.com/baas-project/baas/pkg/model"
 )
 
@@ -37,8 +37,8 @@ func NewApi(store database.Store, diskpath string) *Api {
 }
 
 // BootInform handles all incoming boot inform requests
-func (routes *Api) BootInform(w http.ResponseWriter, r *http.Request) {
-	var bootInform api.BootInformRequest
+func (api *Api) BootInform(w http.ResponseWriter, r *http.Request) {
+	var bootInform pkgapi.BootInformRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
 		log.Errorf("Error while parsing json: %v", err)
@@ -56,26 +56,32 @@ func (routes *Api) BootInform(w http.ResponseWriter, r *http.Request) {
 	location := "/dev/sda"
 
 	// Prepare response
-	resp := api.ReprovisioningInfo{
+	resp := pkgapi.ReprovisioningInfo{
 		Prev: model.MachineSetup{
 			Ephemeral: false,
-			Disks: map[model.DiskUUID]model.DiskImage{
-				uuid1: {
-					DiskType:             model.DiskTypeRaw,
-					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-					Location: location,
+			Disks: []model.DiskMappingModel{
+				{
+					Uuid: uuid1,
+					Image: model.DiskImage{
+						DiskType:             model.DiskTypeRaw,
+						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+						Location: location,
+					},
 				},
 			},
 		},
 		Next: model.MachineSetup{
 			Ephemeral: false,
-			Disks: map[model.DiskUUID]model.DiskImage{
-				uuid2: {
-					DiskType:             model.DiskTypeRaw,
-					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-					Location: location,
+			Disks: []model.DiskMappingModel{
+				{
+					Uuid: uuid2,
+					Image: model.DiskImage{
+						DiskType:             model.DiskTypeRaw,
+						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+						Location: location,
+					},
 				},
 			},
 		},
@@ -91,7 +97,7 @@ func (routes *Api) BootInform(w http.ResponseWriter, r *http.Request) {
 }
 
 // UploadDiskImage allows the management os to upload disk images
-func (routes *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (api *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -100,7 +106,7 @@ func (routes *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := fmt.Sprintf("%s/%s", routes.diskpath, id)
+	path := fmt.Sprintf("%s/%s", api.diskpath, id)
 	temppath := fmt.Sprintf("%s.%s.tmp", path, uuid.New().String())
 
 	f, err := os.OpenFile(temppath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
@@ -126,7 +132,7 @@ func (routes *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // DownloadDiskImage provides disk images for the management os to download
-func (routes *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (api *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -135,7 +141,7 @@ func (routes *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.OpenFile(fmt.Sprintf("%s/%s", routes.diskpath, id), syscall.O_RDONLY, os.ModePerm)
+	f, err := os.OpenFile(fmt.Sprintf("%s/%s", api.diskpath, id), syscall.O_RDONLY, os.ModePerm)
 	if err != nil {
 		http.NotFound(w, r)
 		log.Errorf("failed to read disk image (%v)", err)
@@ -151,5 +157,7 @@ func (routes *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+
 
 

@@ -10,5 +10,6 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/valyala/gozstd v1.8.3
 	go.universe.tf/netboot v0.0.0-20200920222120-66e5fba6f663
+	gorm.io/driver/sqlite v1.1.4
 	gorm.io/gorm v1.20.11
 )

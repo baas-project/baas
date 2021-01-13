@@ -30,12 +30,22 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	// Serve static files (kernel, initramfs, disk images)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
-	{
-		r.HandleFunc("/machine/{mac}", api.GetMachine).Methods(http.MethodGet)
-		r.HandleFunc("/machines", api.GetMachines).Methods(http.MethodGet)
-		r.HandleFunc("/machine/{mac}", api.UpdateMachine).Methods(http.MethodPut)
-		r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
-	}
+	r.HandleFunc("/machine/{mac}", api.GetMachine).Methods(http.MethodGet)
+	r.HandleFunc("/machines", api.GetMachines).Methods(http.MethodGet)
+	r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
+	r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
+
+
+	r.HandleFunc("/users", api.GetUsers).Methods(http.MethodGet)
+	r.HandleFunc("/user", api.CreateUser).Methods(http.MethodPost)
+	r.HandleFunc("/user/{name}", api.GetUser).Methods(http.MethodGet)
+	r.HandleFunc("/user/{name}/createimage", api.CreateImage).Methods(http.MethodPost)
+
+
+	// info about an image
+	//r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)
+	//r.HandleFunc("/image/{uuid}/{version}/download", api.DownloadImage).Methods(http.MethodGet)
+	//r.HandleFunc("/image/{uuid}/upload", api.UploadImage).Methods(http.MethodPost)
 
 
 

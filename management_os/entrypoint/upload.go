@@ -15,20 +15,20 @@ import (
 func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 	log.Info("Reading and uploading disks")
 
-	for uuid, disk := range setup.Disks {
-		log.Debugf("reading disk: %v", uuid)
+	for _, disk := range setup.Disks {
+		log.Debugf("reading disk: %v", disk.Uuid)
 
-		r, err := ReadDisk(disk)
+		r, err := ReadDisk(disk.Image)
 		if err != nil {
 			return errors.Wrapf(err, "read disk")
 		}
 
-		com, err := compression.Compress(r, disk)
+		com, err := compression.Compress(r, disk.Image)
 		if err != nil {
 			return errors.Wrapf(err, "compressing disk")
 		}
 
-		err = UploadDisk(api, com, uuid, disk)
+		err = UploadDisk(api, com, disk.Uuid, disk.Image)
 		if err != nil {
 			return errors.Wrapf(err, "uploading disk")
 		}

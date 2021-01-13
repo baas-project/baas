@@ -2,8 +2,8 @@ package model
 
 import "gorm.io/gorm"
 
-// User (noun) one who uses, not necessarily a single person
-type User struct {
+// UserModel (noun) one who uses, not necessarily a single person
+type UserModel struct {
 	gorm.Model
 
 	// Name is a human-readable identifier for a user (or entity) of the system

@@ -43,11 +43,15 @@ func main() {
 
 	log.Info("Starting BAAS control server")
 
-	store := database.NewInMemoryStore()
-	err := store.UpdateMachineByMac(model.Machine{
+	store, err := database.NewSqliteStore("store.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = store.UpdateMachine(&model.MachineModel{
 		MacAddress:   "52:54:00:ae:a3:b3",
 		Architecture: model.X86_64,
-	}, "")
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

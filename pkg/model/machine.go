@@ -22,32 +22,51 @@ func (id *SystemArchitecture) Name() string {
 	return string(*id)
 }
 
-// Machine stores information intrinsic to a machine. Used together with the MachineStore.
-type Machine struct {
+type DiskModel struct {
+	gorm.Model
+
+	Uuid DiskUUID
+
+	MachineModelID uint
+}
+
+// MachineModel stores information intrinsic to a machine. Used together with the MachineStore.
+type MachineModel struct {
 	gorm.Model
 	MacAddress   string
 	Name         string
 	Architecture SystemArchitecture
 
 	// DiskUUIDs are the linux by-uuids this machine has
-	DiskUUIDs []DiskUUID
+	DiskUUIDs []DiskModel
 
 	// Managed indicates that a machine should be managed by BAAS (if false baas will not touch the machine in any way)
 	Managed bool
 
 	// ShouldReprovision indicates if at bootinform time this machine should be (re)provisioned to NextSetup
 	ShouldReprovision bool
-	CurrentSetup MachineSetup
+	CurrentSetup MachineSetup `gorm:"foreignKey:ID"`
 	// NextSetup stores the machine setup of what the machine should become after reprovisioning
 	// MUST be non-nil if ShouldReprovision is true else it MAY be nil
-	NextSetup	 *MachineSetup
+	NextSetup	 *MachineSetup `gorm:"foreignKey:ID"`
+}
+
+type DiskMappingModel struct {
+	gorm.Model
+
+	MachineSetupId uint
+
+	Uuid DiskUUID
+	Image DiskImage `gorm:"embedded"`
 }
 
 // MachineSetup describes the setup for a machine during a session
 type MachineSetup struct {
+	gorm.Model
+
 	// Ephemeral determines if we should save the state after the session ends
 	Ephemeral bool
 	// Disks is a map from uuids to disk images. Each disk image has a unique uuid,
 	// not related to the /dev/disk/by-uuid on the booting system.
-	Disks map[DiskUUID]DiskImage
+	Disks []DiskMappingModel
 }

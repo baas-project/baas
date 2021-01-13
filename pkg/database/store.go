@@ -5,17 +5,22 @@ import "github.com/baas-project/baas/pkg/model"
 type Store interface {
 
 	// GetMachineByMac retrieves a machine based on it's mac address.
-	GetMachineByMac(mac string) (*model.Machine, error)
+	GetMachineByMac(mac string) (*model.MachineModel, error)
 
 	// GetMachines returns a list of all machines in the database
-	GetMachines() ([]model.Machine, error)
+	GetMachines() ([]model.MachineModel, error)
 
-	// UpdateMachineByMac changes the value of a machine based.
-	// A mac address is used as key. Mac may be the empty string.
-	// In that case the mac address of the given machine is used as key.
+	// UpdateMachine changes the value of a machine based.
+	// The mac address is used as key.
+	UpdateMachine(machine *model.MachineModel) error
+
 	//
-	// The machine however, must contain a MacAddress to be used as key.
-	UpdateMachineByMac(machine model.Machine, mac string) error
+	GetUserByName(name string) (*model.UserModel, error)
 
+	//
+	GetUsers() ([]model.UserModel, error)
+
+	//
+	CreateUser(user *model.UserModel) error
 }
 

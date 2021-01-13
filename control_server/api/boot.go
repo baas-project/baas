@@ -28,6 +28,7 @@ type bootConfigResponse struct {
 func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
 	switch arch {
 	case model.X86_64:
+		// TODO: refactor
 		return &bootConfigResponse{
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
@@ -47,7 +48,7 @@ func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
 }
 
 // ServeBootConfigurations actually responds to requests from pixiecore.
-func (routes *Api) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
+func (api *Api) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac := vars["mac"]
 
@@ -60,7 +61,7 @@ func (routes *Api) ServeBootConfigurations(w http.ResponseWriter, r *http.Reques
 
 	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
-	m, err := routes.store.GetMachineByMac(mac)
+	m, err := api.store.GetMachineByMac(mac)
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)
 		w.WriteHeader(http.StatusNotFound)

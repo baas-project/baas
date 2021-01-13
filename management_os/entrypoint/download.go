@@ -15,20 +15,20 @@ import (
 func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
 	log.Info("Downloading and writing disks")
 
-	for uuid, disk := range setup.Disks {
-		log.Debugf("writing disk: %v", uuid)
+	for _, disk := range setup.Disks {
+		log.Debugf("writing disk: %v", disk.Uuid)
 
-		reader, err := DownloadDisk(api, uuid, disk)
+		reader, err := DownloadDisk(api, disk.Uuid, disk.Image)
 		if err != nil {
 			return errors.Wrap(err, "error downloading disk")
 		}
 
-		dec, err := compression.Decompress(reader, disk)
+		dec, err := compression.Decompress(reader, disk.Image)
 		if err != nil {
 			return errors.Wrap(err, "error decompressing disk")
 		}
 
-		err = WriteDisk(dec, disk)
+		err = WriteDisk(dec, disk.Image)
 		if err != nil {
 			return errors.Wrap(err, "error writing disk")
 		}

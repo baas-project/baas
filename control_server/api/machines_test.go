@@ -6,15 +6,17 @@ import (
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 func TestApi_UpdateMachine(t *testing.T) {
-	store := database.NewInMemoryStore()
+	store, err := database.NewSqliteStore(database.InMemoryPath)
+	assert.NoError(t, err)
 
-	machine := model.Machine{
+	machine := model.MachineModel{
 		MacAddress:        "abc",
 		Name:              "bca",
 		Architecture:      model.X86_64,
@@ -26,7 +28,7 @@ func TestApi_UpdateMachine(t *testing.T) {
 	}
 
 	var mj bytes.Buffer
-	err := json.NewEncoder(&mj).Encode(machine)
+	err = json.NewEncoder(&mj).Encode(machine)
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()
@@ -37,14 +39,18 @@ func TestApi_UpdateMachine(t *testing.T) {
 	assert.Equal(t, resp.Code, http.StatusOK)
 
 	m, err := store.GetMachineByMac(machine.MacAddress)
+
+	m.Model = gorm.Model{}
+
 	assert.NoError(t, err)
 	assert.EqualValues(t, m, &machine)
 }
 
 func TestApi_UpdateMachineExists(t *testing.T) {
-	store := database.NewInMemoryStore()
+	store, err := database.NewSqliteStore(database.InMemoryPath)
+	assert.NoError(t, err)
 
-	machine := model.Machine{
+	machine := model.MachineModel{
 		MacAddress:        "abc",
 		Name:              "bca",
 		Architecture:      model.X86_64,
@@ -56,7 +62,7 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	}
 
 	var mj bytes.Buffer
-	err := json.NewEncoder(&mj).Encode(machine)
+	err = json.NewEncoder(&mj).Encode(machine)
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()
@@ -66,6 +72,8 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	assert.Equal(t, resp.Code, http.StatusOK)
 
 	m, err := store.GetMachineByMac(machine.MacAddress)
+	m.Model = gorm.Model{}
+
 	assert.NoError(t, err)
 	assert.EqualValues(t, m, &machine)
 
@@ -81,15 +89,19 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	assert.Equal(t, resp.Code, http.StatusOK)
 
 	m, err = store.GetMachineByMac(machine.MacAddress)
+
+	m.Model = gorm.Model{}
+
 	assert.NoError(t, err)
 	assert.EqualValues(t, m, &machine)
 }
 
 
 func TestApi_GetMachine(t *testing.T) {
-	store := database.NewInMemoryStore()
+	store, err := database.NewSqliteStore(database.InMemoryPath)
+	assert.NoError(t, err)
 
-	machine := model.Machine{
+	machine := model.MachineModel{
 		MacAddress:        "abc",
 		Name:              "bca",
 		Architecture:      model.X86_64,
@@ -100,7 +112,7 @@ func TestApi_GetMachine(t *testing.T) {
 		NextSetup:         nil,
 	}
 
-	err := store.UpdateMachineByMac(machine, "")
+	err = store.UpdateMachine(&machine)
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()
@@ -111,7 +123,7 @@ func TestApi_GetMachine(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	var dm model.Machine
+	var dm model.MachineModel
 	err = json.NewDecoder(resp.Body).Decode(&dm)
 	assert.NoError(t, err)
 
@@ -120,33 +132,34 @@ func TestApi_GetMachine(t *testing.T) {
 }
 
 func TestApi_GetMachines(t *testing.T) {
-	store := database.NewInMemoryStore()
-
-	machine1 := model.Machine{
-		MacAddress:        "abc",
-		Name:              "bca",
-		Architecture:      model.X86_64,
-		DiskUUIDs:         nil,
-		Managed:           false,
-		ShouldReprovision: false,
-		CurrentSetup:      model.MachineSetup{},
-		NextSetup:         nil,
-	}
-
-	machine2 := model.Machine{
-		MacAddress:        "abc",
-		Name:              "bca",
-		Architecture:      model.X86_64,
-		DiskUUIDs:         nil,
-		Managed:           false,
-		ShouldReprovision: false,
-		CurrentSetup:      model.MachineSetup{},
-		NextSetup:         nil,
-	}
-
-	err := store.UpdateMachineByMac(machine1, "")
+	store, err := database.NewSqliteStore(database.InMemoryPath)
 	assert.NoError(t, err)
-	err = store.UpdateMachineByMac(machine2, "")
+
+	machine1 := model.MachineModel{
+		MacAddress:        "abc",
+		Name:              "bca",
+		Architecture:      model.X86_64,
+		DiskUUIDs:         nil,
+		Managed:           false,
+		ShouldReprovision: false,
+		CurrentSetup:      model.MachineSetup{},
+		NextSetup:         nil,
+	}
+
+	machine2 := model.MachineModel{
+		MacAddress:        "cba",
+		Name:              "bca",
+		Architecture:      model.X86_64,
+		DiskUUIDs:         nil,
+		Managed:           false,
+		ShouldReprovision: false,
+		CurrentSetup:      model.MachineSetup{},
+		NextSetup:         nil,
+	}
+
+	err = store.UpdateMachine(&machine1)
+	assert.NoError(t, err)
+	err = store.UpdateMachine(&machine2)
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()
@@ -157,9 +170,11 @@ func TestApi_GetMachines(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	var dm []model.Machine
+	var dm []model.MachineModel
 	err = json.NewDecoder(resp.Body).Decode(&dm)
 	assert.NoError(t, err)
+
+	assert.Len(t, dm, 2)
 
 	assert.NoError(t, err)
 	assert.Contains(t, dm, machine1)
