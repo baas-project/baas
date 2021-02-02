@@ -23,7 +23,7 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 			return errors.Wrapf(err, "read disk")
 		}
 
-		com, err := compression.Compress(r, disk.Image)
+		com, err := compression.Compress(r, disk.Image.DiskCompressionStrategy)
 		if err != nil {
 			return errors.Wrapf(err, "compressing disk")
 		}

@@ -12,10 +12,10 @@ RUN mkdir /static
 
 # Build project
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o control_server_bin ./control_server
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o control_server_bin ./control_server
 
 # Run stage
-FROM scratch
+FROM gcr.io/distroless/base
 WORKDIR /app
 
 COPY --from=build /build/control_server_bin /app/control_server_bin

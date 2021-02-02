@@ -57,7 +57,7 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	return r
 }
 
-// StartServer defines all routes and then starts listening for HTTP requests.
+// StartServer defines all routes and1 then starts listening for HTTP requests.
 // TODO: Config struct
 func StartServer(machineStore database.Store, staticDir string, diskpath string, address string, port int) {
 	srv := http.Server{

@@ -49,7 +49,7 @@ func main() {
 	}
 
 	err = store.UpdateMachine(&model.MachineModel{
-		MacAddress:   "52:54:00:ae:a3:b3",
+		MacAddress:   "4a:27:a8:38:1f:0c",
 		Architecture: model.X86_64,
 	})
 	if err != nil {

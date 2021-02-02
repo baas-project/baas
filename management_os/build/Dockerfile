@@ -17,7 +17,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" ./management
 # ---------------------
 
 FROM archlinux
-RUN pacman -Syu dhcpcd --noconfirm
+RUN pacman -Syu dhcpcd iputils iproute2 ldns --noconfirm
 RUN systemctl enable getty@tty1.service
 RUN systemctl enable systemd-networkd.service
 RUN systemctl enable systemd-networkd-wait-online.service

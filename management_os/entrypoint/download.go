@@ -23,7 +23,7 @@ func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
 			return errors.Wrap(err, "error downloading disk")
 		}
 
-		dec, err := compression.Decompress(reader, disk.Image)
+		dec, err := compression.Decompress(reader, disk.Image.DiskCompressionStrategy)
 		if err != nil {
 			return errors.Wrap(err, "error decompressing disk")
 		}
