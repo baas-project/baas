@@ -1,159 +1,73 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/baas-project/baas/pkg/database"
-	"net/http"
-	"os"
-	"syscall"
-
+	"github.com/baas-project/baas/pkg/httplog"
 	"github.com/gorilla/mux"
-
-	"github.com/baas-project/baas/pkg/fs"
-
 	log "github.com/sirupsen/logrus"
-
-	"github.com/google/uuid"
-
-	pkgapi "github.com/baas-project/baas/pkg/api"
-	"github.com/baas-project/baas/pkg/model"
+	"net/http"
 )
 
-// Api is a struct on which functions are defined that respond to requests
-// from either the management OS, or the end user (through some kind of interface).
-//This struct holds state necessary for the request handlers.
-type Api struct {
-	store    database.Store
-	diskpath string
+func getHandler(machineStore database.Store, staticDir string, diskpath string) http.Handler {
+	// Api for communicating with the management os
+	api := NewApi(machineStore, diskpath)
+
+	r := mux.NewRouter()
+
+	r.StrictSlash(true)
+	r.Use(logging)
+
+	// Applications (in particular, the management OS) can send logs here to be logged on the control server.
+	r.HandleFunc("/log", httplog.CreateLogHandler(log.StandardLogger()))
+
+	// TODO: we may want to split this up, especially the disk images part
+	// TODO: isn't this already the case?
+	// Serve static files (kernel, initramfs, disk images)
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+
+	r.HandleFunc("/machine/{mac}", api.GetMachine).Methods(http.MethodGet)
+	r.HandleFunc("/machines", api.GetMachines).Methods(http.MethodGet)
+	r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
+	r.HandleFunc("/machine", api.UpdateMachine).Methods(http.MethodPut)
+	r.HandleFunc("/machine/{mac}/disk/{uuid}", api.UploadDiskImage).Methods(http.MethodPost)
+	r.HandleFunc("/machine/{mac}/disk/{uuid}", api.DownloadDiskImage).Methods(http.MethodGet)
+	r.HandleFunc("/machine/{mac}/boot", api.BootInform).Methods(http.MethodPost)
+
+	r.HandleFunc("/users", api.GetUsers).Methods(http.MethodGet)
+	r.HandleFunc("/user", api.CreateUser).Methods(http.MethodPost)
+	r.HandleFunc("/user/{name}", api.GetUser).Methods(http.MethodGet)
+	r.HandleFunc("/user/{name}/createimage", api.CreateImage).Methods(http.MethodPost)
+
+	// info about an image
+	r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)
+	r.HandleFunc("/image/{uuid}/{version}/download", api.DownloadImage).Methods(http.MethodGet)
+	r.HandleFunc("/image/{uuid}/upload", api.UploadImage).Methods(http.MethodPost)
+
+	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
+	r.HandleFunc("/v1/boot/{mac}", api.ServeBootConfigurations)
+
+	return r
 }
 
-// NewApi creates a new Api struct.
-func NewApi(store database.Store, diskpath string) *Api {
-	return &Api{
-		store:    store,
-		diskpath: diskpath,
+// StartServer defines all routes and1 then starts listening for HTTP requests.
+// TODO: Config struct
+func StartServer(machineStore database.Store, staticDir string, diskpath string, address string, port int) {
+	srv := http.Server{
+		Handler: getHandler(machineStore, staticDir, diskpath),
+		Addr:    fmt.Sprintf("%s:%d", address, port),
 	}
+	log.Fatal(srv.ListenAndServe())
 }
 
-// BootInform handles all incoming boot inform requests
-func (api *Api) BootInform(w http.ResponseWriter, r *http.Request) {
-	var bootInform pkgapi.BootInformRequest
+func logging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// We don't want to log the fact that we are logging.
+		if r.URL.Path != "/log" {
+			log.Debugf("%s request on %s", r.Method, r.URL)
+		}
 
-	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
-		log.Errorf("Error while parsing json: %v", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	log.Debug("Received BootInform request, serving Reprovisioning information")
-
-	// handle things based on bootinform
-
-	// Request data from database for what to do with this machine
-	uuid1 := "alpineresult.iso"
-	uuid2 := "alpine.iso"
-	location := "/dev/sda"
-
-	// Prepare response
-	resp := pkgapi.ReprovisioningInfo{
-		Prev: model.MachineSetup{
-			Ephemeral: false,
-			Disks: []model.DiskMappingModel{
-				{
-					Uuid: uuid1,
-					Image: model.DiskImage{
-						DiskType:             model.DiskTypeRaw,
-						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-						Location: location,
-					},
-				},
-			},
-		},
-		Next: model.MachineSetup{
-			Ephemeral: false,
-			Disks: []model.DiskMappingModel{
-				{
-					Uuid: uuid2,
-					Image: model.DiskImage{
-						DiskType:             model.DiskTypeRaw,
-						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-						Location: location,
-					},
-				},
-			},
-		},
-	}
-
-	if err := json.NewEncoder(w).Encode(&resp); err != nil {
-		log.Errorf("Error while serialising json: %v", err)
-		http.Error(w, "Error while serialising response json", http.StatusInternalServerError)
-		return
-	}
-
-	r.Header.Set("content-type", "application/json")
-}
-
-// UploadDiskImage allows the management os to upload disk images
-func (api *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, ok := vars["uuid"]
-	if !ok || id == "" {
-		http.Error(w, "Invalid uuid", http.StatusBadRequest)
-		log.Error("Invalid uuid given")
-		return
-	}
-
-	path := fmt.Sprintf("%s/%s", api.diskpath, id)
-	temppath := fmt.Sprintf("%s.%s.tmp", path, uuid.New().String())
-
-	f, err := os.OpenFile(temppath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
-	if err != nil {
-		http.NotFound(w, r)
-		log.Errorf("failed to open/create disk image (%v)", err)
-		return
-	}
-
-	err = fs.CopyStream(r.Body, f)
-	if err != nil {
-		http.Error(w, "failed to write file", http.StatusInternalServerError)
-		log.Errorf("failed to write file (%v)", err)
-		return
-	}
-
-	err = os.Rename(temppath, path)
-	if err != nil {
-		http.Error(w, "failed to move file", http.StatusInternalServerError)
-		log.Errorf("failed to move file (%v)", err)
-		return
-	}
-}
-
-// DownloadDiskImage provides disk images for the management os to download
-func (api *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, ok := vars["uuid"]
-	if !ok || id == "" {
-		http.Error(w, "Invalid uuid", http.StatusBadRequest)
-		log.Error("Invalid uuid given")
-		return
-	}
-
-	f, err := os.OpenFile(fmt.Sprintf("%s/%s", api.diskpath, id), syscall.O_RDONLY, os.ModePerm)
-	if err != nil {
-		http.NotFound(w, r)
-		log.Errorf("failed to read disk image (%v)", err)
-		return
-	}
-
-	r.Header.Set("Content-Type", "application/octet-stream")
-
-	err = fs.CopyStream(f, w)
-	if err != nil {
-		http.Error(w, "failed to write file", http.StatusInternalServerError)
-		log.Errorf("failed to write file (%v)", err)
-		return
-	}
+		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		next.ServeHTTP(w, r)
+	})
 }

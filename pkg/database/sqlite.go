@@ -29,33 +29,35 @@ func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, er
 }
 
 func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
-	machine := model.MachineModel{
-		MacAddress: mac,
-	}
 
-	res := s.Find(&machine).Limit(1)
+	machine := model.MachineModel{}
+	res := s.Table("machine_models").
+		Preload("MacAddresses").
+		Select("*").
+		Joins("join mac_addresses on mac_addresses.machine_model_id = machine_models.id").
+		Where("mac_addresses.mac = ?", mac).
+		Limit(1).
+		Find(&machine)
+
 	return &machine, errors.Wrap(res.Error, "find machine")
 }
 
 func (s SqliteStore) GetMachines() (machines []model.MachineModel, _ error) {
-	res := s.Find(&machines)
+	res := s.Preload("MacAddresses").Find(&machines)
 	return machines, res.Error
 }
 
 func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
-	result := model.MachineModel{}
-
-	resp := s.Where("mac_address = ?", machine.MacAddress).First(&result)
-	if resp.Error != nil {
-		if errors.Is(resp.Error, gorm.ErrRecordNotFound) {
-			// insert
-			return s.Create(machine).Error
-		} else {
-			return resp.Error
-		}
+	if len(machine.MacAddresses) == 0 {
+		return errors.New("no mac address in original machine")
 	}
 
-	machine.ID = result.ID
+	old, err := s.GetMachineByMac(machine.MacAddresses[0].Mac)
+	if err != nil {
+		return errors.Wrap(err, "get machine")
+	}
+
+	machine.ID = old.ID
 
 	return s.Save(machine).Error
 }
@@ -90,6 +92,7 @@ func NewSqliteStore(dbpath string) (Store, error) {
 		&model.MachineModel{},
 		&model.DiskMappingModel{},
 		&model.MachineSetup{},
+		&model.MacAddress{},
 	)
 
 	if err != nil {

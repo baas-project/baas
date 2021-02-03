@@ -30,10 +30,18 @@ type DiskModel struct {
 	MachineModelID uint
 }
 
+type MacAddress struct {
+	gorm.Model
+
+	Mac            string
+	MachineModelID uint
+}
+
 // MachineModel stores information intrinsic to a machine. Used together with the MachineStore.
 type MachineModel struct {
 	gorm.Model
-	MacAddress   string
+
+	MacAddresses []MacAddress
 	Name         string
 	Architecture SystemArchitecture
 

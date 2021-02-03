@@ -16,9 +16,7 @@ func TestCompressZSTD(t *testing.T) {
 	compressed := gozstd.Compress(nil, b)
 	r := bytes.NewReader(compressed)
 
-	decompressed, err := Decompress(r, model.DiskImage{
-		DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-	})
+	decompressed, err := Decompress(r, model.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
 	res, err := ioutil.ReadAll(decompressed)
@@ -31,9 +29,7 @@ func TestDecompressZSTD(t *testing.T) {
 	b := []byte("Hello, world")
 	r := bytes.NewReader(b)
 
-	c, err := Compress(r, model.DiskImage{
-		DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-	})
+	c, err := Compress(r, model.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
 	cb, err := ioutil.ReadAll(c)
@@ -49,14 +45,10 @@ func TestCompressDecompressZSTD(t *testing.T) {
 	b := []byte("Hello, world")
 	r := bytes.NewReader(b)
 
-	c, err := Compress(r, model.DiskImage{
-		DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-	})
+	c, err := Compress(r, model.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
-	d, err := Decompress(c, model.DiskImage{
-		DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-	})
+	d, err := Decompress(c, model.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
 	res, err := ioutil.ReadAll(d)

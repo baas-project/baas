@@ -12,13 +12,13 @@ import (
 )
 
 // WriteOutDisks Downloads, Decompresses and finally Writes a disk image to disk
-func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
+func WriteOutDisks(api *APIClient, mac string, setup model.MachineSetup) error {
 	log.Info("Downloading and writing disks")
 
 	for _, disk := range setup.Disks {
 		log.Debugf("writing disk: %v", disk.Uuid)
 
-		reader, err := DownloadDisk(api, disk.Uuid, disk.Image)
+		reader, err := DownloadDisk(api, mac, disk.Uuid, disk.Image)
 		if err != nil {
 			return errors.Wrap(err, "error downloading disk")
 		}
@@ -43,11 +43,11 @@ func WriteOutDisks(api *APIClient, setup model.MachineSetup) error {
 }
 
 // DownloadDisk downloads a disk from the network using the image's DiskTransferStrategy
-func DownloadDisk(api *APIClient, uuid model.DiskUUID, image model.DiskImage) (reader io.ReadCloser, _ error) {
+func DownloadDisk(api *APIClient, mac string, uuid model.DiskUUID, image model.DiskImage) (reader io.ReadCloser, _ error) {
 	log.Debugf("DiskUUID transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
-		return api.DownloadDiskHTTP(uuid)
+		return api.DownloadDiskHTTP(mac, uuid)
 	default:
 		return nil, errors.New("unknown transfer strategy")
 	}

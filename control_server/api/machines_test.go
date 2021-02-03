@@ -17,7 +17,9 @@ func TestApi_UpdateMachine(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
-		MacAddress:        "abc",
+		MacAddresses: []model.MacAddress{
+			{Mac: "abc"},
+		},
 		Name:              "bca",
 		Architecture:      model.X86_64,
 		DiskUUIDs:         nil,
@@ -38,12 +40,12 @@ func TestApi_UpdateMachine(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	m, err := store.GetMachineByMac(machine.MacAddress)
-
-	m.Model = gorm.Model{}
-
+	m, err := store.GetMachineByMac(machine.MacAddresses[0].Mac)
 	assert.NoError(t, err)
-	assert.EqualValues(t, m, &machine)
+
+	assert.Equal(t, m.Name, machine.Name)
+	assert.Equal(t, m.Architecture, machine.Architecture)
+	assert.Equal(t, m.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
 }
 
 func TestApi_UpdateMachineExists(t *testing.T) {
@@ -51,7 +53,9 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
-		MacAddress:        "abc",
+		MacAddresses: []model.MacAddress{
+			{Mac: "abc"},
+		},
 		Name:              "bca",
 		Architecture:      model.X86_64,
 		DiskUUIDs:         nil,
@@ -71,11 +75,13 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	m, err := store.GetMachineByMac(machine.MacAddress)
+	m, err := store.GetMachineByMac(machine.MacAddresses[0].Mac)
 	m.Model = gorm.Model{}
 
 	assert.NoError(t, err)
-	assert.EqualValues(t, m, &machine)
+	assert.Equal(t, m.Name, machine.Name)
+	assert.Equal(t, m.Architecture, machine.Architecture)
+	assert.Equal(t, m.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
 
 	machine.Name = "xxx"
 
@@ -88,12 +94,12 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	m, err = store.GetMachineByMac(machine.MacAddress)
-
-	m.Model = gorm.Model{}
+	m, err = store.GetMachineByMac(machine.MacAddresses[0].Mac)
 
 	assert.NoError(t, err)
-	assert.EqualValues(t, m, &machine)
+	assert.Equal(t, m.Name, machine.Name)
+	assert.Equal(t, m.Architecture, machine.Architecture)
+	assert.Equal(t, m.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
 }
 
 func TestApi_GetMachine(t *testing.T) {
@@ -101,7 +107,9 @@ func TestApi_GetMachine(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
-		MacAddress:        "abc",
+		MacAddresses: []model.MacAddress{
+			{Mac: "abc"},
+		},
 		Name:              "bca",
 		Architecture:      model.X86_64,
 		DiskUUIDs:         nil,
@@ -117,7 +125,7 @@ func TestApi_GetMachine(t *testing.T) {
 	resp := httptest.NewRecorder()
 
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/machine/"+machine.MacAddress, nil))
+	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/machine/"+machine.MacAddresses[0].Mac, nil))
 
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
@@ -127,7 +135,10 @@ func TestApi_GetMachine(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, err)
-	assert.EqualValues(t, dm, machine)
+
+	assert.Equal(t, dm.Name, machine.Name)
+	assert.Equal(t, dm.Architecture, machine.Architecture)
+	assert.Equal(t, dm.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
 }
 
 func TestApi_GetMachines(t *testing.T) {
@@ -135,7 +146,9 @@ func TestApi_GetMachines(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine1 := model.MachineModel{
-		MacAddress:        "abc",
+		MacAddresses: []model.MacAddress{
+			{Mac: "abc"},
+		},
 		Name:              "bca",
 		Architecture:      model.X86_64,
 		DiskUUIDs:         nil,
@@ -146,8 +159,10 @@ func TestApi_GetMachines(t *testing.T) {
 	}
 
 	machine2 := model.MachineModel{
-		MacAddress:        "cba",
-		Name:              "bca",
+		MacAddresses: []model.MacAddress{
+			{Mac: "cba"},
+		},
+		Name:              "bcd",
 		Architecture:      model.X86_64,
 		DiskUUIDs:         nil,
 		Managed:           false,
@@ -175,7 +190,20 @@ func TestApi_GetMachines(t *testing.T) {
 
 	assert.Len(t, dm, 2)
 
+	dm1 := dm[0]
+	dm2 := dm[1]
+
+	assert.NotEqual(t, dm1.Name, dm2.Name)
+	if dm1.Name == machine2.Name {
+		dm1, dm2 = dm2, dm1
+	}
+
 	assert.NoError(t, err)
-	assert.Contains(t, dm, machine1)
-	assert.Contains(t, dm, machine2)
+	assert.Equal(t, dm1.Name, machine1.Name)
+	assert.Equal(t, dm1.Architecture, machine1.Architecture)
+	assert.Equal(t, dm1.MacAddresses[0].Mac, machine1.MacAddresses[0].Mac)
+
+	assert.Equal(t, dm2.Name, machine2.Name)
+	assert.Equal(t, dm2.Architecture, machine2.Architecture)
+	assert.Equal(t, dm2.MacAddresses[0].Mac, machine2.MacAddresses[0].Mac)
 }

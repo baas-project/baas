@@ -3,6 +3,7 @@ module github.com/baas-project/baas
 go 1.15
 
 require (
+	github.com/go-ping/ping v0.0.0-20210201192233-b6486c6f1f2d
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.4
 	github.com/pkg/errors v0.9.1
