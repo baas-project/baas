@@ -40,8 +40,12 @@ cp "$SCRIPT_PATH/hosts" "$SCRIPT_PATH/extract/etc/hosts"
 echo "placing init script"
 #cp "$SCRIPT_PATH/init.sh" "$SCRIPT_PATH/extract/init"
 
+# Copy the kernel 
+mv ${SCRIPT_PATH}/extract/boot/vmlinuz-* "$SCRIPT_PATH/../../control_server/static/vmlinuz"
+rm ${SCRIPT_PATH}/extract/{vmlinuz.old,initrd.img,initrd.img.old}
+
 # make `init` exec
-chmod +x "$SCRIPT_PATH/extract/init"
+chmod +x "$SCRIPT_PATH/extract/init" 
 pushd .
 
 echo "recompressing initial ramdisk to create initramfs"
