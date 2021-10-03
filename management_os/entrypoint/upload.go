@@ -15,22 +15,24 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 	log.Info("Reading and uploading disks")
 
 	for uuid, disk := range setup.Disks {
-		log.Debugf("reading disk: %v", uuid)
-
+		log.Infof("<upload> reading disk: %v", uuid)
 		r, err := ReadDisk(disk)
 		if err != nil {
 			return errors.Wrapf(err, "read disk")
 		}
 
+		log.Info("<upload> Compressing the disk")
 		com, err := Compress(r, disk)
 		if err != nil {
 			return errors.Wrapf(err, "compressing disk")
 		}
 
+		log.Info("<upload> Uploading disk to server")
 		err = UploadDisk(api, com, uuid, disk)
 		if err != nil {
 			return errors.Wrapf(err, "uploading disk")
 		}
+		log.Info("<upload> Finished the upload")
 	}
 	return nil
 }

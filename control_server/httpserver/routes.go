@@ -50,8 +50,8 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 	// handle things based on bootinform
 
 	// Request data from database for what to do with this machine
-	uuid1 := "alpineresult.iso"
-	uuid2 := "alpine.iso"
+	uuid1 := "alpine_result.iso.gz"
+	uuid2 := "alpine_configured.iso.gz"
 	location := "/dev/sda"
 
 	// Prepare response
@@ -62,7 +62,7 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 				uuid1: {
 					DiskType:             model.DiskTypeRaw,
 					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+					DiskCompressionStrategy: model.DiskCompressionStrategyGZip,
 					Location: location,
 				},
 			},
@@ -73,7 +73,7 @@ func (routes *Routes) BootInform(w http.ResponseWriter, r *http.Request) {
 				uuid2: {
 					DiskType:             model.DiskTypeRaw,
 					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+					DiskCompressionStrategy: model.DiskCompressionStrategyGZip,
 					Location: location,
 				},
 			},

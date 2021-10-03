@@ -89,6 +89,8 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid model.DiskUUID) error {
 
 	// Post closes r if able to, so no manual close is necessary
 	resp, err := http.Post(fmt.Sprintf("%s/mmos/disk/%s", a.baseURL, uuid), "application/octet-stream", r)
+	fmt.Printf("%s/mmos/disk/%s", a.baseURL, uuid)
+
 	if err != nil {
 		return errors.Wrap(err, "upload disk")
 	}

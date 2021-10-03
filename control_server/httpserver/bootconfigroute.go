@@ -29,7 +29,7 @@ type bootConfigResponse struct {
 func getBootConfig(arch machines.SystemArchitecture) *bootConfigResponse {
 	switch arch {
 	case machines.X86_64:
-		return &bootConfigResponse{
+		return &bootConfigResponse {
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
 				"http://localhost:4848/static/initramfs",

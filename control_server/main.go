@@ -45,7 +45,7 @@ func main() {
 
 	machineStore := machines.InMemoryStore()
 	err := machineStore.UpdateMachine(machines.Machine{
-		MacAddress:   "52:54:00:ae:a3:b3",
+		MacAddress:   "52:54:00:d9:71:93",
 		Architecture: machines.X86_64,
 	})
 	if err != nil {
