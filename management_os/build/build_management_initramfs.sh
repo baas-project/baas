@@ -25,7 +25,7 @@ echo "extracting initial ramdisk"
 mkdir -p "$SCRIPT_PATH/extract"
 tar -C "$SCRIPT_PATH/extract" -xf "$SCRIPT_PATH/management_kernel_initramfs.tar"
 
-
+CONTROL_SERVER_IP="$(hostname -I | awk '{print $1}')"
 
 cat > "$SCRIPT_PATH/hosts" << EOF
 # Put the ip address of the control server here so the management
