@@ -1,11 +1,11 @@
 package compression
 
 import (
-	"io"
-
+	gzip "github.com/klauspost/pgzip"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/gozstd"
+	"io"
 
 	"github.com/baas-project/baas/pkg/model"
 )
@@ -30,6 +30,29 @@ func Compress(reader io.Reader, strategy model.DiskCompressionStrategy) (io.Read
 	switch strategy {
 	case model.DiskCompressionStrategyNone:
 		return reader, nil
+	case model.DiskCompressionStrategyGZip:
+		pr, pw := io.Pipe()
+		log.Info("Compress the disk using gunzip")
+		go func() {
+			w := gzip.NewWriter(pw)
+			_, err := io.Copy(w, reader)
+			if err != nil {
+				log.Warn("Cannot compress data.")
+				return
+			}
+			err = w.Close()
+			if err != nil {
+				log.Warn("Cannot close gunzip header")
+				return
+			}
+			err = pw.Close()
+			if err != nil {
+				log.Warn("Close the writing pointer")
+				return
+			}
+		}()
+
+		return pr, nil
 	case model.DiskCompressionStrategyZSTD:
 		pr, pw := io.Pipe()
 		go func() {

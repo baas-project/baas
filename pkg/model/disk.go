@@ -29,6 +29,8 @@ const (
 	DiskCompressionStrategyNone DiskCompressionStrategy = iota
 	// DiskCompressionStrategyZSTD compresses disk images with zstd.
 	DiskCompressionStrategyZSTD
+	// Uses the standard GZip compression algorithm for disks
+	DiskCompressionStrategyGZip
 )
 
 // DiskImage describes a single disk image on the machine

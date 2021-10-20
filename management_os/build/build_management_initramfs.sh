@@ -25,7 +25,7 @@ echo "extracting initial ramdisk"
 mkdir -p "$SCRIPT_PATH/extract"
 tar -C "$SCRIPT_PATH/extract" -xf "$SCRIPT_PATH/management_kernel_initramfs.tar"
 
-
+CONTROL_SERVER_IP="$(hostname -I | awk '{print $1}')"
 
 cat > "$SCRIPT_PATH/hosts" << EOF
 # Put the ip address of the control server here so the management
@@ -40,8 +40,12 @@ cp "$SCRIPT_PATH/hosts" "$SCRIPT_PATH/extract/etc/hosts"
 echo "placing init script"
 #cp "$SCRIPT_PATH/init.sh" "$SCRIPT_PATH/extract/init"
 
+# Copy the kernel 
+mv ${SCRIPT_PATH}/extract/boot/vmlinuz-* "$SCRIPT_PATH/../../control_server/static/vmlinuz"
+rm ${SCRIPT_PATH}/extract/{vmlinuz.old,initrd.img,initrd.img.old}
+
 # make `init` exec
-chmod +x "$SCRIPT_PATH/extract/init"
+chmod +x "$SCRIPT_PATH/extract/init" 
 pushd .
 
 echo "recompressing initial ramdisk to create initramfs"
