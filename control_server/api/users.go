@@ -29,6 +29,17 @@ func (api *Api) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user.Name == "" {
+		http.Error(w, "No username given", http.StatusBadRequest)
+		return
+	} else if user.Email == "" {
+		http.Error(w, "No email given", http.StatusBadRequest)
+		return
+	} else if user.Role == "" {
+		http.Error(w, "No role given", http.StatusBadRequest)
+		return
+	}
+
 	err = api.store.CreateUser(&user)
 	if err != nil {
 		http.Error(w, "couldn't create user", http.StatusInternalServerError)

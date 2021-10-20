@@ -5,11 +5,11 @@ import (
 	"time"
 )
 
-// DiskType describes the type of a disk image, this can also describe the filesystem contained within
+// DiskType describes the type of disk image, this can also describe the filesystem contained within
 type DiskType int
 
 const (
-	// DiskTypeRaw is the most simple DiskType of which nothing extra is known
+	// DiskTypeRaw is the simplest DiskType of which nothing extra is known
 	DiskTypeRaw DiskType = iota
 )
 
@@ -29,7 +29,7 @@ const (
 	DiskCompressionStrategyNone DiskCompressionStrategy = iota
 	// DiskCompressionStrategyZSTD compresses disk images with zstd.
 	DiskCompressionStrategyZSTD
-	// Uses the standard GZip compression algorithm for disks
+	// DiskCompressionStrategyGZip uses the standard GZip compression algorithm for disks.
 	DiskCompressionStrategyGZip
 )
 
@@ -60,6 +60,8 @@ type Version struct {
 }
 
 type ImageModel struct {
+	// You will see quite a few of these around. They suppress the default values that the ORM creates when it gets
+	// cast into JSON.
 	gorm.Model `json:"-"`
 
 	// Human identifiable name of this image
@@ -71,9 +73,10 @@ type ImageModel struct {
 	Versions []Version
 
 	// ImageUUID is a universally unique identifier for images
+	// TODO: Inline? This causes a separate table to be created
 	UUID ImageUUID `gorm:"uniqueIndex"`
 
-	// DiskUUID is this disks linux by-uuid
+	// DiskUUID is these disks linux by-uuid
 	DiskUUID DiskUUID
 
 	// Foreign key for gorm

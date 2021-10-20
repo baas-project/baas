@@ -64,7 +64,7 @@ func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 
 	// O(nm) operation to add those MacAddresses which filters out the MAC addresses already registered for this
 	// machine. This is fairly slow, but this is a fairly rare operation and the nm is bounded by the amount of network
-	// cards associated with any given machine. In all likelihood this will be somewhere around 1 <= n <= 5
+	// cards associated with any given machine. In all likelihood this will be somewhere around 1 <= n <= 5.
 	for _, mac := range machine.MacAddresses {
 		found := false
 
