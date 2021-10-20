@@ -14,6 +14,29 @@ import (
 	"github.com/baas-project/baas/pkg/api"
 )
 
+func getMacAddr() (string, error) {
+	ifas, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	var as []string
+	for _, ifa := range ifas {
+		if ifa.Flags&net.FlagUp == 0 {
+			continue
+		}
+		a := ifa.HardwareAddr.String()
+		if a != "" {
+			as = append(as, a)
+		}
+	}
+
+	if len(as) == 0 {
+		return "", err
+	}
+
+	return as[0], nil
+}
+
 var baseurl = fmt.Sprintf("http://control_server:%d", api.Port)
 
 func init() {
@@ -63,8 +86,6 @@ func main() {
 	if !conf.UploadDisk {
 		log.Info("Uploading disks disabled in configuration file.")
 	} else if !prov.Prev.Ephemeral {
-		if err := ReadInDisks(c, prov.Prev); err != nil {
-	if !prov.Prev.Ephemeral {
 		if err := ReadInDisks(c, mac, prov.Prev); err != nil {
 			log.Fatal(err)
 		}

@@ -14,4 +14,6 @@ require (
 	github.com/valyala/gozstd v1.8.3
 	go.universe.tf/netboot v0.0.0-20200920222120-66e5fba6f663
 	golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6 // indirect
+	gorm.io/driver/sqlite v1.1.6 // indirect
+	gorm.io/gorm v1.21.16 // indirect
 )

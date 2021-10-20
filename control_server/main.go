@@ -50,7 +50,7 @@ func main() {
 
 	err = store.UpdateMachine(&model.MachineModel{
 		MacAddresses: []model.MacAddress{{
-			Mac: "4a:27:a8:38:1f:0c",
+			Mac: "52:54:00:d9:71:93",
 		}},
 		Architecture: model.X86_64,
 	})
