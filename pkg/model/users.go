@@ -4,7 +4,7 @@ import "gorm.io/gorm"
 
 // UserModel (noun) one who uses, not necessarily a single person
 type UserModel struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	// Name is a human-readable identifier for a user (or entity) of the system
 	Name string

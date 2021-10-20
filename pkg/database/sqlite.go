@@ -53,9 +53,34 @@ func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 	}
 
 	old, err := s.GetMachineByMac(machine.MacAddresses[0].Mac)
+
 	if err != nil {
 		return errors.Wrap(err, "get machine")
 	}
+
+	// Create a new array containing the old MacAddresses
+	var macAddresses []model.MacAddress
+	copy(macAddresses, old.MacAddresses)
+
+	// O(nm) operation to add those MacAddresses which filters out the MAC addresses already registered for this
+	// machine. This is fairly slow, but this is a fairly rare operation and the nm is bounded by the amount of network
+	// cards associated with any given machine. In all likelihood this will be somewhere around 1 <= n <= 5
+	for _, mac := range machine.MacAddresses {
+		found := false
+
+		for _, oldMac := range old.MacAddresses {
+			if mac == oldMac {
+				break
+			}
+			found = true
+		}
+
+		if !found {
+			macAddresses = append(macAddresses, mac)
+		}
+	}
+
+	machine.MacAddresses = macAddresses
 
 	machine.ID = old.ID
 

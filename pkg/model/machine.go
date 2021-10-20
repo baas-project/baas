@@ -8,9 +8,9 @@ import (
 type SystemArchitecture string
 
 const (
-	// Arm64 is the 64 bit Arm architecture
+	// Arm64 is the 64-bit Arm architecture
 	Arm64 SystemArchitecture = "Arm64"
-	// X86_64 is the 64 bit x86 architecture
+	// X86_64 is the 64-bit x86 architecture
 	X86_64 SystemArchitecture = "x86_64" //nolint
 	// Unknown is any architecture which baas could not identify.
 	Unknown SystemArchitecture = "unknown"
@@ -23,7 +23,7 @@ func (id *SystemArchitecture) Name() string {
 }
 
 type DiskModel struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	Uuid DiskUUID
 
@@ -31,7 +31,7 @@ type DiskModel struct {
 }
 
 type MacAddress struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	Mac            string
 	MachineModelID uint
@@ -39,14 +39,11 @@ type MacAddress struct {
 
 // MachineModel stores information intrinsic to a machine. Used together with the MachineStore.
 type MachineModel struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
-	MacAddresses []MacAddress
+	// General Info
 	Name         string
 	Architecture SystemArchitecture
-
-	// DiskUUIDs are the linux by-uuids this machine has
-	DiskUUIDs []DiskModel
 
 	// Managed indicates that a machine should be managed by BAAS (if false baas will not touch the machine in any way)
 	Managed bool
@@ -57,10 +54,17 @@ type MachineModel struct {
 	// NextSetup stores the machine setup of what the machine should become after reprovisioning
 	// MUST be non-nil if ShouldReprovision is true else it MAY be nil
 	NextSetup *MachineSetup `gorm:"foreignKey:ID"`
+
+	// DiskUUIDs are the linux by-uuids this machine has
+	DiskUUIDs []DiskModel
+
+	// MAC addresses associated to the machine
+	// Isn't this going to be one in most, if not all, cases?
+	MacAddresses []MacAddress
 }
 
 type DiskMappingModel struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	MachineSetupId uint
 
@@ -70,7 +74,7 @@ type DiskMappingModel struct {
 
 // MachineSetup describes the setup for a machine during a session
 type MachineSetup struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	// Ephemeral determines if we should save the state after the session ends
 	Ephemeral bool

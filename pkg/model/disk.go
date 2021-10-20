@@ -35,7 +35,7 @@ const (
 
 // DiskImage describes a single disk image on the machine
 type DiskImage struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	DiskType                DiskType
 	DiskTransferStrategy    DiskTransferStrategy
@@ -53,14 +53,14 @@ type DiskUUID = string
 type ImageUUID string
 
 type Version struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	Version      time.Time
 	ImageModelID uint
 }
 
 type ImageModel struct {
-	gorm.Model
+	gorm.Model `json:"-"`
 
 	// Human identifiable name of this image
 	Name string
