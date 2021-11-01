@@ -56,7 +56,7 @@ type MachineModel struct {
 	NextSetup *MachineSetup `gorm:"foreignKey:ID"`
 
 	// DiskUUIDs are the linux by-uuids this machine has
-	DiskUUIDs []DiskModel
+	DiskUUIDs []DiskModel `gorm:"foreignKey:ID""`
 
 	// MAC addresses associated to the machine
 	// Isn't this going to be one in most, if not all, cases?
@@ -66,7 +66,7 @@ type MachineModel struct {
 type DiskMappingModel struct {
 	gorm.Model `json:"-"`
 
-	MachineSetupId uint
+	MachineSetupID uint
 
 	Uuid  DiskUUID
 	Image DiskImage `gorm:"embedded"`
