@@ -36,12 +36,15 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	r.HandleFunc("/users", api.GetUsers).Methods(http.MethodGet)
 	r.HandleFunc("/user", api.CreateUser).Methods(http.MethodPost)
 	r.HandleFunc("/user/{name}", api.GetUser).Methods(http.MethodGet)
-	r.HandleFunc("/user/{name}/createimage", api.CreateImage).Methods(http.MethodPost)
-
+	r.HandleFunc("/user/{name}/image", api.CreateImage).Methods(http.MethodPost)
+	r.HandleFunc("/user/{name}/images", api.GetImagesByUser).Methods(http.MethodGet)
+	r.HandleFunc("/user/{name}/images/{image_name}", api.GetImageByName).Methods(http.MethodGet)
 	// info about an image
+	// TODO: Does this not break the security guarantees?
+	// TODO: Maybe different routes per type? Let's start out here though.
 	r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)
 	r.HandleFunc("/image/{uuid}/{version}/download", api.DownloadImage).Methods(http.MethodGet)
-	r.HandleFunc("/image/{uuid}/upload", api.UploadImage).Methods(http.MethodPost)
+	r.HandleFunc("/image/{uuid}", api.UploadImage).Methods(http.MethodPost)
 
 	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
 	r.HandleFunc("/v1/boot/{mac}", api.ServeBootConfigurations)

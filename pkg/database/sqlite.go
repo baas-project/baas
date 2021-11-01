@@ -1,9 +1,11 @@
 package database
 
 import (
+	errors2 "errors"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 import "gorm.io/driver/sqlite"
 
@@ -18,14 +20,32 @@ func (s SqliteStore) CreateImage(username string, image model.ImageModel) error 
 	if err != nil {
 		return errors.Wrap(err, "get user by name")
 	}
-
 	return s.Model(user).Association("Images").Append(&image)
 }
 
 func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error) {
-	res := model.ImageModel{UUID: uuid}
+	image := model.ImageModel{UUID: uuid}
+	res := s.Where("UUID = ?", uuid).First(&image)
+	return &image, res.Error
+}
 
-	return &res, s.Find(&res).Error
+func (s SqliteStore) GetImagesByUsername(username string) ([] model.ImageModel, error) {
+	var images []model.ImageModel
+
+	res := s.Table("image_models").
+		Joins("join user_models on user_models.id = image_models.user_model_id").
+		Where("user_models.name = ?", username).
+		Find(&images)
+
+	return images, res.Error
+}
+
+func (s SqliteStore) GetImageByName(name string) (model.ImageModel, error) {
+	var image model.ImageModel
+	res := s.Table("image_models").
+		Where("image_models.name = ?", name).
+		First(&image)
+	return image, res.Error
 }
 
 func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
@@ -36,14 +56,20 @@ func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
 		Select("*").
 		Joins("join mac_addresses on mac_addresses.machine_model_id = machine_models.id").
 		Where("mac_addresses.mac = ?", mac).
-		Limit(1).
-		Find(&machine)
+		First(&machine)
 
-	return &machine, errors.Wrap(res.Error, "find machine")
+	return &machine, res.Error
 }
 
+// GetMachines returns the values in the machine_models database.
+// TODO: Fetch foreign relations.
 func (s SqliteStore) GetMachines() (machines []model.MachineModel, _ error) {
-	res := s.Preload("MacAddresses").Find(&machines)
+	res := s.
+		Preload("MacAddresses").
+		Select("*").
+		Joins("left join disk_mapping_models on disk_mapping_models.machine_setup_id = machine_models.id").
+		Find(&machines)
+
 	return machines, res.Error
 }
 
@@ -54,7 +80,9 @@ func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 
 	old, err := s.GetMachineByMac(machine.MacAddresses[0].Mac)
 
-	if err != nil {
+	if errors2.Is(err, gorm.ErrRecordNotFound) {
+
+	} else if err != nil {
 		return errors.Wrap(err, "get machine")
 	}
 
@@ -88,11 +116,15 @@ func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 }
 
 func (s SqliteStore) GetUserByName(name string) (*model.UserModel, error) {
-	user := model.UserModel{
-		Name: name,
-	}
-	res := s.Find(&user).Limit(1)
+	user := model.UserModel{}
+	res := s.Where("name = ?", name).First(&user)
 	return &user, errors.Wrap(res.Error, "find user")
+}
+
+func (s SqliteStore) GetUserById(id uint) (*model.UserModel, error) {
+	user := model.UserModel{}
+	res := s.Where("id = ?", id).First(&user)
+	return &user, errors.Wrap(res.Error, "find user by id")
 }
 
 func (s SqliteStore) GetUsers() (users []model.UserModel, _ error) {
@@ -105,7 +137,10 @@ func (s SqliteStore) CreateUser(user *model.UserModel) error {
 }
 
 func NewSqliteStore(dbpath string) (Store, error) {
-	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
+			})
+
 	if err != nil {
 		return nil, errors.Wrap(err, "open db")
 	}
