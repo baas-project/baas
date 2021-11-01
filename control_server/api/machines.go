@@ -14,6 +14,11 @@ import (
 	"syscall"
 )
 
+// GetMachine GETs any machine in the database based on its MAC address
+// Example message: machine/00:11:22:33:44:55:66
+// Example response: {"name": "Machine 1",
+//                    "Architecture": "x86_64",
+//                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
 func (api *Api) GetMachine(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac, ok := vars["mac"]
@@ -34,6 +39,11 @@ func (api *Api) GetMachine(w http.ResponseWriter, r *http.Request) {
 	_ = e.Encode(machine)
 }
 
+// GetMachines fetches all the machines from the database using a GET request
+// Example request: machines
+// Example response: {"name": "Machine 1",
+//                    "Architecture": "x86_64",
+//                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
 func (api *Api) GetMachines(w http.ResponseWriter, r *http.Request) {
 	machines, err := api.store.GetMachines()
 	if err != nil {
@@ -46,6 +56,24 @@ func (api *Api) GetMachines(w http.ResponseWriter, r *http.Request) {
 	_ = e.Encode(machines)
 }
 
+
+// UpdateMachine updates (or adds) the machine to the database.
+//
+// Example of a JSON message:
+//     {
+//        "name": "Hello World",
+//        "Architecture": "x86_64",
+//        "Managed": true,
+//        "ShouldReprovision": true,
+//        "CurrentSetup": null,
+//        "NextSetup": null,
+//        "DiskUUIDs": null,
+//        "MacAddresses": [{
+//            "Mac": "52:54:00:d9:71:15",
+//            "MachineModelID": 12
+//         }]
+//     }
+//
 func (api *Api) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 	var machine model.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
