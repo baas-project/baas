@@ -21,6 +21,6 @@ type Store interface {
 
 	GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error)
 	GetImagesByUsername(username string) ([]model.ImageModel, error)
-	GetImageByName(name string) (model.ImageModel, error)
-	CreateImage(username string, image model.ImageModel) error
+	GetImagesByNameAndUsername(name string, username string) ([]model.ImageModel, error)
+	CreateImage(username string, image *model.ImageModel) error
 }

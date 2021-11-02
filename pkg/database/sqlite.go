@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"time"
 )
 import "gorm.io/driver/sqlite"
 
@@ -15,12 +16,22 @@ type SqliteStore struct {
 	*gorm.DB
 }
 
-func (s SqliteStore) CreateImage(username string, image model.ImageModel) error {
+func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error {
 	user, err := s.GetUserByName(username)
 	if err != nil {
 		return errors.Wrap(err, "get user by name")
 	}
-	return s.Model(user).Association("Images").Append(&image)
+	res := s.Model(user).Association("Images").Append(&image)
+
+	if res != nil { return res }
+	v := model.Version{
+		Version: time.Now().Unix(),
+		ImageModelID: image.ID,
+	}
+	image.Versions = append(image.Versions, v)
+
+	s.DB.Create(&v)
+	return res
 }
 
 func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error) {
@@ -29,7 +40,7 @@ func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, er
 	return &image, res.Error
 }
 
-func (s SqliteStore) GetImagesByUsername(username string) ([] model.ImageModel, error) {
+func (s SqliteStore) GetImagesByUsername(username string) ([]model.ImageModel, error) {
 	var images []model.ImageModel
 
 	res := s.Table("image_models").
@@ -40,12 +51,13 @@ func (s SqliteStore) GetImagesByUsername(username string) ([] model.ImageModel, 
 	return images, res.Error
 }
 
-func (s SqliteStore) GetImageByName(name string) (model.ImageModel, error) {
-	var image model.ImageModel
+func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([]model.ImageModel, error) {
+	var images []model.ImageModel
 	res := s.Table("image_models").
-		Where("image_models.name = ?", name).
-		First(&image)
-	return image, res.Error
+		Joins("join user_models on user_models.id = image_models.user_model_id").
+		Where("user_models.name = ? AND image_models.name = ?", username, name).
+		Find(&images)
+	return images, res.Error
 }
 
 func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
@@ -138,7 +150,7 @@ func (s SqliteStore) CreateUser(user *model.UserModel) error {
 
 func NewSqliteStore(dbpath string) (Store, error) {
 	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger: logger.Default.LogMode(logger.Info),
 			})
 
 	if err != nil {

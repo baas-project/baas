@@ -38,7 +38,7 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	r.HandleFunc("/user/{name}", api.GetUser).Methods(http.MethodGet)
 	r.HandleFunc("/user/{name}/image", api.CreateImage).Methods(http.MethodPost)
 	r.HandleFunc("/user/{name}/images", api.GetImagesByUser).Methods(http.MethodGet)
-	r.HandleFunc("/user/{name}/images/{image_name}", api.GetImageByName).Methods(http.MethodGet)
+	r.HandleFunc("/user/{name}/images/{image_name}", api.GetImagesByName).Methods(http.MethodGet)
 	// info about an image
 	// TODO: Does this not break the security guarantees?
 	// TODO: Maybe different routes per type? Let's start out here though.

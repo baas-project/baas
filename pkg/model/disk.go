@@ -2,7 +2,6 @@ package model
 
 import (
 	"gorm.io/gorm"
-	"time"
 )
 
 // DiskType describes the type of disk image, this can also describe the filesystem contained within
@@ -55,7 +54,7 @@ type ImageUUID string
 type Version struct {
 	gorm.Model `json:"-"`
 
-	Version      time.Time
+	Version     int64
 	ImageModelID uint
 }
 
@@ -84,7 +83,8 @@ type ImageModel struct {
 }
 
 /* Disk Layout on control_server
-
+This contradicts the actual implementation and other documentation.
+TODO: Bring this inline, I prefer this method as well
 where 'abc' and 'cdf' are ImageUUIDs
 
 /disks

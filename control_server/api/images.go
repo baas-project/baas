@@ -2,13 +2,14 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"time"
+	"os"
 )
 
 // GetTag helper function which gets the name out of the request
@@ -29,6 +30,28 @@ func GetTag(tag string, w http.ResponseWriter, r *http.Request) (string, error) 
 // GetName is a shorthand for GetTag(name, r, w)
 func GetName(w http.ResponseWriter, r *http.Request) (string, error) {
 	return GetTag("name", w, r)
+}
+
+// CreateImageFile creates the actual image on disk with a given size.
+func CreateImageFile(imageSize uint, image *model.ImageModel) error {
+	f, err := os.OpenFile(fmt.Sprintf("control_server/disks/%s/%v.img", image.UUID, image.Versions[0].Version),
+		os.O_WRONLY|os.O_CREATE, 0644)
+
+	if err != nil { return err }
+
+	// Create an image with a size of 512 MiB
+	size := int64(imageSize * 1024 * 1024)
+
+	_, err = f.Seek(size-1, 0)
+	if err != nil { return err }
+
+	_, err = f.Write([]byte{0})
+	if err != nil { return err }
+
+	err = f.Close()
+	if err != nil { return err }
+
+	return nil
 }
 
 // CreateImage creates an image based on a name
@@ -59,11 +82,6 @@ func (api *Api) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create the first version of the image. It may not make the most sense, though.
-	image.Versions = append(image.Versions, model.Version{
-		Version: time.Now(),
-	})
-
 	if err != nil {
 		http.Error(w, "couldn't decode image model", http.StatusBadRequest)
 		log.Errorf("decode image model: %v", err)
@@ -73,12 +91,31 @@ func (api *Api) CreateImage(w http.ResponseWriter, r *http.Request) {
 	// Generate the UUID and create the entry in the database.
 	// We don't actually make an image file yet.
 	image.UUID = model.ImageUUID(uuid.New().String())
-	err = api.store.CreateImage(name, image)
+	err = api.store.CreateImage(name, &image)
 	if err != nil {
 		http.Error(w, "couldn't create image model", http.StatusInternalServerError)
 		log.Errorf("decode create model: %v", err)
 		return
 	}
+
+	// Create the actual image together with the first empty version which a user may or may not use.
+	err = CreateImageFile(512, &image)
+
+	err = os.Mkdir(fmt.Sprintf("control_server/disks/%s", image.UUID), os.ModePerm)
+	if err != nil {
+		http.Error(w, "could not create image", http.StatusInternalServerError)
+		log.Errorf("cannot create image directory: %v", err)
+		return
+	}
+
+	err = CreateImageFile(512, &image)
+
+	if err != nil {
+		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
+		log.Errorf("image creation failed: %v", err)
+		return
+	}
+
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(&image)
@@ -89,8 +126,7 @@ func (api *Api) CreateImage(w http.ResponseWriter, r *http.Request) {
 // Example result: [
 //  {
 //    "Name": "Windows",
-//    "Versions": null,
-//    "UUID": "a9c11954-6161-410b-b238-c03df5c529e9",
+//    "Versions "a9c11954-6161-410b-b238-c03df5c529e9",
 //    "DiskUUID": "30DF-844C",
 //    "UserModelID": 2
 //  },
@@ -117,52 +153,45 @@ func (api *Api) GetImagesByUser(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(images)
 }
 
-func (api *Api) GetImageByName(w http.ResponseWriter, r *http.Request) {
+// GetImagesByName gets any image based on the user who created it and human-readable name assigned to it.
+// Example Request: user/Jan/images/Gentoo
+// Example Response: [
+//  {
+//    "Name": "Gentoo",
+//    "Versions": null,
+//    "UUID": "57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf",
+//    "DiskUUID": "30DF-844C",
+//    "UserModelID": 1
+//  }
+//]
+func (api *Api) GetImagesByName(w http.ResponseWriter, r *http.Request) {
 	username, err := GetName(w, r)
 	if err != nil { return }
 
 	imageName, err := GetTag("image_name", w, r)
 	if err != nil { return }
 
-	// TODO: Change to images
-	// TODO: Fetch by name and user id
 	// TODO: Security needs to be done using auth system instead, no role checking in this route code.
-	image, err := api.store.GetImageByName(imageName)
+	images, err := api.store.GetImagesByNameAndUsername(imageName, username)
+
 	if err != nil {
 		http.Error(w, "couldn't get image", http.StatusInternalServerError)
 		log.Errorf("get image by name: %v", err)
 		return
 	}
 
-	givenUser, err := api.store.GetUserByName(username)
-	if err != nil {
-		http.Error(w, "couldn't find user", http.StatusInternalServerError)
-		log.Errorf("get user by id: %v", err)
-		return
-	}
-
-	// In the image setup there is no easily usable info to check the user permissions or the user who requested the
-	// image. Therefore we need to check the permissions ourselves. You might be able to do this a bit faster with a
-	// clever-ish SQL query. Please keep in mind this should only go for /user/ images and these restrictions do not
-	// apply to system images. TODO: Ensure that works when system images are implemented
-	if givenUser.Role != "admin" {
-		imageUser, err := api.store.GetUserById(image.UserModelID)
-
-		if err != nil {
-			http.Error(w, "couldn't find user", http.StatusInternalServerError)
-			log.Errorf("get user by id: %v", err)
-			return
-		}
-
-		if imageUser.Name != username {
-			http.Error(w, "wrong permissions and/or user", http.StatusForbidden)
-			log.Errorf("Wrong permission image access %v", err)
-			return
-		}
-	}
-	_ = json.NewEncoder(w).Encode(image)
+	_ = json.NewEncoder(w).Encode(images)
 }
 
+// GetImage gets any image based on it's unique id.
+// Example request: image/57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf
+// Example response: {
+//  "Name": "Gentoo",
+//  "Versions": null,
+//  "UUID": "57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf",
+//  "DiskUUID": "30DF-844C",
+//  "UserModelID": 1
+//}
 func (api *Api) GetImage(w http.ResponseWriter, r *http.Request) {
 	uniqueId, err := GetTag("uuid", w, r)
 	if err != nil { return }
