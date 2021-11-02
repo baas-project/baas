@@ -2,6 +2,7 @@ package database
 
 import (
 	errors2 "errors"
+	"fmt"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -21,7 +22,7 @@ func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error
 	if err != nil {
 		return errors.Wrap(err, "get user by name")
 	}
-	res := s.Model(user).Association("Images").Append(&image)
+	res := s.Model(user).Association("Images").Append(image)
 
 	if res != nil { return res }
 	v := model.Version{
@@ -36,7 +37,10 @@ func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error
 
 func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error) {
 	image := model.ImageModel{UUID: uuid}
-	res := s.Where("UUID = ?", uuid).First(&image)
+	res := s.Where("UUID = ?", uuid).
+		Preload("Versions").
+		First(&image)
+	fmt.Print(image.Versions)
 	return &image, res.Error
 }
 
@@ -44,6 +48,7 @@ func (s SqliteStore) GetImagesByUsername(username string) ([]model.ImageModel, e
 	var images []model.ImageModel
 
 	res := s.Table("image_models").
+		Preload("Versions").
 		Joins("join user_models on user_models.id = image_models.user_model_id").
 		Where("user_models.name = ?", username).
 		Find(&images)
@@ -54,6 +59,7 @@ func (s SqliteStore) GetImagesByUsername(username string) ([]model.ImageModel, e
 func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([]model.ImageModel, error) {
 	var images []model.ImageModel
 	res := s.Table("image_models").
+		Preload("Versions").
 		Joins("join user_models on user_models.id = image_models.user_model_id").
 		Where("user_models.name = ? AND image_models.name = ?", username, name).
 		Find(&images)

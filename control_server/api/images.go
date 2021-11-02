@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"net/http"
 	"os"
 )
@@ -207,6 +208,47 @@ func (api *Api) GetImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *Api) DownloadImage(w http.ResponseWriter, r *http.Request) {
+	version, err := GetTag("version", w, r)
+	if err != nil {
+		http.Error(w, "Invalid version in the URI", http.StatusInternalServerError)
+		log.Errorf("Download image: %v", err)
+		return
+	}
+
+	uniqueId, err := GetTag("uuid", w, r)
+	if err != nil {
+		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
+		log.Errorf("Download image: %v", err)
+		return
+	}
+
+	f, err := os.Open(fmt.Sprintf("control_server/disks/%s/%s.img", uniqueId, version))
+	if err != nil {
+		http.Error(w, "Cannot download the image", http.StatusNotFound)
+		log.Errorf("Download image: %v", err)
+		return
+	}
+
+
+	// Defer closing the file until the end of the program
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			http.Error(w, "Cannot close image file", http.StatusInternalServerError)
+			log.Errorf("Cannot close image file: %v", err)
+		}
+	}()
+
+	// We set the Content-Type to disk/raw as a placeholder, but it does not actually exist. It might be nice to change
+	// this at some later date some more common value. 
+	w.Header().Set("Content-Type", "disk/raw")
+	_, err = io.Copy(w, f)
+
+	if err != nil {
+		http.Error(w, "Cannot serve image", http.StatusInternalServerError)
+		log.Errorf("Cannot serve image: %v", err)
+		return
+	}
 
 }
 
