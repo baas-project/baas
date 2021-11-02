@@ -11,7 +11,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
+
+const FilePathFmt = "control_server/disks/%s/%v.img"
+const MaximumFileSize = 5 * 1024 * 1024 * 1024 // 5 GiB
+const ImageFileSize = 512 // size in MiB
 
 // GetTag helper function which gets the name out of the request
 // Returns the name in the URI
@@ -35,12 +41,12 @@ func GetName(w http.ResponseWriter, r *http.Request) (string, error) {
 
 // CreateImageFile creates the actual image on disk with a given size.
 func CreateImageFile(imageSize uint, image *model.ImageModel) error {
-	f, err := os.OpenFile(fmt.Sprintf("control_server/disks/%s/%v.img", image.UUID, image.Versions[0].Version),
+	f, err := os.OpenFile(fmt.Sprintf(FilePathFmt, image.UUID, image.Versions[0].Version),
 		os.O_WRONLY|os.O_CREATE, 0644)
 
 	if err != nil { return err }
 
-	// Create an image with a size of 512 MiB
+ 	// Create an image with a size of 512 MiB
 	size := int64(imageSize * 1024 * 1024)
 
 	_, err = f.Seek(size-1, 0)
@@ -100,7 +106,7 @@ func (api *Api) CreateImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create the actual image together with the first empty version which a user may or may not use.
-	err = CreateImageFile(512, &image)
+	err = CreateImageFile(ImageFileSize, &image)
 
 	err = os.Mkdir(fmt.Sprintf("control_server/disks/%s", image.UUID), os.ModePerm)
 	if err != nil {
@@ -109,7 +115,7 @@ func (api *Api) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = CreateImageFile(512, &image)
+	err = CreateImageFile(ImageFileSize, &image)
 
 	if err != nil {
 		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
@@ -207,6 +213,40 @@ func (api *Api) GetImage(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(res)
 }
 
+// DownloadImageFile gets the specified version of the image off the disk and offers it to the client
+func DownloadImageFile(uniqueId string, version string, w http.ResponseWriter) {
+	f, err := os.Open(fmt.Sprintf(FilePathFmt, uniqueId, version))
+	if err != nil {
+		http.Error(w, "Cannot download the image", http.StatusNotFound)
+		log.Errorf("Download image: %v", err)
+		return
+	}
+
+	// Defer closing the file until the end of the program
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			http.Error(w, "Cannot close image file", http.StatusInternalServerError)
+			log.Errorf("Cannot close image file: %v", err)
+		}
+	}()
+
+	// We set the Content-Type to disk/raw as a placeholder, but it does not actually exist. It might be nice to change
+	// this at some later date some more common value.
+	w.Header().Set("Content-Type", "disk/raw")
+	_, err = io.Copy(w, f)
+
+	if err != nil {
+		http.Error(w, "Cannot serve image", http.StatusInternalServerError)
+		log.Errorf("Cannot serve image: %v", err)
+		return
+	}
+
+	return
+}
+
+// DownloadImage offers the requested image to the respective client
+// Example request: image/87f58936-9540-4dad-aba6-253f06142166/1635888918
 func (api *Api) DownloadImage(w http.ResponseWriter, r *http.Request) {
 	version, err := GetTag("version", w, r)
 	if err != nil {
@@ -222,36 +262,92 @@ func (api *Api) DownloadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.Open(fmt.Sprintf("control_server/disks/%s/%s.img", uniqueId, version))
+	DownloadImageFile(uniqueId, version, w)
+}
+
+// DownloadLatestImage offers the latest version
+// Example request: image/87f58936-9540-4dad-aba6-253f06142166/latest
+func (api *Api) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
+	uniqueId, err := GetTag("uuid", w, r)
 	if err != nil {
-		http.Error(w, "Cannot download the image", http.StatusNotFound)
+		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
 		log.Errorf("Download image: %v", err)
 		return
 	}
 
-
-	// Defer closing the file until the end of the program
-	defer func() {
-		err = f.Close()
-		if err != nil {
-			http.Error(w, "Cannot close image file", http.StatusInternalServerError)
-			log.Errorf("Cannot close image file: %v", err)
-		}
-	}()
-
-	// We set the Content-Type to disk/raw as a placeholder, but it does not actually exist. It might be nice to change
-	// this at some later date some more common value. 
-	w.Header().Set("Content-Type", "disk/raw")
-	_, err = io.Copy(w, f)
-
+	image, err := api.store.GetImageByUUID(model.ImageUUID(uniqueId))
 	if err != nil {
-		http.Error(w, "Cannot serve image", http.StatusInternalServerError)
-		log.Errorf("Cannot serve image: %v", err)
+		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
+		log.Errorf("Download latest image: %v", err)
 		return
 	}
 
+	version := image.Versions[len(image.Versions)-1]
+	DownloadImageFile(uniqueId, strconv.FormatInt(version.Version, 10), w)
 }
 
+// UploadImage takes the uploaded file and stores as a new version of the image
+// Example request: image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data"
+//                     -F "file=@/tmp/test3.img"
+// Example return: Successfully uploaded image: 134251234
 func (api *Api) UploadImage(w http.ResponseWriter, r *http.Request) {
+	uniqueId, err := GetTag("uuid", w, r)
+	if err != nil { return }
 
+	// Accept maximum file of 5 Gigabytes (wowzers~)
+	// https://stackoverflow.com/questions/40684307/how-can-i-receive-an-uploaded-file-using-a-golang-net-http-server
+	err = r.ParseMultipartForm(MaximumFileSize)
+
+	if err != nil {
+		http.Error(w, "Cannot parse POST form", http.StatusBadRequest)
+		log.Errorf("Cannot parse POST form: %v", err)
+		return
+	}
+
+	f, _, err := r.FormFile("file")
+
+	// Go error's handling is pain
+	if err != nil {
+		http.Error(w, "File upload failed", http.StatusInternalServerError)
+		log.Errorf("Cannot upload image: %v", err)
+		return
+	}
+
+	// One liner which closes the file at the end of the call.
+	defer func () { if err := f.Close(); err != nil { log.Errorf("Cannot close upload file: %v", err)}}()
+
+	// First fetch the image from the database, so we can get the id using the unique id.
+	// Do not ask me why this is needed, revamp of the database might be needed.
+	image, err := api.store.GetImageByUUID(model.ImageUUID(uniqueId))
+
+	if err != nil {
+		http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
+		log.Errorf("cannot fetch image from database: %v", err)
+		return
+	}
+
+	version := model.Version{
+		Version: time.Now().Unix(),
+		ImageModelID: image.ID,
+	}
+
+	api.store.CreateNewImageVersion(version)
+
+	// Write the file onto the disk
+	dest, err := os.OpenFile(fmt.Sprintf(FilePathFmt, uniqueId, version.Version), os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		http.Error(w, "Cannot open destination file", http.StatusInternalServerError)
+		log.Errorf("Cannot open destination file: %v", err)
+		return
+	}
+
+	_, err = io.Copy(dest, f)
+	if err != nil {
+		http.Error(w, "Cannot copy over the contents of the file", http.StatusInternalServerError)
+		log.Errorf("Cannot copy the contents of the file: %v", err)
+		return
+	}
+
+	defer func () { if err := dest.Close(); err != nil { log.Errorf("Cannot close upload file: %v", err)}}()
+	http.Error(w, "Successfully uploaded image: " + strconv.FormatInt(version.Version, 10), http.StatusOK)
 }

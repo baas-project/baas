@@ -2,7 +2,6 @@ package database
 
 import (
 	errors2 "errors"
-	"fmt"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
@@ -40,7 +39,7 @@ func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, er
 	res := s.Where("UUID = ?", uuid).
 		Preload("Versions").
 		First(&image)
-	fmt.Print(image.Versions)
+
 	return &image, res.Error
 }
 
@@ -154,9 +153,13 @@ func (s SqliteStore) CreateUser(user *model.UserModel) error {
 	return s.Save(user).Error
 }
 
+func (s SqliteStore) CreateNewImageVersion(version model.Version) {
+	s.Create(&version)
+}
+
 func NewSqliteStore(dbpath string) (Store, error) {
 	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Warn),
 			})
 
 	if err != nil {

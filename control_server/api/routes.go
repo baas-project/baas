@@ -43,7 +43,8 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	// TODO: Does this not break the security guarantees?
 	// TODO: Maybe different routes per type? Let's start out here though.
 	r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)
-	r.HandleFunc("/image/{uuid}/{version}/download", api.DownloadImage).Methods(http.MethodGet)
+	r.HandleFunc("/image/{uuid}/latest", api.DownloadLatestImage).Methods(http.MethodGet)
+	r.HandleFunc("/image/{uuid}/{version}", api.DownloadImage).Methods(http.MethodGet)
 	r.HandleFunc("/image/{uuid}", api.UploadImage).Methods(http.MethodPost)
 
 	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)

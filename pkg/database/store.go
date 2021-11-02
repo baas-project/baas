@@ -23,4 +23,5 @@ type Store interface {
 	GetImagesByUsername(username string) ([]model.ImageModel, error)
 	GetImagesByNameAndUsername(name string, username string) ([]model.ImageModel, error)
 	CreateImage(username string, image *model.ImageModel) error
+	CreateNewImageVersion(version model.Version)
 }
