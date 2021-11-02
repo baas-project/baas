@@ -1,13 +1,14 @@
 package database
 
 import (
+	"testing"
+	"time"
+
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"testing"
-	"time"
 )
 
 type User struct {
@@ -22,7 +23,6 @@ type CreditCard struct {
 }
 
 func TestNewSqliteStore(t *testing.T) {
-
 	db, err := gorm.Open(sqlite.Open(InMemoryPath), &gorm.Config{})
 	assert.NoError(t, err)
 
@@ -33,11 +33,11 @@ func TestNewSqliteStore(t *testing.T) {
 		Name: "aaa",
 		Versions: []model.Version{
 			{
-				Version: time.Now(),
+				Version: time.Now().Unix(),
 			}, {
-				Version: time.Now(),
+				Version: time.Now().Unix(),
 			}, {
-				Version: time.Now(),
+				Version: time.Now().Unix(),
 			},
 		},
 		UUID:     "yeet",
@@ -51,5 +51,4 @@ func TestNewSqliteStore(t *testing.T) {
 	db.Preload(clause.Associations).First(&imr)
 
 	assert.Equal(t, len(imr.Versions), 3)
-
 }

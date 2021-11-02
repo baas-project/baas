@@ -51,13 +51,15 @@ type DiskUUID = string
 // ImageUUID is a UUID distinguishing each disk image
 type ImageUUID string
 
+// Version stores the version of an ImageModel using an UNIX timestamp
 type Version struct {
 	gorm.Model `json:"-"`
 
-	Version     int64
+	Version      int64
 	ImageModelID uint
 }
 
+// ImageModel defines the database structure for storing the metadata about images
 type ImageModel struct {
 	// You will see quite a few of these around. They suppress the default values that the ORM creates when it gets
 	// cast into JSON.

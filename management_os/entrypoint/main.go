@@ -5,9 +5,10 @@ import (
 	"os"
 	"os/exec"
 
-	log "github.com/sirupsen/logrus"
-	 "github.com/sirupsen/logrus/hooks/writer"
 	"net"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/writer"
 
 	"github.com/baas-project/baas/pkg/httplog"
 
@@ -45,15 +46,15 @@ func init() {
 		0666)
 
 	log.SetFormatter(&BaasFormatter{log.TextFormatter{
-		ForceColors: true,
+		ForceColors:     true,
 		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp: true,
+		FullTimestamp:   true,
 	}})
 
 	if err != nil {
 		log.Warn("Cannot log to file")
 	} else {
-		log.AddHook(&writer.Hook {
+		log.AddHook(&writer.Hook{
 			Writer: file,
 			LogLevels: []log.Level{
 				log.PanicLevel,
@@ -85,15 +86,17 @@ func main() {
 
 	if !conf.UploadDisk {
 		log.Info("Uploading disks disabled in configuration file.")
-	} else if !prov.Prev.Ephemeral {
-		if err := ReadInDisks(c, mac, prov.Prev); err != nil {
+	}
+
+	if !prov.Prev.Ephemeral {
+		if err = ReadInDisks(c, mac, prov.Prev); err != nil {
 			log.Fatal(err)
 		}
 	} else {
 		log.Info("Not downloading any disk because previous session was ephemeral")
 	}
 
-	if err := WriteOutDisks(c, mac, prov.Next); err != nil {
+	if err = WriteOutDisks(c, mac, prov.Next); err != nil {
 		log.Fatal(err)
 	}
 

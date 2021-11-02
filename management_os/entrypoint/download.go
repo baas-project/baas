@@ -1,9 +1,10 @@
 package main
 
 import (
+	"io"
+
 	"github.com/baas-project/baas/pkg/compression"
 	gzip "github.com/klauspost/pgzip"
-	"io"
 
 	log "github.com/sirupsen/logrus"
 
@@ -26,13 +27,13 @@ func setupDisk(api *APIClient, mac string, uuid model.DiskUUID, disk model.DiskI
 	// is a neater way out there. Feel free to change this.
 	var dec io.Reader
 	if disk.DiskCompressionStrategy == model.DiskCompressionStrategyGZip {
-		r, err := gzip.NewReader(reader)
+		r, error := gzip.NewReader(reader)
 
-		if err != nil {
+		if error != nil {
 			return errors.Wrap(err, "Opening GZip stream")
 		}
 
-		defer func () {
+		defer func() {
 			err = r.Close()
 			if err != nil {
 				log.Warnf("Cannot close GZip stream: '%s'", err)
@@ -40,7 +41,7 @@ func setupDisk(api *APIClient, mac string, uuid model.DiskUUID, disk model.DiskI
 		}()
 
 		// Cast down to common Reader
-		dec = r
+		dec = r // nolint: ineffassign
 	} else {
 		dec, err = compression.Decompress(reader, disk.DiskCompressionStrategy)
 		if err != nil {
@@ -70,7 +71,7 @@ func WriteOutDisks(api *APIClient, mac string, setup model.MachineSetup) error {
 		// Yes, you could inline this function but this crews with the defers mechanism that Go has.
 		// By using a separate method call we ensure that the file are closed whenever they are no longer
 		// needed rather than waiting for the entire cycle.
-		err := setupDisk(api, mac, disk.Uuid, disk.Image)
+		err := setupDisk(api, mac, disk.UUID, disk.Image)
 
 		if err != nil {
 			return errors.Wrap(err, "couldn't close download body")

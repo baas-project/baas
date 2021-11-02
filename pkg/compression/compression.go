@@ -1,11 +1,13 @@
+// Package compression defines the methods used to compress and decompress file streams.
 package compression
 
 import (
+	"io"
+
 	gzip "github.com/klauspost/pgzip"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/gozstd"
-	"io"
 
 	"github.com/baas-project/baas/pkg/model"
 )

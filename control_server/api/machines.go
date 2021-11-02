@@ -3,15 +3,16 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
+	"syscall"
+
 	pkgapi "github.com/baas-project/baas/pkg/api"
 	"github.com/baas-project/baas/pkg/fs"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"os"
-	"syscall"
 )
 
 // GetMachine GETs any machine in the database based on its MAC address
@@ -19,7 +20,7 @@ import (
 // Example response: {"name": "Machine 1",
 //                    "Architecture": "x86_64",
 //                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
-func (api *Api) GetMachine(w http.ResponseWriter, r *http.Request) {
+func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac, ok := vars["mac"]
 	if !ok || mac == "" {
@@ -44,7 +45,7 @@ func (api *Api) GetMachine(w http.ResponseWriter, r *http.Request) {
 // Example response: {"name": "Machine 1",
 //                    "Architecture": "x86_64",
 //                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
-func (api *Api) GetMachines(w http.ResponseWriter, r *http.Request) {
+func (api *API) GetMachines(w http.ResponseWriter, r *http.Request) {
 	machines, err := api.store.GetMachines()
 	if err != nil {
 		http.Error(w, "couldn't get machines", http.StatusInternalServerError)
@@ -55,7 +56,6 @@ func (api *Api) GetMachines(w http.ResponseWriter, r *http.Request) {
 	e := json.NewEncoder(w)
 	_ = e.Encode(machines)
 }
-
 
 // UpdateMachine updates (or adds) the machine to the database.
 //
@@ -74,7 +74,7 @@ func (api *Api) GetMachines(w http.ResponseWriter, r *http.Request) {
 //         }]
 //     }
 //
-func (api *Api) UpdateMachine(w http.ResponseWriter, r *http.Request) {
+func (api *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 	var machine model.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
 	if err != nil {
@@ -92,7 +92,7 @@ func (api *Api) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 }
 
 // UploadDiskImage allows the management os to upload disk images
-func (api *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (api *API) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -134,7 +134,7 @@ func (api *Api) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // DownloadDiskImage provides disk images for the management os to download
-func (api *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -168,7 +168,7 @@ func (api *Api) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // BootInform handles all incoming boot inform requests
-func (api *Api) BootInform(w http.ResponseWriter, r *http.Request) {
+func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	var bootInform pkgapi.BootInformRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
@@ -192,7 +192,7 @@ func (api *Api) BootInform(w http.ResponseWriter, r *http.Request) {
 			Ephemeral: false,
 			Disks: []model.DiskMappingModel{
 				{
-					Uuid: uuid1,
+					UUID: uuid1,
 					Image: model.DiskImage{
 						DiskType:             model.DiskTypeRaw,
 						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
@@ -206,7 +206,7 @@ func (api *Api) BootInform(w http.ResponseWriter, r *http.Request) {
 			Ephemeral: false,
 			Disks: []model.DiskMappingModel{
 				{
-					Uuid: uuid2,
+					UUID: uuid2,
 					Image: model.DiskImage{
 						DiskType:             model.DiskTypeRaw,
 						DiskTransferStrategy: model.DiskTransferStrategyHTTP,

@@ -3,17 +3,18 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // GetUsers fetches all the users from the database
 // Example request: users
 // Response: [{"Name": "Valentijn", "Email": "v.d.vandebeek@student.tudelft.nl",
 //             "Role": "admin", "Image": null}
-func (api *Api) GetUsers(w http.ResponseWriter, _ *http.Request) {
+func (api *API) GetUsers(w http.ResponseWriter, _ *http.Request) {
 	users, err := api.store.GetUsers()
 
 	if err != nil {
@@ -30,7 +31,7 @@ func (api *Api) GetUsers(w http.ResponseWriter, _ *http.Request) {
 //                         "email", "w.narchi1@student.tudelft.nl",
 //                         "role": "user"}
 // Response: Either an error message or success.
-func (api *Api) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user model.UserModel
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -42,10 +43,14 @@ func (api *Api) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if user.Name == "" {
 		http.Error(w, "No username given", http.StatusBadRequest)
 		return
-	} else if user.Email == "" {
+	}
+
+	if user.Email == "" {
 		http.Error(w, "No email given", http.StatusBadRequest)
 		return
-	} else if user.Role == "" {
+	}
+
+	if user.Role == "" {
 		http.Error(w, "No role given", http.StatusBadRequest)
 		return
 	}
@@ -64,7 +69,7 @@ func (api *Api) CreateUser(w http.ResponseWriter, r *http.Request) {
 // Response: {"Name": "Jan",
 //            "Email": "v.d.vandebeek@student.tudelft.nl",
 //            "role": "admin"}
-func (api *Api) GetUser(w http.ResponseWriter, r *http.Request) {
+func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name, ok := vars["name"]
 	if !ok || name == "" {

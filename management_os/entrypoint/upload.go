@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/baas-project/baas/pkg/compression"
 	"io"
+
+	"github.com/baas-project/baas/pkg/compression"
 
 	log "github.com/sirupsen/logrus"
 
@@ -16,7 +17,7 @@ func ReadInDisks(api *APIClient, mac string, setup model.MachineSetup) error {
 	log.Info("Reading and uploading disks")
 
 	for _, disk := range setup.Disks {
-		log.Debugf("reading disk: %v", disk.Uuid)
+		log.Debugf("reading disk: %v", disk.UUID)
 
 		r, err := ReadDisk(disk.Image)
 		if err != nil {
@@ -28,7 +29,7 @@ func ReadInDisks(api *APIClient, mac string, setup model.MachineSetup) error {
 			return errors.Wrapf(err, "compressing disk")
 		}
 
-		err = UploadDisk(api, com, mac, disk.Uuid, disk.Image)
+		err = UploadDisk(api, com, mac, disk.UUID, disk.Image)
 		if err != nil {
 			return errors.Wrapf(err, "uploading disk")
 		}

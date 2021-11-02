@@ -3,12 +3,13 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/baas-project/baas/pkg/database"
-	"github.com/baas-project/baas/pkg/model"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/baas-project/baas/pkg/database"
+	"github.com/baas-project/baas/pkg/model"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestApi_CreateImage(t *testing.T) {
@@ -34,7 +35,7 @@ func TestApi_CreateImage(t *testing.T) {
 
 	resp := httptest.NewRecorder()
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodPost, "/user/"+user.Name+"/createimage", &mi))
+	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodPost, "/user/"+user.Name+"/image", &mi))
 
 	assert.Equal(t, http.StatusCreated, resp.Code)
 
@@ -72,7 +73,7 @@ func TestApi_GetImage(t *testing.T) {
 		DiskUUID: "ghi",
 	}
 
-	err = store.CreateImage(user.Name, image)
+	err = store.CreateImage(user.Name, &image)
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()

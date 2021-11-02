@@ -2,16 +2,17 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/httplog"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func getHandler(machineStore database.Store, staticDir string, diskpath string) http.Handler {
-	// Api for communicating with the management os
-	api := NewApi(machineStore, diskpath)
+	// API for communicating with the management os
+	api := NewAPI(machineStore, diskpath)
 
 	r := mux.NewRouter()
 

@@ -2,9 +2,10 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/baas-project/baas/pkg/model"
 	"net"
 	"net/http"
+
+	"github.com/baas-project/baas/pkg/model"
 
 	log "github.com/sirupsen/logrus"
 
@@ -48,7 +49,7 @@ func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
 }
 
 // ServeBootConfigurations actually responds to requests from pixiecore.
-func (api *Api) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
+func (api *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac := vars["mac"]
 

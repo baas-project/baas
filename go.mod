@@ -13,7 +13,9 @@ require (
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/valyala/gozstd v1.8.3
 	go.universe.tf/netboot v0.0.0-20200920222120-66e5fba6f663
+	golang.org/x/net v0.0.0-20211101193420-4a448f8816b3 // indirect
 	golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6 // indirect
+	golang.org/x/tools v0.1.7 // indirect
 	gorm.io/driver/sqlite v1.1.6 // indirect
 	gorm.io/gorm v1.21.16 // indirect
 )

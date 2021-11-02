@@ -9,10 +9,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Config is the structure of the YAML file in code
 type Config struct {
-	UploadDisk bool
+	UploadDisk        bool
 	RebootAfterFinish bool
-	SetNextBoot bool
+	SetNextBoot       bool
 }
 
 var conf *Config
@@ -46,4 +47,3 @@ func getConfig() *Config {
 
 	return conf
 }
-

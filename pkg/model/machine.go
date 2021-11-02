@@ -1,3 +1,4 @@
+// Package model defines the entities which are used inside the database.
 package model
 
 import (
@@ -22,14 +23,15 @@ func (id *SystemArchitecture) Name() string {
 	return string(*id)
 }
 
+// DiskModel is the layout of a Disk of a MachineModel
 type DiskModel struct {
 	gorm.Model `json:"-"`
 
-	Uuid DiskUUID
-
+	UUID           DiskUUID
 	MachineModelID uint
 }
 
+// MacAddress stores an MAC address associated to a machine.
 type MacAddress struct {
 	gorm.Model `json:"-"`
 
@@ -56,19 +58,20 @@ type MachineModel struct {
 	NextSetup *MachineSetup `gorm:"foreignKey:ID"`
 
 	// DiskUUIDs are the linux by-uuids this machine has
-	DiskUUIDs []DiskModel `gorm:"foreignKey:ID""`
+	DiskUUIDs []DiskModel `gorm:"foreignKey:ID"`
 
 	// MAC addresses associated to the machine
 	// Isn't this going to be one in most, if not all, cases?
 	MacAddresses []MacAddress
 }
 
+// DiskMappingModel stores the images and the target device for an DiskImage.
 type DiskMappingModel struct {
 	gorm.Model `json:"-"`
 
 	MachineSetupID uint
 
-	Uuid  DiskUUID
+	UUID  DiskUUID
 	Image DiskImage `gorm:"embedded"`
 }
 

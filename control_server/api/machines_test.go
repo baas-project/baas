@@ -3,13 +3,15 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestApi_UpdateMachine(t *testing.T) {
@@ -188,6 +190,7 @@ func TestApi_GetMachines(t *testing.T) {
 	err = json.NewDecoder(resp.Body).Decode(&dm)
 	assert.NoError(t, err)
 
+	fmt.Println(dm[0].MacAddresses)
 	assert.Len(t, dm, 2)
 
 	dm1 := dm[0]

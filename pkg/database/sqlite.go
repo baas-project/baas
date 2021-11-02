@@ -2,20 +2,24 @@ package database
 
 import (
 	errors2 "errors"
+	"time"
+
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"time"
 )
-import "gorm.io/driver/sqlite"
 
+// InMemoryPath is the path inside the memory pointing to the database
 const InMemoryPath = "file::memory:"
 
+// SqliteStore is the database structure
 type SqliteStore struct {
 	*gorm.DB
 }
 
+// CreateImage creates the image entity in the database and adds the first version to it.
 func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error {
 	user, err := s.GetUserByName(username)
 	if err != nil {
@@ -23,9 +27,11 @@ func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error
 	}
 	res := s.Model(user).Association("Images").Append(image)
 
-	if res != nil { return res }
+	if res != nil {
+		return res
+	}
 	v := model.Version{
-		Version: time.Now().Unix(),
+		Version:      time.Now().Unix(),
 		ImageModelID: image.ID,
 	}
 	image.Versions = append(image.Versions, v)
@@ -34,6 +40,7 @@ func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error
 	return res
 }
 
+// GetImageByUUID fetches the image with the versions using their UUID as a key
 func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error) {
 	image := model.ImageModel{UUID: uuid}
 	res := s.Where("UUID = ?", uuid).
@@ -43,6 +50,7 @@ func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, er
 	return &image, res.Error
 }
 
+// GetImagesByUsername fetches all the images associated to a user.
 func (s SqliteStore) GetImagesByUsername(username string) ([]model.ImageModel, error) {
 	var images []model.ImageModel
 
@@ -55,6 +63,8 @@ func (s SqliteStore) GetImagesByUsername(username string) ([]model.ImageModel, e
 	return images, res.Error
 }
 
+// GetImagesByNameAndUsername gets all the images associated with a user which have the same human-readable name.
+// This theoretically possible, but it is unsure whether this actually holds in any real-world scenario.
 func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([]model.ImageModel, error) {
 	var images []model.ImageModel
 	res := s.Table("image_models").
@@ -65,8 +75,8 @@ func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([
 	return images, res.Error
 }
 
+// GetMachineByMac gets any machine with the associated MAC addresses from the database
 func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
-
 	machine := model.MachineModel{}
 	res := s.Table("machine_models").
 		Preload("MacAddresses").
@@ -83,13 +93,12 @@ func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
 func (s SqliteStore) GetMachines() (machines []model.MachineModel, _ error) {
 	res := s.
 		Preload("MacAddresses").
-		Select("*").
-		Joins("left join disk_mapping_models on disk_mapping_models.machine_setup_id = machine_models.id").
 		Find(&machines)
 
 	return machines, res.Error
 }
 
+// UpdateMachine updates the information about the machine or creates a machine where one does not yet exist.
 func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 	if len(machine.MacAddresses) == 0 {
 		return errors.New("no mac address in original machine")
@@ -132,35 +141,41 @@ func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 	return s.Save(machine).Error
 }
 
+// GetUserByName gets the first user with the associated username from the database.
 func (s SqliteStore) GetUserByName(name string) (*model.UserModel, error) {
 	user := model.UserModel{}
 	res := s.Where("name = ?", name).First(&user)
 	return &user, errors.Wrap(res.Error, "find user")
 }
 
-func (s SqliteStore) GetUserById(id uint) (*model.UserModel, error) {
+// GetUserByID gets the user with the specified id from the database.
+func (s SqliteStore) GetUserByID(id uint) (*model.UserModel, error) {
 	user := model.UserModel{}
 	res := s.Where("id = ?", id).First(&user)
 	return &user, errors.Wrap(res.Error, "find user by id")
 }
 
+// GetUsers gets all the users out of the database.
 func (s SqliteStore) GetUsers() (users []model.UserModel, _ error) {
 	res := s.Find(&users)
 	return users, res.Error
 }
 
+// CreateUser creates a new user
 func (s SqliteStore) CreateUser(user *model.UserModel) error {
 	return s.Save(user).Error
 }
 
+// CreateNewImageVersion creates a new version in the database
 func (s SqliteStore) CreateNewImageVersion(version model.Version) {
 	s.Create(&version)
 }
 
+// NewSqliteStore creates the database storage using the given string as the database file.
 func NewSqliteStore(dbpath string) (Store, error) {
 	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
-			})
+	})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "open db")

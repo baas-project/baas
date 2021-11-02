@@ -7,17 +7,17 @@ import (
 	"github.com/baas-project/baas/pkg/database"
 )
 
-// Api is a struct on which functions are defined that respond to requests
+// API is a struct on which functions are defined that respond to requests
 // from either the management OS, or the end user (through some kind of interface).
-//This struct holds state necessary for the request handlers.
-type Api struct {
+// This struct holds state necessary for the request handlers.
+type API struct {
 	store    database.Store
 	diskpath string
 }
 
-// NewApi creates a new Api struct.
-func NewApi(store database.Store, diskpath string) *Api {
-	return &Api{
+// NewAPI creates a new API struct.
+func NewAPI(store database.Store, diskpath string) *API {
+	return &API{
 		store:    store,
 		diskpath: diskpath,
 	}
