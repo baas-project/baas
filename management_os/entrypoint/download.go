@@ -13,10 +13,10 @@ import (
 	"github.com/baas-project/baas/pkg/model"
 )
 
-func setupDisk(api *APIClient, mac string, uuid model.DiskUUID, disk model.DiskImage) error {
+func setupDisk(api *APIClient, mac string, uuid model.DiskUUID, disk model.DiskImage, version uint) error {
 	log.Debugf("writing disk: %v", mac)
 
-	reader, err := DownloadDisk(api, mac, uuid, disk)
+	reader, err := DownloadDisk(api, uuid, disk, version)
 	if err != nil {
 		return errors.Wrap(err, "error downloading disk")
 	}
@@ -71,7 +71,7 @@ func WriteOutDisks(api *APIClient, mac string, setup model.MachineSetup) error {
 		// Yes, you could inline this function but this crews with the defers mechanism that Go has.
 		// By using a separate method call we ensure that the file are closed whenever they are no longer
 		// needed rather than waiting for the entire cycle.
-		err := setupDisk(api, mac, disk.UUID, disk.Image)
+		err := setupDisk(api, mac, disk.UUID, disk.Image, disk.Version)
 
 		if err != nil {
 			return errors.Wrap(err, "couldn't close download body")
@@ -82,11 +82,11 @@ func WriteOutDisks(api *APIClient, mac string, setup model.MachineSetup) error {
 }
 
 // DownloadDisk downloads a disk from the network using the image's DiskTransferStrategy
-func DownloadDisk(api *APIClient, mac string, uuid model.DiskUUID, image model.DiskImage) (reader io.ReadCloser, _ error) {
+func DownloadDisk(api *APIClient, uuid model.DiskUUID, image model.DiskImage, version uint) (reader io.ReadCloser, _ error) {
 	log.Debugf("DiskUUID transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
-		return api.DownloadDiskHTTP(mac, uuid)
+		return api.DownloadDiskHTTP(uuid, version)
 	default:
 		return nil, errors.New("unknown transfer strategy")
 	}

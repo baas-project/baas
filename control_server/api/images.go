@@ -22,7 +22,7 @@ const filePathFmt = "/%s/%v.img"
 // maximumFileSize is the maximum file size allowed to be uploaded as an image
 const maximumFileSize = 5 * 1024 * 1024 * 1024 // 5 GiB
 // imageFileSize is the size of the standard image that is created in MiB.
-const imageFileSize = 512 // size in MiB
+const imageFileSize = 6 // size in Gib
 
 // GetTag helper function which gets the name out of the request
 // Returns the name in the URI
@@ -53,8 +53,8 @@ func CreateImageFile(imageSize uint, image *model.ImageModel, api *API) error {
 		return err
 	}
 
-	// Create an image with a size of 512 MiB
-	size := int64(imageSize * 1024 * 1024)
+	// Create an image of a specified size in GiB
+	size := int64(imageSize * 1024 * 1024 * 1024)
 
 	_, err = f.Seek(size-1, 0)
 	if err != nil {

@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // GetMachine GETs any machine in the database based on its MAC address
@@ -71,7 +72,7 @@ func (api *API) GetMachines(w http.ResponseWriter, r *http.Request) {
 //        "MacAddresses": [{
 //            "Mac": "52:54:00:d9:71:15",
 //            "MachineModelID": 12
-//         }]
+//        }]
 //     }
 //
 func (api *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
@@ -169,11 +170,21 @@ func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 
 // BootInform handles all incoming boot inform requests
 func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
-	var bootInform pkgapi.BootInformRequest
+	// First we fetch the id associated of the
+	vars := mux.Vars(r)
+	mac, ok := vars["mac"]
 
-	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
-		log.Errorf("Error while parsing json: %v", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if !ok || mac == "" {
+		http.Error(w, "mac address is not found", http.StatusBadRequest)
+		log.Errorf("mac not provided")
+		return
+	}
+
+	machine, err := api.store.GetMachineByMac(mac)
+
+	if err != nil {
+		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
+		log.Errorf("Machine not found")
 		return
 	}
 
@@ -182,36 +193,64 @@ func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	// handle things based on bootinform
 
 	// Request data from database for what to do with this machine
-	uuid1 := "alpineresult.iso"
-	uuid2 := "alpine.iso"
-	location := "/dev/sda"
+	/*
+			uuid1 := "alpineresult.iso"
+			uuid2 := "alpine.iso"
+			location := "/dev/sda"
 
-	// Prepare response
-	resp := pkgapi.ReprovisioningInfo{
-		Prev: model.MachineSetup{
-			Ephemeral: false,
-			Disks: []model.DiskMappingModel{
-				{
-					UUID: uuid1,
-					Image: model.DiskImage{
-						DiskType:             model.DiskTypeRaw,
-						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-						Location: location,
+			// Prepare response
+
+		/*
+			resp := pkgapi.ReprovisioningInfo{
+				Prev: model.MachineSetup{
+					Ephemeral: false,
+					Disks: []model.DiskMappingModel{
+						{
+							UUID: uuid1,
+							Image: model.DiskImage{
+								DiskType:             model.DiskTypeRaw,
+								DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+								//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+								Location: location,
+							},
+						},
 					},
 				},
-			},
-		},
+				Next: model.MachineSetup{
+					Ephemeral: false,
+					Disks: []model.DiskMappingModel{
+						{
+							UUID: uuid2,
+							Image: model.DiskImage{
+								DiskType:             model.DiskTypeRaw,
+								DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+								//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
+								Location: location,
+							},
+						},
+					},
+				},
+			}
+	*/
+
+	bootInfo, err := api.store.GetNextBootSetup(machine.ID)
+
+	if err == gorm.ErrRecordNotFound {
+		http.Error(w, "No boot setup found", http.StatusNotFound)
+		return
+	}
+
+	resp := pkgapi.ReprovisioningInfo{
 		Next: model.MachineSetup{
 			Ephemeral: false,
 			Disks: []model.DiskMappingModel{
 				{
-					UUID: uuid2,
+					UUID:    bootInfo.ImageUUID,
+					Version: bootInfo.Version,
 					Image: model.DiskImage{
 						DiskType:             model.DiskTypeRaw,
 						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-						Location: location,
+						Location:             "/dev/sda",
 					},
 				},
 			},
@@ -225,4 +264,55 @@ func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.Header.Set("content-type", "application/json")
+}
+
+// SetBootSetup adds an image to the schedule to be flashed onto the machine
+// Example request: POST machine/52:54:00:d9:71:93/boot
+// Example body: {"Version": 1636116090, "ImageUUID": "74368cec-7903-4233-87b7-564195619dce", "update": true}
+// Example response: {
+//   "MachineModelID": 1,
+//   "Version": 1636116090,
+//   "ImageUUID": "74368cec-7903-4233-87b7-564195619dce",
+//   "Update": true}
+func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
+	// First we fetch the id associated of the
+	vars := mux.Vars(r)
+	mac, ok := vars["mac"]
+
+	if !ok || mac == "" {
+		http.Error(w, "mac address is not found", http.StatusBadRequest)
+		log.Errorf("mac not provided")
+		return
+	}
+
+	machine, err := api.store.GetMachineByMac(mac)
+
+	if err != nil {
+		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
+		log.Errorf("Machine not found")
+		return
+	}
+
+	// Fetch the data from the body
+	var bootSetup model.BootSetup
+	err = json.NewDecoder(r.Body).Decode(&bootSetup)
+	if err != nil {
+		http.Error(w, "Invalid machine given", http.StatusBadRequest)
+		log.Errorf("Invalid machine given: %v", err)
+		return
+	}
+
+	// pkgapi.PrettyPrintStruct(bootSetup)
+
+	bootSetup.MachineModelID = machine.ID
+	err = api.store.AddBootSetupToMachine(&bootSetup)
+
+	if err != nil {
+		http.Error(w, "cannot add the bootsetup to the machine", http.StatusBadRequest)
+		log.Errorf("Cannot add boot info: %v", err)
+		return
+	}
+
+	e := json.NewEncoder(w)
+	_ = e.Encode(bootSetup)
 }

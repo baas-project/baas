@@ -141,6 +141,18 @@ func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 	return s.Save(machine).Error
 }
 
+// AddBootSetupToMachine adds a configuration for booting to the specified machine
+func (s SqliteStore) AddBootSetupToMachine(bootSetup *model.BootSetup) error {
+	return s.Save(bootSetup).Error
+}
+
+// GetNextBootSetup fetches the first machine from the database.
+func (s SqliteStore) GetNextBootSetup(machineID uint) (model.BootSetup, error) {
+	var bootSetup model.BootSetup
+	res := s.Table("boot_setups").Where("machine_model_id = ?", machineID).First(&bootSetup)
+	return bootSetup, res.Error
+}
+
 // GetUserByName gets the first user with the associated username from the database.
 func (s SqliteStore) GetUserByName(name string) (*model.UserModel, error) {
 	user := model.UserModel{}
@@ -182,13 +194,14 @@ func NewSqliteStore(dbpath string) (Store, error) {
 	}
 
 	err = db.AutoMigrate(
-		&model.Version{},
-		&model.ImageModel{},
-		&model.UserModel{},
-		&model.MachineModel{},
+		&model.BootSetup{},
 		&model.DiskMappingModel{},
-		&model.MachineSetup{},
+		&model.ImageModel{},
 		&model.MacAddress{},
+		&model.MachineModel{},
+		&model.MachineSetup{},
+		&model.UserModel{},
+		&model.Version{},
 	)
 
 	if err != nil {

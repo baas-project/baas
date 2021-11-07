@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,12 +34,7 @@ func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
 	url := fmt.Sprintf("%s/machine/%s/boot", a.baseURL, mac)
 	log.Debugf("Sending boot inform request to %s", url)
 
-	b, err := json.Marshal(&api.BootInformRequest{})
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't marshal boot inform json")
-	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewReader(b))
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed sending inform request")
 	}
@@ -65,9 +59,9 @@ func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
 }
 
 // DownloadDiskHTTP Downloads a disk image from the control_server over HTTP
-func (a *APIClient) DownloadDiskHTTP(mac string, uuid model.DiskUUID) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s/machine/%s/disk/%s", a.baseURL, mac, uuid)
-	log.Debugf("downloading disk %v over http from %s", uuid, url)
+func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID, version uint) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s/image/%s/%d", a.baseURL, uuid, version)
+	log.Warnf("downloading disk %v over http from %s", uuid, url)
 
 	//nolint we are returning a readcloser so the body will be closed later
 	resp, err := http.Get(url)
