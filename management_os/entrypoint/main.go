@@ -89,7 +89,7 @@ func main() {
 	}
 
 	if !prov.Prev.Ephemeral {
-		if err = ReadInDisks(c, mac, prov.Prev); err != nil {
+		if err = ReadInDisks(c, prov.Prev); err != nil {
 			log.Fatal(err)
 		}
 	} else {

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/baas-project/baas/pkg/fs"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -19,8 +20,6 @@ import (
 // filePathFmt is the format string to create the path the image should be written to
 const filePathFmt = "/%s/%v.img"
 
-// maximumFileSize is the maximum file size allowed to be uploaded as an image
-const maximumFileSize = 5 * 1024 * 1024 * 1024 // 5 GiB
 // imageFileSize is the size of the standard image that is created in MiB.
 const imageFileSize = 6 // size in Gib
 
@@ -313,14 +312,14 @@ func (api *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
 //                     -F "file=@/tmp/test3.img"
 // Example return: Successfully uploaded image: 134251234
 func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
+	log.Info("Started with upload")
 	uniqueID, err := GetTag("uuid", w, r)
 	if err != nil {
 		return
 	}
 
-	// Accept maximum file of 5 Gigabytes (wowzers~)
-	// https://stackoverflow.com/questions/40684307/how-can-i-receive-an-uploaded-file-using-a-golang-net-http-server
-	err = r.ParseMultipartForm(maximumFileSize)
+	// Get the reader to the multireader
+	mr, err := r.MultipartReader()
 
 	if err != nil {
 		http.Error(w, "Cannot parse POST form", http.StatusBadRequest)
@@ -328,7 +327,8 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, _, err := r.FormFile("file")
+	// We only use the first part right now, but this might change
+	p, err := mr.NextPart()
 
 	// Go error's handling is pain
 	if err != nil {
@@ -339,7 +339,7 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 
 	// One liner which closes the file at the end of the call.
 	defer func() {
-		if err = f.Close(); err != nil {
+		if err = p.Close(); err != nil {
 			log.Errorf("Cannot close upload file: %v", err)
 		}
 	}()
@@ -369,7 +369,7 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = io.Copy(dest, f)
+	err = fs.CopyStream(p, dest)
 	if err != nil {
 		http.Error(w, "Cannot copy over the contents of the file", http.StatusInternalServerError)
 		log.Errorf("Cannot copy the contents of the file: %v", err)

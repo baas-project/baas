@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+
 	"net/http"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/baas-project/baas/pkg/api"
+	//	"github.com/baas-project/baas/pkg/util"
 )
 
 // APIClient is the client for all communication with the server
@@ -61,7 +63,7 @@ func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
 // DownloadDiskHTTP Downloads a disk image from the control_server over HTTP
 func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID, version uint) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s/image/%s/%d", a.baseURL, uuid, version)
-	log.Warnf("downloading disk %v over http from %s", uuid, url)
+	log.Infof("downloading disk %v over http from %s", uuid, url)
 
 	//nolint we are returning a readcloser so the body will be closed later
 	resp, err := http.Get(url)
@@ -81,12 +83,25 @@ func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID, version uint) (io.Read
 }
 
 // UploadDiskHTTP uploads a disk image given the http strategy
-func (a *APIClient) UploadDiskHTTP(r io.Reader, mac string, uuid model.DiskUUID) error {
-	url := fmt.Sprintf("%s/machine/%s/disk/%s", a.baseURL, mac, uuid)
+func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid model.DiskUUID) error {
+	url := fmt.Sprintf("%s/image/%s", a.baseURL, uuid)
 	log.Debugf("uploading disk %v over http to %s", uuid, url)
 
-	// Post closes r if able to, so no manual close is necessary
-	resp, err := http.Post(url, "application/octet-stream", r)
+	// Create a pipe so we only pass around the streams, if we try to write the actual file or program will be reaped
+	// Dammit Calli
+	boundary := "JanRellermeyer"
+	fileName := "image.img"
+	fileHeader := "Content-Type: application/octet-stream"
+	fileFormat := "--%s\r\nContent-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n%s\r\n\r\n"
+	filePart := fmt.Sprintf(fileFormat, boundary, fileName, fileHeader)
+	end := fmt.Sprintf("\r\n--%s\r\n", boundary)
+
+	body := io.MultiReader(strings.NewReader(filePart), r, strings.NewReader(end))
+
+	// TODO: Do not work with a max but get the file size
+	resp, err := http.Post(url, fmt.Sprintf("multipart/form-data; boundary=%s", boundary),
+		body)
+
 	if err != nil {
 		return errors.Wrap(err, "upload disk")
 	}

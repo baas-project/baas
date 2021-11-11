@@ -150,9 +150,9 @@ func (s SqliteStore) AddBootSetupToMachine(bootSetup *model.BootSetup) error {
 func (s SqliteStore) GetNextBootSetup(machineID uint) (model.BootSetup, error) {
 	var bootSetup model.BootSetup
 	res := s.Table("boot_setups").
-	     Where("machine_model_id = ?", machineID).
-	     First(&bootSetup).
-	     Delete()
+		Where("machine_model_id = ?", machineID).
+		First(&bootSetup).
+		Delete(&bootSetup)
 	return bootSetup, res.Error
 }
 
