@@ -17,6 +17,7 @@ type Store interface {
 	UpdateMachine(machine *model.MachineModel) error
 	AddBootSetupToMachine(bootSetup *model.BootSetup) error
 	GetNextBootSetup(machineID uint) (model.BootSetup, error)
+	GetLastDeletedBootSetup(machineID uint) (model.BootSetup, error)
 
 	GetUserByName(name string) (*model.UserModel, error)
 	GetUserByID(id uint) (*model.UserModel, error)

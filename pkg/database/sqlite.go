@@ -149,7 +149,20 @@ func (s SqliteStore) AddBootSetupToMachine(bootSetup *model.BootSetup) error {
 // GetNextBootSetup fetches the first machine from the database.
 func (s SqliteStore) GetNextBootSetup(machineID uint) (model.BootSetup, error) {
 	var bootSetup model.BootSetup
-	res := s.Table("boot_setups").Where("machine_model_id = ?", machineID).First(&bootSetup)
+	res := s.Table("boot_setups").
+	     Where("machine_model_id = ?", machineID).
+	     First(&bootSetup).
+	     Delete()
+	return bootSetup, res.Error
+}
+
+// GetLastDeletedBootSetup fetches the previously flashed image from the database which should tell us whether to update the image or not.
+func (s SqliteStore) GetLastDeletedBootSetup(machineID uint) (model.BootSetup, error) {
+	var bootSetup model.BootSetup
+	res := s.Table("boot_setups").
+		Unscoped().
+		Where("machine_model_id = ? and DELETED_AT IS NOT NULL", machineID).
+		Last(&bootSetup)
 	return bootSetup, res.Error
 }
 

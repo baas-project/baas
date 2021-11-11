@@ -46,7 +46,7 @@ func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 // Example response: {"name": "Machine 1",
 //                    "Architecture": "x86_64",
 //                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
-func (api *API) GetMachines(w http.ResponseWriter, r *http.Request) {
+func (api *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
 	machines, err := api.store.GetMachines()
 	if err != nil {
 		http.Error(w, "couldn't get machines", http.StatusInternalServerError)
@@ -168,6 +168,24 @@ func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// generateMachineSetup generates the MachineSetup model
+func generateMachineSetup(setup model.BootSetup) model.MachineSetup {
+	return model.MachineSetup{
+		Ephemeral: false,
+		Disks: []model.DiskMappingModel{
+			{
+				UUID:    setup.ImageUUID,
+				Version: setup.Version,
+				Image: model.DiskImage{
+					DiskType:             model.DiskTypeRaw,
+					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+					Location:             "/dev/sda",
+				},
+			},
+		},
+	}
+}
+
 // BootInform handles all incoming boot inform requests
 func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	// First we fetch the id associated of the
@@ -190,49 +208,7 @@ func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("Received BootInform request, serving Reprovisioning information")
 
-	// handle things based on bootinform
-
-	// Request data from database for what to do with this machine
-	/*
-			uuid1 := "alpineresult.iso"
-			uuid2 := "alpine.iso"
-			location := "/dev/sda"
-
-			// Prepare response
-
-		/*
-			resp := pkgapi.ReprovisioningInfo{
-				Prev: model.MachineSetup{
-					Ephemeral: false,
-					Disks: []model.DiskMappingModel{
-						{
-							UUID: uuid1,
-							Image: model.DiskImage{
-								DiskType:             model.DiskTypeRaw,
-								DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-								//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-								Location: location,
-							},
-						},
-					},
-				},
-				Next: model.MachineSetup{
-					Ephemeral: false,
-					Disks: []model.DiskMappingModel{
-						{
-							UUID: uuid2,
-							Image: model.DiskImage{
-								DiskType:             model.DiskTypeRaw,
-								DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-								//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-								Location: location,
-							},
-						},
-					},
-				},
-			}
-	*/
-
+	// Get the next boot configuration based on a FIFO queue.
 	bootInfo, err := api.store.GetNextBootSetup(machine.ID)
 
 	if err == gorm.ErrRecordNotFound {
@@ -240,21 +216,28 @@ func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err != nil {
+		http.Error(w, "Error with finding boot setup", http.StatusBadRequest)
+		log.Errorf("Database error: %v", err)
+		return
+	}
+
+	// Use the same table to get the last deleted setup (which is the one running now)
+	lastSetup, err := api.store.GetLastDeletedBootSetup(machine.ID)
+
+	if err != gorm.ErrRecordNotFound && err != nil {
+		http.Error(w, "Error with fetching the boot history", http.StatusBadRequest)
+		return
+	}
+
+	var prev model.MachineSetup
+	if err != gorm.ErrRecordNotFound && lastSetup.Update {
+		prev = generateMachineSetup(lastSetup)
+	}
+
 	resp := pkgapi.ReprovisioningInfo{
-		Next: model.MachineSetup{
-			Ephemeral: false,
-			Disks: []model.DiskMappingModel{
-				{
-					UUID:    bootInfo.ImageUUID,
-					Version: bootInfo.Version,
-					Image: model.DiskImage{
-						DiskType:             model.DiskTypeRaw,
-						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-						Location:             "/dev/sda",
-					},
-				},
-			},
-		},
+		Prev: prev,
+		Next: generateMachineSetup(bootInfo),
 	}
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
