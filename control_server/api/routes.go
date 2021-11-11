@@ -41,9 +41,8 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	r.HandleFunc("/user/{name}/image", api.CreateImage).Methods(http.MethodPost)
 	r.HandleFunc("/user/{name}/images", api.GetImagesByUser).Methods(http.MethodGet)
 	r.HandleFunc("/user/{name}/images/{image_name}", api.GetImagesByName).Methods(http.MethodGet)
-	// info about an image
-	// TODO: Does this not break the security guarantees?
-	// TODO: Maybe different routes per type? Let's start out here though.
+
+	// Info about an image
 	r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)
 	r.HandleFunc("/image/{uuid}/latest", api.DownloadLatestImage).Methods(http.MethodGet)
 	r.HandleFunc("/image/{uuid}/{version}", api.DownloadImage).Methods(http.MethodGet)
@@ -56,7 +55,6 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 }
 
 // StartServer defines all routes and then starts listening for HTTP requests.
-// TODO: Config struct
 func StartServer(machineStore database.Store, staticDir string, diskPath string, address string, port int) {
 	srv := http.Server{
 		Handler: getHandler(machineStore, staticDir, diskPath),

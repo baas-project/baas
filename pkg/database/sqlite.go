@@ -92,6 +92,7 @@ func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
 // TODO: Fetch foreign relations.
 func (s SqliteStore) GetMachines() (machines []model.MachineModel, _ error) {
 	res := s.
+		Preload("DiskUUIDs").
 		Preload("MacAddresses").
 		Find(&machines)
 
@@ -209,6 +210,7 @@ func NewSqliteStore(dbpath string) (Store, error) {
 	err = db.AutoMigrate(
 		&model.BootSetup{},
 		&model.DiskMappingModel{},
+		&model.DiskModel{},
 		&model.ImageModel{},
 		&model.MacAddress{},
 		&model.MachineModel{},

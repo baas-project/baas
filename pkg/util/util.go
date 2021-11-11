@@ -40,7 +40,6 @@ func (pr *ProgressReporter) report() {
 }
 
 // PrettyPrintStruct prints a nice looking version of a struct
-// TODO: Give this a better place in the code than randomly inside API
 func PrettyPrintStruct(a interface{}) {
 	// If I had a nickel for every time that the best way in a language to pretty print a datastructure is to cast it into a JSON
 	// structure and printing that, I would have two nickels. That is not a lot, but it is funny that it happened twice.

@@ -65,9 +65,6 @@ func (api *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
 //        "name": "Hello World",
 //        "Architecture": "x86_64",
 //        "Managed": true,
-//        "ShouldReprovision": true,
-//        "CurrentSetup": null,
-//        "NextSetup": null,
 //        "DiskUUIDs": null,
 //        "MacAddresses": [{
 //            "Mac": "52:54:00:d9:71:15",

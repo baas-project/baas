@@ -98,7 +98,6 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid model.DiskUUID) error {
 
 	body := io.MultiReader(strings.NewReader(filePart), r, strings.NewReader(end))
 
-	// TODO: Do not work with a max but get the file size
 	resp, err := http.Post(url, fmt.Sprintf("multipart/form-data; boundary=%s", boundary),
 		body)
 

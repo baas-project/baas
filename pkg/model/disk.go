@@ -74,7 +74,6 @@ type ImageModel struct {
 	Versions []Version
 
 	// ImageUUID is a universally unique identifier for images
-	// TODO: Inline? This causes a separate table to be created
 	UUID ImageUUID `gorm:"uniqueIndex"`
 
 	// DiskUUID is these disks linux by-uuid

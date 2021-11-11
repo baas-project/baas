@@ -68,13 +68,6 @@ type MachineModel struct {
 	// Managed indicates that a machine should be managed by BAAS (if false baas will not touch the machine in any way)
 	Managed bool
 
-	// ShouldReprovision indicates if at bootinform time this machine should be (re)provisioned to NextSetup
-	ShouldReprovision bool
-	CurrentSetup      MachineSetup `gorm:"foreignKey:ID"`
-	// NextSetup stores the machine setup of what the machine should become after reprovisioning
-	// MUST be non-nil if ShouldReprovision is true else it MAY be nil
-	NextSetup *MachineSetup `gorm:"foreignKey:ID"`
-
 	// DiskUUIDs are the linux by-uuids this machine has
 	DiskUUIDs []DiskModel `gorm:"foreignKey:ID"`
 
@@ -90,7 +83,6 @@ type DiskMappingModel struct {
 	MachineSetupID uint
 
 	// Why can image only be flashed onto one device file
-	// TODO: Set this in the JSON request instead
 	UUID    DiskUUID
 	Image   DiskImage `gorm:"embedded"`
 	Version uint
