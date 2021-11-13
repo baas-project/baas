@@ -1,22 +1,19 @@
 on: [push]
 name: CI
 jobs:
-# CI testing does not work at the moment since we need to write to the disk, but we do not
-# have the permission to access it. I don't feel like fixing it right now. Please tag me
-# whenever you do end up solving this issue so that I know how many years have passed.
-# Until that time, please manually run the test suite before pushing. Thanks. 
-#   - ValentijnvdBeek
-#  test:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Install Go
-#        uses: actions/setup-go@v2
-#        with:
-#          go-version: 1.16
-#      - name: Checkout code
-#        uses: actions/checkout@v2
-#      - name: Build
-#        run: go test ./...
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build
+        run: |
+               sudo cp management_os/config/config.toml /etc/baas.toml
+               sudo /opt/hostedtoolcache/go/1.16.10/x64/bin/go test ./...
   lint:
     runs-on: ubuntu-latest
     steps:
