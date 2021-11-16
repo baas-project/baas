@@ -22,13 +22,10 @@ func TestApi_UpdateMachine(t *testing.T) {
 		MacAddresses: []model.MacAddress{
 			{Mac: "abc"},
 		},
-		Name:              "bca",
-		Architecture:      model.X86_64,
-		DiskUUIDs:         nil,
-		Managed:           false,
-		ShouldReprovision: false,
-		CurrentSetup:      model.MachineSetup{},
-		NextSetup:         nil,
+		Name:         "bca",
+		Architecture: model.X86_64,
+		DiskUUIDs:    nil,
+		Managed:      false,
 	}
 
 	var mj bytes.Buffer
@@ -58,13 +55,10 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 		MacAddresses: []model.MacAddress{
 			{Mac: "abc"},
 		},
-		Name:              "bca",
-		Architecture:      model.X86_64,
-		DiskUUIDs:         nil,
-		Managed:           false,
-		ShouldReprovision: false,
-		CurrentSetup:      model.MachineSetup{},
-		NextSetup:         nil,
+		Name:         "bca",
+		Architecture: model.X86_64,
+		DiskUUIDs:    nil,
+		Managed:      false,
 	}
 
 	var mj bytes.Buffer
@@ -112,13 +106,10 @@ func TestApi_GetMachine(t *testing.T) {
 		MacAddresses: []model.MacAddress{
 			{Mac: "abc"},
 		},
-		Name:              "bca",
-		Architecture:      model.X86_64,
-		DiskUUIDs:         nil,
-		Managed:           false,
-		ShouldReprovision: false,
-		CurrentSetup:      model.MachineSetup{},
-		NextSetup:         nil,
+		Name:         "bca",
+		Architecture: model.X86_64,
+		DiskUUIDs:    nil,
+		Managed:      false,
 	}
 
 	err = store.UpdateMachine(&machine)
@@ -151,26 +142,20 @@ func TestApi_GetMachines(t *testing.T) {
 		MacAddresses: []model.MacAddress{
 			{Mac: "abc"},
 		},
-		Name:              "bca",
-		Architecture:      model.X86_64,
-		DiskUUIDs:         nil,
-		Managed:           false,
-		ShouldReprovision: false,
-		CurrentSetup:      model.MachineSetup{},
-		NextSetup:         nil,
+		Name:         "bca",
+		Architecture: model.X86_64,
+		DiskUUIDs:    nil,
+		Managed:      false,
 	}
 
 	machine2 := model.MachineModel{
 		MacAddresses: []model.MacAddress{
 			{Mac: "cba"},
 		},
-		Name:              "bcd",
-		Architecture:      model.X86_64,
-		DiskUUIDs:         nil,
-		Managed:           false,
-		ShouldReprovision: false,
-		CurrentSetup:      model.MachineSetup{},
-		NextSetup:         nil,
+		Name:         "bcd",
+		Architecture: model.X86_64,
+		DiskUUIDs:    nil,
+		Managed:      false,
 	}
 
 	err = store.UpdateMachine(&machine1)

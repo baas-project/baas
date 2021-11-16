@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // GetMachine GETs any machine in the database based on its MAC address
@@ -45,7 +46,7 @@ func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 // Example response: {"name": "Machine 1",
 //                    "Architecture": "x86_64",
 //                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
-func (api *API) GetMachines(w http.ResponseWriter, r *http.Request) {
+func (api *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
 	machines, err := api.store.GetMachines()
 	if err != nil {
 		http.Error(w, "couldn't get machines", http.StatusInternalServerError)
@@ -64,14 +65,11 @@ func (api *API) GetMachines(w http.ResponseWriter, r *http.Request) {
 //        "name": "Hello World",
 //        "Architecture": "x86_64",
 //        "Managed": true,
-//        "ShouldReprovision": true,
-//        "CurrentSetup": null,
-//        "NextSetup": null,
 //        "DiskUUIDs": null,
 //        "MacAddresses": [{
 //            "Mac": "52:54:00:d9:71:15",
 //            "MachineModelID": 12
-//         }]
+//        }]
 //     }
 //
 func (api *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
@@ -167,55 +165,76 @@ func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// generateMachineSetup generates the MachineSetup model
+func generateMachineSetup(setup model.BootSetup) model.MachineSetup {
+	return model.MachineSetup{
+		Ephemeral: false,
+		Disks: []model.DiskMappingModel{
+			{
+				UUID:    setup.ImageUUID,
+				Version: setup.Version,
+				Image: model.DiskImage{
+					DiskType:             model.DiskTypeRaw,
+					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
+					Location:             "/dev/sda",
+				},
+			},
+		},
+	}
+}
+
 // BootInform handles all incoming boot inform requests
 func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
-	var bootInform pkgapi.BootInformRequest
+	// First we fetch the id associated of the
+	vars := mux.Vars(r)
+	mac, ok := vars["mac"]
 
-	if err := json.NewDecoder(r.Body).Decode(&bootInform); err != nil {
-		log.Errorf("Error while parsing json: %v", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if !ok || mac == "" {
+		http.Error(w, "mac address is not found", http.StatusBadRequest)
+		log.Errorf("mac not provided")
+		return
+	}
+
+	machine, err := api.store.GetMachineByMac(mac)
+
+	if err != nil {
+		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
+		log.Errorf("Machine not found")
 		return
 	}
 
 	log.Debug("Received BootInform request, serving Reprovisioning information")
 
-	// handle things based on bootinform
+	// Get the next boot configuration based on a FIFO queue.
+	bootInfo, err := api.store.GetNextBootSetup(machine.ID)
 
-	// Request data from database for what to do with this machine
-	uuid1 := "alpineresult.iso"
-	uuid2 := "alpine.iso"
-	location := "/dev/sda"
+	if err == gorm.ErrRecordNotFound {
+		http.Error(w, "No boot setup found", http.StatusNotFound)
+		return
+	}
 
-	// Prepare response
+	if err != nil {
+		http.Error(w, "Error with finding boot setup", http.StatusBadRequest)
+		log.Errorf("Database error: %v", err)
+		return
+	}
+
+	// Use the same table to get the last deleted setup (which is the one running now)
+	lastSetup, err := api.store.GetLastDeletedBootSetup(machine.ID)
+
+	if err != gorm.ErrRecordNotFound && err != nil {
+		http.Error(w, "Error with fetching the boot history", http.StatusBadRequest)
+		return
+	}
+
+	var prev model.MachineSetup
+	if err != gorm.ErrRecordNotFound && lastSetup.Update {
+		prev = generateMachineSetup(lastSetup)
+	}
+
 	resp := pkgapi.ReprovisioningInfo{
-		Prev: model.MachineSetup{
-			Ephemeral: false,
-			Disks: []model.DiskMappingModel{
-				{
-					UUID: uuid1,
-					Image: model.DiskImage{
-						DiskType:             model.DiskTypeRaw,
-						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-						Location: location,
-					},
-				},
-			},
-		},
-		Next: model.MachineSetup{
-			Ephemeral: false,
-			Disks: []model.DiskMappingModel{
-				{
-					UUID: uuid2,
-					Image: model.DiskImage{
-						DiskType:             model.DiskTypeRaw,
-						DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-						//DiskCompressionStrategy: model.DiskCompressionStrategyZSTD,
-						Location: location,
-					},
-				},
-			},
-		},
+		Prev: prev,
+		Next: generateMachineSetup(bootInfo),
 	}
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
@@ -225,4 +244,55 @@ func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.Header.Set("content-type", "application/json")
+}
+
+// SetBootSetup adds an image to the schedule to be flashed onto the machine
+// Example request: POST machine/52:54:00:d9:71:93/boot
+// Example body: {"Version": 1636116090, "ImageUUID": "74368cec-7903-4233-87b7-564195619dce", "update": true}
+// Example response: {
+//   "MachineModelID": 1,
+//   "Version": 1636116090,
+//   "ImageUUID": "74368cec-7903-4233-87b7-564195619dce",
+//   "Update": true}
+func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
+	// First we fetch the id associated of the
+	vars := mux.Vars(r)
+	mac, ok := vars["mac"]
+
+	if !ok || mac == "" {
+		http.Error(w, "mac address is not found", http.StatusBadRequest)
+		log.Errorf("mac not provided")
+		return
+	}
+
+	machine, err := api.store.GetMachineByMac(mac)
+
+	if err != nil {
+		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
+		log.Errorf("Machine not found")
+		return
+	}
+
+	// Fetch the data from the body
+	var bootSetup model.BootSetup
+	err = json.NewDecoder(r.Body).Decode(&bootSetup)
+	if err != nil {
+		http.Error(w, "Invalid machine given", http.StatusBadRequest)
+		log.Errorf("Invalid machine given: %v", err)
+		return
+	}
+
+	// pkgapi.PrettyPrintStruct(bootSetup)
+
+	bootSetup.MachineModelID = machine.ID
+	err = api.store.AddBootSetupToMachine(&bootSetup)
+
+	if err != nil {
+		http.Error(w, "cannot add the bootsetup to the machine", http.StatusBadRequest)
+		log.Errorf("Cannot add boot info: %v", err)
+		return
+	}
+
+	e := json.NewEncoder(w)
+	_ = e.Encode(bootSetup)
 }

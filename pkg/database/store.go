@@ -15,6 +15,9 @@ type Store interface {
 	// UpdateMachine changes the value of a machine based.
 	// The mac address is used as key.
 	UpdateMachine(machine *model.MachineModel) error
+	AddBootSetupToMachine(bootSetup *model.BootSetup) error
+	GetNextBootSetup(machineID uint) (model.BootSetup, error)
+	GetLastDeletedBootSetup(machineID uint) (model.BootSetup, error)
 
 	GetUserByName(name string) (*model.UserModel, error)
 	GetUserByID(id uint) (*model.UserModel, error)

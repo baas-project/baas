@@ -39,6 +39,24 @@ type MacAddress struct {
 	MachineModelID uint
 }
 
+// BootSetup stores what the next boot for the machine should look like.
+// It functions somewhat like a queue where it removes the first value from the database.
+type BootSetup struct {
+	gorm.Model `json:"-"`
+
+	// Store the machine id
+	MachineModelID uint `gorm:"foreignKey:ID"`
+
+	// We want to store the version of the disk
+	Version uint `gorm:"foreignKey:version"`
+
+	// The image and the disk mapping for this image
+	ImageUUID string `gorm:"foreignKey:UUID"`
+
+	// Should the image changes be uploaded to the server?
+	Update bool
+}
+
 // MachineModel stores information intrinsic to a machine. Used together with the MachineStore.
 type MachineModel struct {
 	gorm.Model `json:"-"`
@@ -49,13 +67,6 @@ type MachineModel struct {
 
 	// Managed indicates that a machine should be managed by BAAS (if false baas will not touch the machine in any way)
 	Managed bool
-
-	// ShouldReprovision indicates if at bootinform time this machine should be (re)provisioned to NextSetup
-	ShouldReprovision bool
-	CurrentSetup      MachineSetup `gorm:"foreignKey:ID"`
-	// NextSetup stores the machine setup of what the machine should become after reprovisioning
-	// MUST be non-nil if ShouldReprovision is true else it MAY be nil
-	NextSetup *MachineSetup `gorm:"foreignKey:ID"`
 
 	// DiskUUIDs are the linux by-uuids this machine has
 	DiskUUIDs []DiskModel `gorm:"foreignKey:ID"`
@@ -71,8 +82,10 @@ type DiskMappingModel struct {
 
 	MachineSetupID uint
 
-	UUID  DiskUUID
-	Image DiskImage `gorm:"embedded"`
+	// Why can image only be flashed onto one device file
+	UUID    DiskUUID
+	Image   DiskImage `gorm:"embedded"`
+	Version uint
 }
 
 // MachineSetup describes the setup for a machine during a session
