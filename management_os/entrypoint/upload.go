@@ -3,6 +3,8 @@ package main
 import (
 	"io"
 
+	"github.com/baas-project/baas/pkg/compression"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
@@ -14,32 +16,32 @@ import (
 func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 	log.Info("Reading and uploading disks")
 
-	for uuid, disk := range setup.Disks {
-		log.Infof("<upload> reading disk: %v", uuid)
-		r, err := ReadDisk(disk)
+	for _, disk := range setup.Disks {
+		log.Debugf("reading disk: %v", disk.UUID)
+
+		r, err := ReadDisk(disk.Image)
 		if err != nil {
 			return errors.Wrapf(err, "read disk")
 		}
 
-		log.Info("<upload> Compressing the disk")
-		com, err := Compress(r, disk)
+		log.Debug("Compressing disk")
+		com, err := compression.Compress(r, disk.Image.DiskCompressionStrategy)
 		if err != nil {
 			return errors.Wrapf(err, "compressing disk")
 		}
 
-		log.Info("<upload> Uploading disk to server")
-		err = UploadDisk(api, com, uuid, disk)
+		log.Debug("Uploading image")
+		err = UploadDisk(api, com, disk.UUID, disk.Image)
 		if err != nil {
 			return errors.Wrapf(err, "uploading disk")
 		}
-		log.Info("<upload> Finished the upload")
 	}
 	return nil
 }
 
 // UploadDisk uploads a disk to the control server given a transfer strategy.
 func UploadDisk(api *APIClient, reader io.Reader, uuid model.DiskUUID, image model.DiskImage) error {
-	log.Debugf("Disk transfer strategy: %v", image.DiskTransferStrategy)
+	log.Debugf("DiskUUID transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:
 		return api.UploadDiskHTTP(reader, uuid)

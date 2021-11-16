@@ -1,3 +1,6 @@
 management_os/build/linux
 control_server/disks
+control_server/disks
+control_server/old_disks
+baas.qcow2
 .git/
