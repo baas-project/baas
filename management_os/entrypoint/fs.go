@@ -35,5 +35,5 @@ func WriteDisk(reader io.Reader, image model.DiskImage) error {
 		}
 	}()
 
-	return errors.Wrap(fs.CopyStream(reader, file), "error copying stream")
+	return errors.Wrap(fs.CopyStream(reader, file), "Error compressing")
 }

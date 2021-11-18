@@ -1,7 +1,9 @@
 // Package api defines structures which are transferred over the network
 package api
 
-import "github.com/baas-project/baas/pkg/model"
+import (
+	"github.com/baas-project/baas/pkg/model"
+)
 
 // Port is the port on which the control server listens
 const Port int = 4848

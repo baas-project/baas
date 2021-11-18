@@ -1,6 +1,7 @@
 [Unit]
 Description=Management OS Userland Control Entrypoint Service
-Requires=network-online.target
+After=network.target nss-lookup.target network-online.target systemd-networkd-wait-online.service
+Requires=network-online.target systemd-networkd-wait-online.service
 
 [Service]
 Type=oneshot

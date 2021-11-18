@@ -1,12 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/baas-project/baas/pkg/api"
+	//	"github.com/baas-project/baas/pkg/util"
 )
 
 // APIClient is the client for all communication with the server
@@ -30,15 +32,11 @@ func NewAPIClient(baseURL string) *APIClient {
 }
 
 // BootInform informs the server that we have booted
-func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
-	log.Debug("Sending boot inform request")
+func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
+	url := fmt.Sprintf("%s/machine/%s/boot", a.baseURL, mac)
+	log.Debugf("Sending boot inform request to %s", url)
 
-	b, err := json.Marshal(&api.BootInformRequest{})
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't marshal boot inform json")
-	}
-
-	resp, err := http.Post(a.baseURL+"/mmos/inform", "application/json", bytes.NewReader(b))
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed sending inform request")
 	}
@@ -50,7 +48,7 @@ func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		msg, _ := ioutil.ReadAll(resp.Body)
-		return nil, errors.Errorf("inform request failed (%s)", string(msg))
+		return nil, errors.Errorf("inform request failed (%s) to %s", strings.TrimSpace(string(msg)), url)
 	}
 
 	var info api.ReprovisioningInfo
@@ -63,11 +61,12 @@ func (a *APIClient) BootInform() (*api.ReprovisioningInfo, error) {
 }
 
 // DownloadDiskHTTP Downloads a disk image from the control_server over HTTP
-func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error) {
-	log.Debugf("downloading disk %v over http", uuid)
+func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID, version uint) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s/image/%s/%d", a.baseURL, uuid, version)
+	log.Infof("downloading disk %v over http from %s", uuid, url)
 
 	//nolint we are returning a readcloser so the body will be closed later
-	resp, err := http.Get(fmt.Sprintf("%s/mmos/disk/%s", a.baseURL, uuid))
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "error dl disk")
 	}
@@ -75,7 +74,7 @@ func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error)
 	if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
 
-		return nil, errors.Errorf("http error while downloading disk (%s)", string(b))
+		return nil, errors.Errorf("http error while downloading disk (%s)", strings.TrimSpace(string(b)))
 	}
 
 	log.Debugf("done downloading disk %v over http", uuid)
@@ -85,10 +84,23 @@ func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID) (io.ReadCloser, error)
 
 // UploadDiskHTTP uploads a disk image given the http strategy
 func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid model.DiskUUID) error {
-	log.Debugf("uploading disk %v over http", uuid)
+	url := fmt.Sprintf("%s/image/%s", a.baseURL, uuid)
+	log.Debugf("uploading disk %v over http to %s", uuid, url)
 
-	// Post closes r if able to, so no manual close is necessary
-	resp, err := http.Post(fmt.Sprintf("%s/mmos/disk/%s", a.baseURL, uuid), "application/octet-stream", r)
+	// Create a pipe so we only pass around the streams, if we try to write the actual file or program will be reaped
+	// Dammit Calli
+	boundary := "JanRellermeyer"
+	fileName := "image.img"
+	fileHeader := "Content-Type: application/octet-stream"
+	fileFormat := "--%s\r\nContent-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n%s\r\n\r\n"
+	filePart := fmt.Sprintf(fileFormat, boundary, fileName, fileHeader)
+	end := fmt.Sprintf("\r\n--%s\r\n", boundary)
+
+	body := io.MultiReader(strings.NewReader(filePart), r, strings.NewReader(end))
+
+	resp, err := http.Post(url, fmt.Sprintf("multipart/form-data; boundary=%s", boundary),
+		body)
+
 	if err != nil {
 		return errors.Wrap(err, "upload disk")
 	}
@@ -96,7 +108,7 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid model.DiskUUID) error {
 	if resp.StatusCode != http.StatusOK {
 		b, _ := ioutil.ReadAll(resp.Body)
 
-		return errors.Errorf("upload disk http (%s)", string(b))
+		return errors.Errorf("upload disk http (%s) to %s", strings.TrimSpace(string(b)), url)
 	}
 
 	defer func() {
