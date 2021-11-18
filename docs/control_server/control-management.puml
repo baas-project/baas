@@ -1,0 +1,28 @@
+@startuml
+actor Jan
+control Control
+collections Machines
+
+activate Control
+Jan -> Control : Schedule an image boot
+
+...
+
+== Machine Handshake ==
+Machines -> Control : Request iPXE image
+Control -> Control : Check if the MAC address is registered
+Control --> Machines : Send management boot image
+activate Machines
+
+== Boot sequence ==
+Machines -> Control : Request boot configuration
+Control --> Machines : Return the first outstanding configuration
+Control -> Control : Register it as sent
+Machines -> Control : Upload the current disk data
+Control -> Control : Save to disk
+
+Machines -> Control : Request the image data
+Control --> Machines : Return the image file
+Machines --> Machines : Reboot into the image
+deactivate Machines
+Control --> Jan : Notify the user that his image is online
