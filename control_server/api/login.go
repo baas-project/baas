@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/baas-project/baas/pkg/model"
@@ -47,8 +46,7 @@ func (api *API) LoginGithub(w http.ResponseWriter, _ *http.Request) {
 	uri := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
 
 	w.WriteHeader(200)
-	w.Write([]byte("Visit the following URI: a " + uri))
-
+	w.Write([]byte("Visit the following URI: " + uri))
 }
 
 // LoginGithubCallback gets the token and creates the user model for the Github User
@@ -83,6 +81,7 @@ func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot parse GitHub data", http.StatusBadRequest)
 		return
 	}
+	defer resp.Body.Close()
 
 	user, err := api.returnUserByOAuth(loginInfo.Login, loginInfo.Email, loginInfo.Email)
 
@@ -101,17 +100,15 @@ func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	// Set the session ID and username
 	session.Values["Session"] = uuid.String()
 	session.Values["Username"] = user.Username
-	fmt.Println(session.Values)
+
 	err = session.Save(r, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Println(session.ID)
-	response := fmt.Sprintf("Session cookie: %s\n", session.ID)
+	// Return the session cookie
+	response := "Please check the cookies to get your session ID!"
 	w.WriteHeader(200)
-
 	w.Write([]byte(response))
-
 }

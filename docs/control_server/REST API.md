@@ -25,6 +25,9 @@ In general of all of the resources look like the following:
 
 Different resources may be nested in groups of two arbitrarily deep into other resources, for example, `/machine/[mac]/disk/[uuid]/file/[name]`.
 
+Some endpoints may require a user to be logging in, as indicated by the permissions field in the documentation below, which means that the `session-name` cookie must be set to the right value. This can be done by simply [logging in](logging_in.md), copying the relevant cookie value and using it in your requests. For example, using cURL you want to prefix your commands with: `--cookie "session-name=[some base64 string]"`.
+
+
 ## Endpoint compendium
 In this section an overview is given of every single on the defined endpoints together with an example on how to call it, what parameters it takes and what it returns. This section is divided in the same way as the resources defined above.
 
@@ -197,6 +200,15 @@ Add user to the system.
 **Permissions:** Administrators/System <br>
 **Example curl request:** `curl -X POST "localhost:4848/user -h 'Content-Type: application/json' -d {"name": "William Narchi", "email": "w.narchi1@student.tudelft.net", "role": "user"}`
 
+
+#### Login using GitHub
+Starts the OAuth2 process as described in [logging in](logging_in.md)
+
+**Request:** `GET /user/login/github` <br>
+**Body:** None <br>
+**Response:** A link to Github's Authentication page <br>
+**Example request:** `curl "localhost:4848/user/login/github"`
+
 #### Fetch a particular user
 Returns information about a particular user.
 
@@ -216,6 +228,15 @@ Returns information about a particular user.
    "Role:" "admin"
 }
 ```
+
+#### Fetch the currently logged in user
+Finds the user information for the user that is currently logged into the session.
+
+**Request:** `GET /user/me` <br>
+**Body:** None <br>
+**Response:** Same as [fetch a particular user](#fetch-a-particular-user) <br>
+**Example request:** `curl "localhost:4848/user/me" --cookie "session-name=[value]"`
+
 
 #### Get all registered users
 Gives a list of every user which is currently registered with the system.

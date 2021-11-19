@@ -4,6 +4,7 @@
 package api
 
 import (
+	"fmt"
 	"math/rand"
 
 	"github.com/baas-project/baas/pkg/database"
@@ -21,7 +22,7 @@ type API struct {
 
 // NewAPI creates a new API struct.
 func NewAPI(store database.Store, diskpath string) *API {
-	session := sessions.NewCookieStore([]byte(string(rand.Intn(2_000_000))))
+	session := sessions.NewCookieStore([]byte(fmt.Sprint(rand.Intn(2_000_000))))
 	session.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   3600 * 8,

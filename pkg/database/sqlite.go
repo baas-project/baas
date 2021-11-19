@@ -167,7 +167,7 @@ func (s SqliteStore) GetLastDeletedBootSetup(machineID uint) (model.BootSetup, e
 	return bootSetup, res.Error
 }
 
-// GetUserByName gets the first user with the associated username from the database.
+// GetUserByUsername gets the first user with the associated username from the database.
 func (s SqliteStore) GetUserByUsername(name string) (*model.UserModel, error) {
 	user := model.UserModel{}
 	res := s.Where("username = ?", name).First(&user)

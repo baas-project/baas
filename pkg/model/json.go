@@ -1,21 +1,22 @@
 package model
 
+// GitHubLogin represent the JSON structure sent by the GitHub user API
 type GitHubLogin struct {
 	Login             string
-	Id                int
-	NodeId            string
-	AvatarUri         string
-	GravatarId        string
-	Uri               string
-	HtmlUri           string
-	FollowersUri      string
-	FollowingUri      string
-	GistsUri          string
-	StarredUri        string
-	SubscriptionsUri  string
-	OrganizationsUri  string
-	ReposUri          string
-	ReceivedEventsUri string
+	ID                int
+	NodeID            string
+	AvatarURI         string
+	GravatarID        string
+	URI               string
+	HTMLURI           string
+	FollowersURI      string
+	FollowingURI      string
+	GistsURI          string
+	StarredURI        string
+	SubscriptionsURI  string
+	OrganizationsURI  string
+	ReposURI          string
+	ReceivedEventsURI string
 	Type              string
 	SiteAdmin         bool
 	Name              string

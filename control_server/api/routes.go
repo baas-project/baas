@@ -37,7 +37,7 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 
 	r.HandleFunc("/users", api.GetUsers).Methods(http.MethodGet)
 	r.HandleFunc("/user", api.CreateUser).Methods(http.MethodPost)
-	r.HandleFunc("/user/me", api.GetLoggedUser).Methods(http.MethodGet)
+	r.HandleFunc("/user/me", api.GetLoggedInUser).Methods(http.MethodGet)
 
 	r.HandleFunc("/user/{name}", api.GetUser).Methods(http.MethodGet)
 	r.HandleFunc("/user/{name}/image", api.CreateImage).Methods(http.MethodPost)
