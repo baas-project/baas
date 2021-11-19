@@ -19,9 +19,10 @@ type UserModel struct {
 	gorm.Model `json:"-"`
 
 	// Name is a human-readable identifier for a user (or entity) of the system
-	Name  string `gorm:"unique;not null"`
-	Email string `gorm:"unique;not null"`
-	Role  UserRole
+	Username string `gorm:"unique;not null;primaryKey"`
+	Name     string `gorm:"not null"`
+	Email    string `gorm:"unique;not null"`
+	Role     UserRole
 
 	// Images is a list of ImageModel of this user
 	Images []ImageModel

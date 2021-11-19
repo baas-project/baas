@@ -37,10 +37,16 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 
 	r.HandleFunc("/users", api.GetUsers).Methods(http.MethodGet)
 	r.HandleFunc("/user", api.CreateUser).Methods(http.MethodPost)
+	r.HandleFunc("/user/me", api.GetLoggedUser).Methods(http.MethodGet)
+
 	r.HandleFunc("/user/{name}", api.GetUser).Methods(http.MethodGet)
 	r.HandleFunc("/user/{name}/image", api.CreateImage).Methods(http.MethodPost)
 	r.HandleFunc("/user/{name}/images", api.GetImagesByUser).Methods(http.MethodGet)
 	r.HandleFunc("/user/{name}/images/{image_name}", api.GetImagesByName).Methods(http.MethodGet)
+
+	// OAuth login handlers
+	r.HandleFunc("/user/login/github", api.LoginGithub).Methods(http.MethodGet)
+	r.HandleFunc("/user/login/github/callback", api.LoginGithubCallback).Methods(http.MethodGet)
 
 	// Info about an image
 	r.HandleFunc("/image/{uuid}", api.GetImage).Methods(http.MethodGet)

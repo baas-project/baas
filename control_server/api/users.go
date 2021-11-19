@@ -34,14 +34,21 @@ func (api *API) GetUsers(w http.ResponseWriter, _ *http.Request) {
 func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user model.UserModel
 	err := json.NewDecoder(r.Body).Decode(&user)
+
+	
 	if err != nil {
 		http.Error(w, "invalid user given", http.StatusBadRequest)
 		log.Errorf("Invalid user given: %v", err)
 		return
 	}
 
+	if user.Username == "" {
+		http.Error(w, "No username given" http.StatusBadRequest)
+		return
+	}
+
 	if user.Name == "" {
-		http.Error(w, "No username given", http.StatusBadRequest)
+		http.Error(w, "No name given", http.StatusBadRequest)
 		return
 	}
 
@@ -64,12 +71,41 @@ func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Successfully created user\n")
 }
 
+// GetUser gets the currently logged in user and returns it.
+// Example request: user/me
+func (api *API) GetLoggedUser(w http.ResponseWriter, r *http.Request) {
+	session, _ := api.session.Get(r, "session-name")
+	username, ok := session.Values["Username"].(string)
+
+	if !ok {
+		http.Error(w, "Cannot find username", http.StatusBadRequest)
+		return
+	}
+
+	user, err := api.store.GetUserByUsername(username)
+
+	if err != nil {
+		http.Error(w, "Cannot find user: "+username, http.StatusNotFound)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(user)
+}
+
 // GetUser fetches a user based on their name and returns it
 // Example request: user/Jan
 // Response: {"Name": "Jan",
 //            "Email": "v.d.vandebeek@student.tudelft.nl",
 //            "role": "admin"}
 func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
+	session, _ := api.session.Get(r, "session-name")
+
+	username, ok := session.Values["Username"].(string)
+	if !ok {
+		http.Error(w, "Username not found", http.StatusBadRequest)
+		return
+	}
+
 	vars := mux.Vars(r)
 	name, ok := vars["name"]
 	if !ok || name == "" {
@@ -78,7 +114,7 @@ func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := api.store.GetUserByName(name)
+	user, err := api.store.GetUserByUsername(name)
 
 	// Annoyingly enough we can't be more specific due to error wrapping... I swear, this language.
 	if err != nil {
@@ -87,5 +123,11 @@ func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(users)
+	// Check if the user is allowed to access the profile.
+	if user.Role != model.Admin && user.Username != username {
+		http.Error(w, "Cannot access this user", http.StatusUnauthorized)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(user)
 }
