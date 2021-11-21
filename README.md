@@ -13,7 +13,7 @@ but we might not implement suggestions ourselves which are outside the scope of 
 
 # Documentation
 
-Some documentation about the systems, and building these systems is provided [here](https://baas-project.github.io/baas/)
+Some documentation about the systems, and building these systems is provided [here](https://baas-project.github.io/baas/). In addition, you can generate a website with inline documentation by running `godoc` and going to [this url](http://localhost:6060/pkg/github.com/baas-project/baas/).
 
 # Install
 

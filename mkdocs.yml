@@ -1,0 +1,28 @@
+site_name: BAAS Project Documentation
+site_url: https://docs.baas-project.nl/
+nav: 
+    - Home: index.md
+    - General:
+        - Overview: general/index.md
+        - Image layout: general/images.md
+        - Architecture: general/architecture.md
+        - Project Structure: general/project_structure.md
+    - Control Server:
+        - Overview: control_server/index.md
+        - Running the server: control_server/running_baas_control_server.md
+        - REST API: control_server/REST API.md
+    - Management OS:
+        - Overview: management_os/index.md
+        - Reprovision flow: management_os/reprovision_flow.md
+
+theme: readthedocs
+
+plugins:
+  - search
+
+
+markdown_extensions:
+  - toc
+  - admonition
+  - plantuml_markdown:
+      server: http://www.plantuml.com/plantuml  # PlantUML server, for remote rendering
