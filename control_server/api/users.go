@@ -130,3 +130,69 @@ func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewEncoder(w).Encode(user)
 }
+
+// RegisterUserHandlers sets the metadata for each of the routes and registers them to the global handler
+func (api *API) RegisterUserHandlers() {
+	api.routes = append(api.routes, Route{
+		URI:         "/users",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: false,
+		Handler:     api.GetUsers,
+		Method:      http.MethodGet,
+		Description: "Gets all the users from the database",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user",
+		Permissions: []model.UserRole{model.Admin},
+		UserAllowed: false,
+		Handler:     api.CreateUser,
+		Method:      http.MethodPost,
+		Description: "Adds a new user to the database",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/me",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetLoggedInUser,
+		Method:      http.MethodGet,
+		Description: "Gets the user who is currently logged in",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetUser,
+		Method:      http.MethodGet,
+		Description: "Gets information about a particular user",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}/image",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.CreateImage,
+		Method:      http.MethodPost,
+		Description: "Creates a new image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}/images",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetImagesByUser,
+		Method:      http.MethodGet,
+		Description: "Gets all the images owned by a particular user",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}/images/{image_name}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetImagesByName,
+		Method:      http.MethodGet,
+		Description: "Finds all the images by this user with a particular name",
+	})
+}

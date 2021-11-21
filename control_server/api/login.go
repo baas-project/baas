@@ -46,7 +46,7 @@ func (api *API) LoginGithub(w http.ResponseWriter, _ *http.Request) {
 	uri := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
 
 	w.WriteHeader(200)
-	w.Write([]byte("Visit the following URI: " + uri))
+	w.Write([]byte("Visit the following URI: " + uri + "\n"))
 }
 
 // LoginGithubCallback gets the token and creates the user model for the Github User
@@ -100,6 +100,7 @@ func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	// Set the session ID and username
 	session.Values["Session"] = uuid.String()
 	session.Values["Username"] = user.Username
+	session.Values["Role"] = string(user.Role)
 
 	err = session.Save(r, w)
 	if err != nil {
