@@ -14,3 +14,8 @@ In this section the general structures and implementation of the BAAS project is
 [Web Server] ..> ImageAPI : Consumes
 [Web Server] ..> BootAPI : Consumes
 ```
+
+## Documentation Index
+1. [Image Layout](images.md)
+2. [Architecture](architecture.md)
+3. [Project Structure](project_structure.md)

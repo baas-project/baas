@@ -2,7 +2,21 @@
 
 BAAS (Baremetal as a Service) is a project aiming to facilitate research into operating systems by simplifying the process of downloading and syncing images to work servers. It allows for the registration of machines, the scheduling of flashing images and the uploading of images. The final goal of the project is to create a server where a research can mxs and match various personal or system images to easily test configurations. By allowing these to be run on servers they don't need to risk dataloss on their own machines and by automating it there also will not be long waiting times.
 
-This project was made student developers from the Bsc Computer Science & Engineering at TU Delft and has been made with those machines in mind. Modifications to the project to have it run on other machines are more than welcome, but no garantuees can be made of it actually working on your target hardware..
+This project was made student developers from the Bsc Computer Science & Engineering at TU Delft and has been made with those machines in mind. Modifications to the project to have it run on other machines are more than welcome, but no garantuees can be made of it actually working on your target hardware.
+
+## Documentation index
+1. [Introduction](index.md)
+2. [General Concepts](general/index.md)
+    1. [Image Layout](general/images.md)
+    2. [Architecture](general/architecture.md)
+    3. [Project Structure](general/project_structure.md)
+3. [Control Server](control_server/index.md)
+    1. [Running the Server](control_server/running_baas_control_server.md)
+    2. [REST API](control_server/REST API.md)
+4. [Management OS](management/index.md)
+    1. [Reprovision Flow](management_os/repovision_flow.md)
+
+
 
 ## Project structure
 At the moment the project three subprojects which are all separate self-contained programs which communicate to each other over well defined REST interfaces. The highest level abstraction, and the one most users will use, is the website interface which allows for the graphical management of the images. In turn, the website communicates over the network to a Control Server which deals with authentication, the storage of the images, and ensuring that the right configuration is sent to the server. On the server there is a management OS which takes configurations from the server, flashes them to the server and ensures that the server is always returned into a valid neutral state. A diagram of a typical interaction can be found in the [control server overview](control_server/index.md).

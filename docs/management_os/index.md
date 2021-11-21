@@ -1,6 +1,9 @@
 # Overview Management OS
 When a machine boots it gets offered a specialized Debian GNU/Linux image over the network. This image contains the code which communicates with the *Control Server* and actually flashes the code onto the disk.
 
+## Documentation index
+1. [Reprovision Flow](repovision_flow.md)
+
 ## Image Creation
 Image creation is done by first generating a Docker image which is extracted and converted into a [initramfs](https://wiki.debian.org/initramfs) image. An initramfs image is a mechanism used by the Linux kernel in order to access more complicated programs, utilities and files which are not accessible to just the kernel itself. Basically, it contains all the data needed to boot the system itself. The upside of generating the image this is way is that is easy to change packages which are installed onto the management image. You can think of a new dependency, system utility or interpreter.
 
