@@ -1,6 +1,23 @@
-management_os/build/linux
+# Ignore the possible build files to avoid having the context balloon to gigabytes at failed builds
+management_os/build
+*.img
+
+# Similarly, please do not send our image files or static files
 control_server/disks
 control_server/disks
 control_server/old_disks
+control_server/static
 baas.qcow2
+
+# Do not send the database
+store.db
+
+# No docs or git files either
+docs/
 .git/
+.github/
+.idea
+.pip
+site
+
+
