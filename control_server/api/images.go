@@ -383,3 +383,42 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}()
 	http.Error(w, "Successfully uploaded image: "+strconv.FormatInt(version.Version, 10), http.StatusOK)
 }
+
+// RegisterImageHandlers sets the metadata for each of the routes and registers them to the global handler
+func (api *API) RegisterImageHandlers() {
+	api.routes = append(api.routes, Route{
+		URI:         "/image/{uuid}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetImage,
+		Method:      http.MethodGet,
+		Description: "Gets information about an image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/image/{uuid}/latest",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.DownloadLatestImage,
+		Method:      http.MethodPost,
+		Description: "Offers the latest version of the image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/image/{uuid}/{version}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.DownloadImage,
+		Method:      http.MethodGet,
+		Description: "Requests a particular version of the image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/image/{uuid}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.UploadImage,
+		Method:      http.MethodPost,
+		Description: "Uploads a new version of the image",
+	})
+}

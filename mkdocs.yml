@@ -9,6 +9,7 @@ nav:
         - Project Structure: general/project_structure.md
     - Control Server:
         - Overview: control_server/index.md
+        - Logging in: control_server/logging_in.md
         - Running the server: control_server/running_baas_control_server.md
         - REST API: control_server/REST API.md
     - Management OS:
@@ -19,6 +20,7 @@ theme: readthedocs
 
 plugins:
   - search
+#  - with-pdf
 
 
 markdown_extensions:

@@ -296,3 +296,69 @@ func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 	e := json.NewEncoder(w)
 	_ = e.Encode(bootSetup)
 }
+
+// RegisterMachineHandlers sets the metadata for each of the routes and registers them to the global handler
+func (api *API) RegisterMachineHandlers() {
+	api.routes = append(api.routes, Route{
+		URI:         "/machine/{mac}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetMachine,
+		Method:      http.MethodGet,
+		Description: "Gets a machine from the database",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/machines",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetMachines,
+		Method:      http.MethodGet,
+		Description: "Gets all the machines from the database",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/machine",
+		Permissions: []model.UserRole{model.Admin},
+		UserAllowed: false,
+		Handler:     api.UpdateMachine,
+		Method:      http.MethodPost,
+		Description: "Updates a machine",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/machine/{mac}/disk/{uuid}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.UploadDiskImage,
+		Method:      http.MethodPost,
+		Description: "Uploads the image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/machine/{mac}/disk/{uuid}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.DownloadDiskImage,
+		Method:      http.MethodGet,
+		Description: "Downloads the disk image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/machine/{mac}/boot",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.BootInform,
+		Method:      http.MethodGet,
+		Description: "Gets the next configuration a machine is going to boot into",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/machine/{mac}/boot",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: false,
+		Handler:     api.SetBootSetup,
+		Method:      http.MethodPost,
+		Description: "Adds a boot configuration to the queue",
+	})
+}

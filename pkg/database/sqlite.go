@@ -21,7 +21,7 @@ type SqliteStore struct {
 
 // CreateImage creates the image entity in the database and adds the first version to it.
 func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error {
-	user, err := s.GetUserByName(username)
+	user, err := s.GetUserByUsername(username)
 	if err != nil {
 		return errors.Wrap(err, "get user by name")
 	}
@@ -167,11 +167,11 @@ func (s SqliteStore) GetLastDeletedBootSetup(machineID uint) (model.BootSetup, e
 	return bootSetup, res.Error
 }
 
-// GetUserByName gets the first user with the associated username from the database.
-func (s SqliteStore) GetUserByName(name string) (*model.UserModel, error) {
+// GetUserByUsername gets the first user with the associated username from the database.
+func (s SqliteStore) GetUserByUsername(name string) (*model.UserModel, error) {
 	user := model.UserModel{}
-	res := s.Where("name = ?", name).First(&user)
-	return &user, errors.Wrap(res.Error, "find user")
+	res := s.Where("username = ?", name).First(&user)
+	return &user, res.Error
 }
 
 // GetUserByID gets the user with the specified id from the database.

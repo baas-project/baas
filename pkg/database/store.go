@@ -19,7 +19,7 @@ type Store interface {
 	GetNextBootSetup(machineID uint) (model.BootSetup, error)
 	GetLastDeletedBootSetup(machineID uint) (model.BootSetup, error)
 
-	GetUserByName(name string) (*model.UserModel, error)
+	GetUserByUsername(name string) (*model.UserModel, error)
 	GetUserByID(id uint) (*model.UserModel, error)
 	GetUsers() ([]model.UserModel, error)
 	CreateUser(user *model.UserModel) error
