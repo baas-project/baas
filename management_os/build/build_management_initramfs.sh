@@ -1,29 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source $SCRIPT_PATH/../../utils/container.sh
 
-echo "building docker container"
-
-# Build the docker container
-pushd .
-cd "$SCRIPT_PATH"/../..
-docker build -t management_kernel -f "$SCRIPT_PATH/Dockerfile" .
-popd
-
-# Run the container to get a container id
-CID=$(docker run -d management_kernel /bin/true)
-
-echo "creating initial ram disk from docker container"
-
-# Export the flat container to a tar
-docker export -o "$SCRIPT_PATH/management_kernel_initramfs.tar" "${CID}"
-
-# Extract the tar to ./extract
-echo "extracting initial ramdisk"
-
-mkdir -p "$SCRIPT_PATH/extract"
-tar -C "$SCRIPT_PATH/extract" -xf "$SCRIPT_PATH/management_kernel_initramfs.tar"
+# Generate the image directory
+generateImage $SCRIPT_PATH
 
 CONTROL_SERVER_IP="$(hostname -I | awk '{print $1}')"
 
@@ -31,6 +13,7 @@ cat > "$SCRIPT_PATH/hosts" << EOF
 # Put the ip address of the control server here so the management
 # os can start communicating with it once it's booted.
 $CONTROL_SERVER_IP        control_server
+127.0.0.1                 localhost
 EOF
 
 printf "placing /etc/hosts file \033[0;31m(control_server ip set to: $CONTROL_SERVER_IP)\033[0m. To change this edit the CONTROL_SERVER_IP envvar.\n"
@@ -60,5 +43,4 @@ popd
 mv "$SCRIPT_PATH/initramfs.cpio.gz" "$SCRIPT_PATH/../../control_server/static/initramfs"
 
 # Cleanup
-sudo rm -rf "$SCRIPT_PATH/extract"
-rm "$SCRIPT_PATH/management_kernel_initramfs.tar"
+cleanupImage $SCRIPT_PATH

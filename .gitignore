@@ -279,3 +279,5 @@ dhcp
 
 # Don't upload the database
 store.db
+.pip
+.docker*
