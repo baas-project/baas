@@ -301,7 +301,7 @@ Returns every image created by the human without versions.
 **Response:** A list of image objcts described above <br>
 **Permissions:** User in question or administrator <br>
 **Example curl request:** `curl "localhost:4848/user/Jan/images"` <br>
-**Example response:** 
+**Example response:**
 ```json
 [
   {

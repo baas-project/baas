@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
@@ -14,7 +15,7 @@ import (
 
 var conf = &oauth2.Config{
 	ClientID:     "2162911b22578f57f3e0",
-	ClientSecret: "198f08805ae79b48d8afd943780a335514fdf640",
+	ClientSecret: os.Getenv("GITHUB_SECRET"),
 	Scopes:       []string{"user"},
 	Endpoint:     github.Endpoint,
 }
