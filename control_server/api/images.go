@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -71,6 +72,25 @@ func CreateImageFile(imageSize uint, image *model.ImageModel, api *API) error {
 	}
 
 	return nil
+}
+
+// createNewVersion creates a new version for a specified image
+func createNewVersion(uuid string, api *API) (model.Version, error) {
+	// First fetch the image from the database, so we can get the id using the unique id.
+	// Do not ask me why this is needed, revamp of the database might be needed.
+	image, err := api.store.GetImageByUUID(model.ImageUUID(uuid))
+
+	if err != nil {
+		return model.Version{}, errors.New("Cannot fetch image from database")
+	}
+
+	version := model.Version{
+		Version:      time.Now().Unix(),
+		ImageModelID: image.ID,
+	}
+
+	api.store.CreateNewImageVersion(version)
+	return version, nil
 }
 
 // CreateImage creates an image based on a name
@@ -344,22 +364,12 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	// First fetch the image from the database, so we can get the id using the unique id.
-	// Do not ask me why this is needed, revamp of the database might be needed.
-	image, err := api.store.GetImageByUUID(model.ImageUUID(uniqueID))
-
+	version, err := createNewVersion(uniqueID, api)
 	if err != nil {
 		http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
 		log.Errorf("cannot fetch image from database: %v", err)
 		return
 	}
-
-	version := model.Version{
-		Version:      time.Now().Unix(),
-		ImageModelID: image.ID,
-	}
-
-	api.store.CreateNewImageVersion(version)
 
 	// Write the file onto the disk
 	dest, err := os.OpenFile(fmt.Sprintf(api.diskpath+filePathFmt, uniqueID, version.Version), os.O_WRONLY|os.O_CREATE, 0644)
@@ -405,6 +415,15 @@ func (api *API) RegisterImageHandlers() {
 	})
 
 	api.routes = append(api.routes, Route{
+		URI:         "/image/{uuid}/docker",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.RunDocker,
+		Method:      http.MethodPost,
+		Description: "Uploads a new version of the image",
+	})
+
+	api.routes = append(api.routes, Route{
 		URI:         "/image/{uuid}/{version}",
 		Permissions: []model.UserRole{model.Moderator, model.Admin},
 		UserAllowed: true,
@@ -421,4 +440,114 @@ func (api *API) RegisterImageHandlers() {
 		Method:      http.MethodPost,
 		Description: "Uploads a new version of the image",
 	})
+}
+
+func (api *API) RunDocker(w http.ResponseWriter, r *http.Request) {
+	// Get the reader to the multireader
+	mr, err := r.MultipartReader()
+
+	if err != nil {
+		http.Error(w, "Cannot parse POST form", http.StatusBadRequest)
+		log.Errorf("Cannot parse POST form: %v", err)
+		return
+	}
+
+	uniqueID, err := GetTag("uuid", w, r)
+	if err != nil {
+		return
+	}
+
+	version, err := createNewVersion(uniqueID, api)
+	if err != nil {
+		http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
+		log.Errorf("cannot fetch image from database: %v", err)
+		return
+	}
+
+	// We only use the first part right now, but this might change
+	p, err := mr.NextPart()
+
+	// Go error's handling is pain
+	if err != nil {
+		http.Error(w, "File upload failed", http.StatusInternalServerError)
+		log.Errorf("Cannot upload image: %v", err)
+		return
+	}
+
+	// One liner which closes the file at the end of the call.
+	defer func() {
+		if err = p.Close(); err != nil {
+			log.Errorf("Cannot close upload file: %v", err)
+		}
+	}()
+
+	dir := api.diskpath + "/" + uniqueID
+
+	if err != nil {
+		http.Error(w, "Cannot open destination file", http.StatusInternalServerError)
+		log.Errorf("Cannot open destination file: %v", err)
+		return
+	}
+
+	// Delete the directory at the end of the program
+	//defer os.RemoveAll(dir)
+
+	// Write the docker file to the directory
+	f, err := os.OpenFile(dir+"/Dockerfile", os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
+		log.Errorf("Cannot write to DockerImage file: %v", err)
+		return
+	}
+	defer f.Close()
+
+	err = fs.CopyStream(p, f)
+	if err != nil {
+		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
+		log.Errorf("Cannot write to DockerImage file: %v", err)
+		return
+	}
+
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Println(path)
+
+	// Run a shell script which creates the image
+	// It is written in shell for convience, it could be rewritten in Go if someone really cares.
+	cmd := exec.Command("utils/docker2image.sh", dir)
+
+	fmt.Println(cmd)
+	stderr, err := cmd.StdoutPipe()
+	if err != nil {
+		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
+		log.Errorf("Cannot run the docker2image script: %v", err)
+		return
+	}
+
+	if err := cmd.Run(); err != nil {
+		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
+		log.Errorf("Cannot run the docker2image script: %v", err)
+
+		// If we error out here we probably don't care
+		slurp, _ := io.ReadAll(stderr)
+		log.Errorf("Output: %s", slurp)
+		return
+	}
+
+	if err := os.Rename(dir+"/"+"image.img", fmt.Sprintf(api.diskpath+filePathFmt, uniqueID, version.Version)); err != nil {
+		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
+		log.Errorf("Failed to move image file: %v", err)
+		return
+	}
+
+	newPath := fmt.Sprintf(api.diskpath+"/%s/Dockerfile-%d", uniqueID, version.Version)
+	if err := os.Rename(dir+"/"+"Dockerfile", newPath); err != nil {
+		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
+		log.Errorf("Failed to move dockerfile: %v", err)
+		return
+	}
+
+	http.Error(w, "Successfully uploaded image: "+strconv.FormatInt(version.Version, 10), http.StatusOK)
 }

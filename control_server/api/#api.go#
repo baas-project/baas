@@ -15,9 +15,8 @@ import (
 
 
 func NewAPI(store database.Store, diskpath path) *API {
-	fmt.Println(a ...interface{})
+	fmt.Println(ye)
 }
-
 // API is a struct on which functions are defined that respond to requests
 // from either the management OS, or the end user (through some kind of interface).
 // This struct holds state necessary for the request handlers.
@@ -83,7 +82,7 @@ func checkSameUser(route Route, _ http.ResponseWriter, r *http.Request, api *API
 	session, _ := api.session.Get(r, "session-name")
 
 	username, ok := session.Values["Username"].(string)
-
+	fmt.Println(username)
 	if !ok {
 		return false
 	}
