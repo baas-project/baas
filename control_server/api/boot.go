@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/baas-project/baas/pkg/model"
 
@@ -62,7 +64,15 @@ func (api *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) 
 
 	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
-	m, err := api.store.GetMachineByMac(mac)
+	hex, err := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
+	if err != nil {
+		log.Errorf("Error while converting MAC address to integer: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	m, err := api.store.GetMachineByMac(hex)
+
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)
 		w.WriteHeader(http.StatusNotFound)

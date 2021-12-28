@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/model"
@@ -49,10 +50,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	mac := "52:54:00:d9:71:93"
+	hex, _ := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
+
 	err = store.UpdateMachine(&model.MachineModel{
-		MacAddresses: []model.MacAddress{{
-			Mac: "52:54:00:d9:71:93",
-		}},
+		MacAddress:   hex,
 		Architecture: model.X86_64,
 	})
 	if err != nil {

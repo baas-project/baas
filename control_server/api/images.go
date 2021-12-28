@@ -3,12 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/images"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
-	"time"
 
 	"github.com/baas-project/baas/pkg/fs"
 	"github.com/baas-project/baas/pkg/model"
@@ -45,7 +45,7 @@ func GetName(w http.ResponseWriter, r *http.Request) (string, error) {
 }
 
 // CreateImageFile creates the actual image on disk with a given size.
-func CreateImageFile(imageSize uint, image *model.ImageModel, api *API) error {
+func CreateImageFile(imageSize uint, image images.ImageModel, api *API) error {
 	f, err := os.OpenFile(fmt.Sprintf(api.diskpath+filePathFmt, image.UUID, image.Versions[0].Version),
 		os.O_WRONLY|os.O_CREATE, 0644)
 
@@ -75,17 +75,16 @@ func CreateImageFile(imageSize uint, image *model.ImageModel, api *API) error {
 }
 
 // createNewVersion creates a new version for a specified image
-func createNewVersion(uuid string, api *API) (model.Version, error) {
+func createNewVersion(uuid string, api *API) (images.Version, error) {
 	// First fetch the image from the database, so we can get the id using the unique id.
 	// Do not ask me why this is needed, revamp of the database might be needed.
-	image, err := api.store.GetImageByUUID(model.ImageUUID(uuid))
+	image, err := api.store.GetImageByUUID(images.ImageUUID(uuid))
 
 	if err != nil {
-		return model.Version{}, errors.New("Cannot fetch image from database")
+		return images.Version{}, errors.New("Cannot fetch image from database")
 	}
 
-	version := model.Version{
-		Version:      time.Now().Unix(),
+	version := images.Version{
 		ImageModelID: image.ID,
 	}
 
@@ -108,7 +107,7 @@ func (api *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image := model.ImageModel{}
+	image := images.ImageModel{}
 	err = json.NewDecoder(r.Body).Decode(&image)
 
 	// Input validation
@@ -122,11 +121,6 @@ func (api *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if image.DiskUUID == "" {
-		http.Error(w, "DiskUUID is not allowed to be empty", http.StatusBadRequest)
-		return
-	}
-
 	if err != nil {
 		http.Error(w, "couldn't decode image model", http.StatusBadRequest)
 		log.Errorf("decode image model: %v", err)
@@ -135,7 +129,7 @@ func (api *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 
 	// Generate the UUID and create the entry in the database.
 	// We don't actually make an image file yet.
-	image.UUID = model.ImageUUID(uuid.New().String())
+	image.UUID = images.ImageUUID(uuid.New().String())
 	err = api.store.CreateImage(name, &image)
 	if err != nil {
 		http.Error(w, "couldn't create image model", http.StatusInternalServerError)
@@ -151,7 +145,7 @@ func (api *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = CreateImageFile(imageFileSize, &image, api)
+	err = CreateImageFile(imageFileSize, image, api)
 
 	if err != nil {
 		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
@@ -246,7 +240,7 @@ func (api *API) GetImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := api.store.GetImageByUUID(model.ImageUUID(uniqueID))
+	res, err := api.store.GetImageByUUID(images.ImageUUID(uniqueID))
 	if err != nil {
 		http.Error(w, "couldn't get image", http.StatusInternalServerError)
 		log.Errorf("get image: %v", err)
@@ -316,7 +310,7 @@ func (api *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image, err := api.store.GetImageByUUID(model.ImageUUID(uniqueID))
+	image, err := api.store.GetImageByUUID(images.ImageUUID(uniqueID))
 	if err != nil {
 		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
 		log.Errorf("Download latest image: %v", err)
@@ -324,7 +318,8 @@ func (api *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	version := image.Versions[len(image.Versions)-1]
-	DownloadImageFile(uniqueID, strconv.FormatInt(version.Version, 10), api, w)
+
+	DownloadImageFile(uniqueID, strconv.FormatUint(version.Version, 10), api, w)
 }
 
 // UploadImage takes the uploaded file and stores as a new version of the image
@@ -391,7 +386,7 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 			log.Errorf("Cannot close upload file: %v", err)
 		}
 	}()
-	http.Error(w, "Successfully uploaded image: "+strconv.FormatInt(version.Version, 10), http.StatusOK)
+	http.Error(w, "Successfully uploaded image: "+strconv.FormatUint(version.Version, 10), http.StatusOK)
 }
 
 // RegisterImageHandlers sets the metadata for each of the routes and registers them to the global handler
@@ -549,5 +544,5 @@ func (api *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Error(w, "Successfully uploaded image: "+strconv.FormatInt(version.Version, 10), http.StatusOK)
+	http.Error(w, "Successfully uploaded image: "+strconv.FormatUint(version.Version, 10), http.StatusOK)
 }

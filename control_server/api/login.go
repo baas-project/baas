@@ -50,7 +50,7 @@ func (api *API) LoginGithub(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte("Visit the following URI: " + uri + "\n"))
 }
 
-// LoginGithubCallback gets the token and creates the user model for the Github User
+// LoginGithubCallback gets the token and creates the user model for the GitHub User
 func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	// Get the session
 	session, _ := api.session.Get(r, "session-name")
@@ -91,7 +91,7 @@ func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid, err := uuid.NewUUID()
+	uuId, err := uuid.NewUUID()
 
 	if err != nil {
 		http.Error(w, "Cannot generate UUID", http.StatusBadRequest)
@@ -99,7 +99,7 @@ func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set the session ID and username
-	session.Values["Session"] = uuid.String()
+	session.Values["Session"] = uuId.String()
 	session.Values["Username"] = user.Username
 	session.Values["Role"] = string(user.Role)
 
@@ -112,5 +112,9 @@ func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	// Return the session cookie
 	response := "Please check the cookies to get your session ID!"
 	w.WriteHeader(200)
-	w.Write([]byte(response))
+	_, err = w.Write([]byte(response))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

@@ -1,6 +1,9 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"github.com/baas-project/baas/pkg/images"
+	"gorm.io/gorm"
+)
 
 // UserRole is an enum which stores the roles a user can have.
 type UserRole string
@@ -25,5 +28,5 @@ type UserModel struct {
 	Role     UserRole
 
 	// Images is a list of ImageModel of this user
-	Images []ImageModel
+	Images []images.ImageModel
 }

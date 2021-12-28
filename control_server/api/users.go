@@ -67,10 +67,14 @@ func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("create user: %v", err)
 		return
 	}
-	fmt.Fprintf(w, "Successfully created user\n")
+	_, err = fmt.Fprintf(w, "Successfully created user\n")
+	if err != nil {
+		log.Error("Error writing over http")
+		return
+	}
 }
 
-// GetLoggedInUser gets the currently logged in user and returns it.
+// GetLoggedInUser gets the currently logged-in user and returns it.
 // Example request: user/me
 func (api *API) GetLoggedInUser(w http.ResponseWriter, r *http.Request) {
 	session, _ := api.session.Get(r, "session-name")
