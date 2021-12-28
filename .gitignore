@@ -281,3 +281,5 @@ dhcp
 store.db
 .pip
 .docker*
+#*
+*~

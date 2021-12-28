@@ -30,13 +30,13 @@ function cleanupImage {
 
 function createDisk {
     # Create an image made out of 2048 blocks of 4 megabytes
-    fallocate -l 8GiB "$1/image.img"
+    fallocate -l 15GiB "$1/image.img"
 
     losetup "$2" "$1/image.img"
     # Turn the image into a disk with one bootable 10 Gigabyte image
     parted "$2" mklabel gpt
     yes 'I' | parted "$2" mkpart image fat32 0 512M
-    yes 'I' | parted "$2" mkpart image ext4 512M 8G
+    yes 'I' | parted "$2" mkpart image ext4 512M 15G
     parted "$2" set 1 boot on
     parted "$2" set 1 esp on
 
