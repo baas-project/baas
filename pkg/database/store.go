@@ -1,13 +1,16 @@
 // Package database defines the interface to interact with the database.
 package database
 
-import "github.com/baas-project/baas/pkg/model"
+import (
+	"github.com/baas-project/baas/pkg/images"
+	"github.com/baas-project/baas/pkg/model"
+)
 
 // Store defines the functions which should be exported by any concrete database implementation
 type Store interface {
 
 	// GetMachineByMac retrieves a machine based on its mac address.
-	GetMachineByMac(mac string) (*model.MachineModel, error)
+	GetMachineByMac(mac uint64) (*model.MachineModel, error)
 
 	// GetMachines returns a list of all machines in the database
 	GetMachines() ([]model.MachineModel, error)
@@ -24,9 +27,9 @@ type Store interface {
 	GetUsers() ([]model.UserModel, error)
 	CreateUser(user *model.UserModel) error
 
-	GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error)
-	GetImagesByUsername(username string) ([]model.ImageModel, error)
-	GetImagesByNameAndUsername(name string, username string) ([]model.ImageModel, error)
-	CreateImage(username string, image *model.ImageModel) error
-	CreateNewImageVersion(version model.Version)
+	GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, error)
+	GetImagesByUsername(username string) ([]images.ImageModel, error)
+	GetImagesByNameAndUsername(name string, username string) ([]images.ImageModel, error)
+	CreateImage(username string, image *images.ImageModel) error
+	CreateNewImageVersion(version images.Version)
 }

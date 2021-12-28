@@ -2,7 +2,7 @@ package database
 
 import (
 	errors2 "errors"
-	"time"
+	"github.com/baas-project/baas/pkg/images"
 
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
@@ -20,7 +20,7 @@ type SqliteStore struct {
 }
 
 // CreateImage creates the image entity in the database and adds the first version to it.
-func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error {
+func (s SqliteStore) CreateImage(username string, image *images.ImageModel) error {
 	user, err := s.GetUserByUsername(username)
 	if err != nil {
 		return errors.Wrap(err, "get user by name")
@@ -30,8 +30,7 @@ func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error
 	if res != nil {
 		return res
 	}
-	v := model.Version{
-		Version:      time.Now().Unix(),
+	v := images.Version{
 		ImageModelID: image.ID,
 	}
 	image.Versions = append(image.Versions, v)
@@ -41,8 +40,8 @@ func (s SqliteStore) CreateImage(username string, image *model.ImageModel) error
 }
 
 // GetImageByUUID fetches the image with the versions using their UUID as a key
-func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, error) {
-	image := model.ImageModel{UUID: uuid}
+func (s SqliteStore) GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, error) {
+	image := images.ImageModel{UUID: uuid}
 	res := s.Where("UUID = ?", uuid).
 		Preload("Versions").
 		First(&image)
@@ -51,8 +50,8 @@ func (s SqliteStore) GetImageByUUID(uuid model.ImageUUID) (*model.ImageModel, er
 }
 
 // GetImagesByUsername fetches all the images associated to a user.
-func (s SqliteStore) GetImagesByUsername(username string) ([]model.ImageModel, error) {
-	var images []model.ImageModel
+func (s SqliteStore) GetImagesByUsername(username string) ([]images.ImageModel, error) {
+	var images []images.ImageModel
 
 	res := s.Table("image_models").
 		Preload("Versions").
@@ -65,8 +64,8 @@ func (s SqliteStore) GetImagesByUsername(username string) ([]model.ImageModel, e
 
 // GetImagesByNameAndUsername gets all the images associated with a user which have the same human-readable name.
 // This theoretically possible, but it is unsure whether this actually holds in any real-world scenario.
-func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([]model.ImageModel, error) {
-	var images []model.ImageModel
+func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([]images.ImageModel, error) {
+	var images []images.ImageModel
 	res := s.Table("image_models").
 		Preload("Versions").
 		Joins("join user_models on user_models.id = image_models.user_model_id").
@@ -76,13 +75,10 @@ func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([
 }
 
 // GetMachineByMac gets any machine with the associated MAC addresses from the database
-func (s SqliteStore) GetMachineByMac(mac string) (*model.MachineModel, error) {
+func (s SqliteStore) GetMachineByMac(mac uint64) (*model.MachineModel, error) {
 	machine := model.MachineModel{}
 	res := s.Table("machine_models").
-		Preload("MacAddresses").
-		Select("*").
-		Joins("join mac_addresses on mac_addresses.machine_model_id = machine_models.id").
-		Where("mac_addresses.mac = ?", mac).
+		Where("mac_address = ?", mac).
 		First(&machine)
 
 	return &machine, res.Error
@@ -101,11 +97,7 @@ func (s SqliteStore) GetMachines() (machines []model.MachineModel, _ error) {
 
 // UpdateMachine updates the information about the machine or creates a machine where one does not yet exist.
 func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
-	if len(machine.MacAddresses) == 0 {
-		return errors.New("no mac address in original machine")
-	}
-
-	old, err := s.GetMachineByMac(machine.MacAddresses[0].Mac)
+	_, err := s.GetMachineByMac(machine.MacAddress)
 
 	if errors2.Is(err, gorm.ErrRecordNotFound) {
 
@@ -114,31 +106,9 @@ func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
 	}
 
 	// Create a new array containing the old MacAddresses
-	var macAddresses []model.MacAddress
-	copy(macAddresses, old.MacAddresses)
-
 	// O(nm) operation to add those MacAddresses which filters out the MAC addresses already registered for this
-	// machine. This is fairly slow, but this is a fairly rare operation and the nm is bounded by the amount of network
+	// machine. This is fairly slow, but this is a fairly rare operation and the nm is bounded by the amount of netwok
 	// cards associated with any given machine. In all likelihood this will be somewhere around 1 <= n <= 5.
-	for _, mac := range machine.MacAddresses {
-		found := false
-
-		for _, oldMac := range old.MacAddresses {
-			if mac == oldMac {
-				break
-			}
-			found = true
-		}
-
-		if !found {
-			macAddresses = append(macAddresses, mac)
-		}
-	}
-
-	machine.MacAddresses = macAddresses
-
-	machine.ID = old.ID
-
 	return s.Save(machine).Error
 }
 
@@ -193,7 +163,7 @@ func (s SqliteStore) CreateUser(user *model.UserModel) error {
 }
 
 // CreateNewImageVersion creates a new version in the database
-func (s SqliteStore) CreateNewImageVersion(version model.Version) {
+func (s SqliteStore) CreateNewImageVersion(version images.Version) {
 	s.Create(&version)
 }
 
@@ -209,14 +179,10 @@ func NewSqliteStore(dbpath string) (Store, error) {
 
 	err = db.AutoMigrate(
 		&model.BootSetup{},
-		&model.DiskMappingModel{},
-		&model.DiskModel{},
-		&model.ImageModel{},
-		&model.MacAddress{},
+		&images.ImageModel{},
 		&model.MachineModel{},
-		&model.MachineSetup{},
 		&model.UserModel{},
-		&model.Version{},
+		&images.Version{},
 	)
 
 	if err != nil {

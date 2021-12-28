@@ -1,5 +1,5 @@
 // Package api provides functions for handling http requests on the control server.
-// This is used to respond to requests from pixiecore, to serve files (kernel, initramfs, disk images)
+// This is used to respond to request from pixiecore, to serve files (kernel, initramfs, disk images)
 // and to communicate with machines running the management os.
 package api
 
@@ -13,12 +13,12 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-
-func NewAPI(store database.Store, diskpath path) *API {
+/*func NewAPI(store database.Store, diskpath path) *API {
 	fmt.Println(a ...interface{})
 }
+*/
 
-// API is a struct on which functions are defined that respond to requests
+// API is a struct on which functions are defined that respond to request
 // from either the management OS, or the end user (through some kind of interface).
 // This struct holds state necessary for the request handlers.
 type API struct {
@@ -44,10 +44,10 @@ func NewAPI(store database.Store, diskpath string) *API {
 	}
 }
 
-// CheckRole verifies whether or not a user is allowed to use this particular route or not.
+// CheckRole verifies whether a user is allowed to use this particular route or not.
 // lint:
 func (api *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc { // nolint
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := api.session.Get(r, "session-name")
 
 		role, ok := session.Values["Role"].(string)
@@ -70,7 +70,7 @@ func (api *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		next.ServeHTTP(w, r)
-	})
+	}
 }
 
 // checkSameUser checks if this resource is owned by the same issue. It only works for when the user is in the URI, database needs to be checked manually

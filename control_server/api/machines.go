@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"syscall"
 
-	pkgapi "github.com/baas-project/baas/pkg/api"
 	"github.com/baas-project/baas/pkg/fs"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 // GetMachine GETs any machine in the database based on its MAC address
@@ -30,7 +30,14 @@ func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine, err := api.store.GetMachineByMac(mac)
+	hex, err := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
+	if err != nil {
+		http.Error(w, "invalid mac address", http.StatusBadRequest)
+		log.Error("Invalid mac address given")
+		return
+	}
+
+	machine, err := api.store.GetMachineByMac(hex)
 	if err != nil {
 		http.Error(w, "couldn't get machine", http.StatusInternalServerError)
 		log.Errorf("get machine by mac: %v", err)
@@ -165,85 +172,66 @@ func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// generateMachineSetup generates the MachineSetup model
-func generateMachineSetup(setup model.BootSetup) model.MachineSetup {
-	return model.MachineSetup{
-		Ephemeral: false,
-		Disks: []model.DiskMappingModel{
-			{
-				UUID:    setup.ImageUUID,
-				Version: setup.Version,
-				Image: model.DiskImage{
-					DiskType:             model.DiskTypeRaw,
-					DiskTransferStrategy: model.DiskTransferStrategyHTTP,
-					Location:             "/dev/sda",
-				},
-			},
-		},
-	}
-}
-
 // BootInform handles all incoming boot inform requests
 func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
-	// First we fetch the id associated of the
-	vars := mux.Vars(r)
-	mac, ok := vars["mac"]
+	/*
+		// First we fetch the id associated of the
+		vars := mux.Vars(r)
+		mac, ok := vars["mac"]
 
-	if !ok || mac == "" {
-		http.Error(w, "mac address is not found", http.StatusBadRequest)
-		log.Errorf("mac not provided")
-		return
-	}
+		if !ok || mac == "" {
+			http.Error(w, "mac address is not found", http.StatusBadRequest)
+			log.Errorf("mac not provided")
+			return
+		}
 
-	machine, err := api.store.GetMachineByMac(mac)
+		hex, err := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
+		if err != nil {
+			http.Error(w, "mac address is not found", http.StatusBadRequest)
+			log.Errorf("mac not provided")
+			return
+		}
+		machine, err := api.store.GetMachineByMac(hex)
 
-	if err != nil {
-		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
-		log.Errorf("Machine not found")
-		return
-	}
+		if err != nil {
+			http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
+			log.Errorf("Machine not found")
+			return
+		}
 
-	log.Debug("Received BootInform request, serving Reprovisioning information")
+		log.Debug("Received BootInform request, serving Reprovisioning information")
 
-	// Get the next boot configuration based on a FIFO queue.
-	bootInfo, err := api.store.GetNextBootSetup(machine.ID)
+		// Get the next boot configuration based on a FIFO queue.
+		//bootInfo, err := api.store.GetNextBootSetup(machine.ID)
 
-	if err == gorm.ErrRecordNotFound {
-		http.Error(w, "No boot setup found", http.StatusNotFound)
-		return
-	}
+		if err == gorm.ErrRecordNotFound {
+			http.Error(w, "No boot setup found", http.StatusNotFound)
+			return
+		}
 
-	if err != nil {
-		http.Error(w, "Error with finding boot setup", http.StatusBadRequest)
-		log.Errorf("Database error: %v", err)
-		return
-	}
+		if err != nil {
+			http.Error(w, "Error with finding boot setup", http.StatusBadRequest)
+			log.Errorf("Database error: %v", err)
+			return
+		}
 
-	// Use the same table to get the last deleted setup (which is the one running now)
-	lastSetup, err := api.store.GetLastDeletedBootSetup(machine.ID)
+		// Use the same table to get the last deleted setup (which is the one running now)
+		lastSetup, err := api.store.GetLastDeletedBootSetup(machine.ID)
 
-	if err != gorm.ErrRecordNotFound && err != nil {
-		http.Error(w, "Error with fetching the boot history", http.StatusBadRequest)
-		return
-	}
+		if err != gorm.ErrRecordNotFound && err != nil {
+			http.Error(w, "Error with fetching the boot history", http.StatusBadRequest)
+			return
+		}
 
-	var prev model.MachineSetup
-	if err != gorm.ErrRecordNotFound && lastSetup.Update {
-		prev = generateMachineSetup(lastSetup)
-	}
+		if err := json.NewEncoder(w).Encode(&resp); err != nil {
+			log.Errorf("Error while serialising json: %v", err)
+			http.Error(w, "Error while serialising response json", http.StatusInternalServerError)
+			return
+		}
 
-	resp := pkgapi.ReprovisioningInfo{
-		Prev: prev,
-		Next: generateMachineSetup(bootInfo),
-	}
+		r.Header.Set("content-type", "application/json")
+	*/
 
-	if err := json.NewEncoder(w).Encode(&resp); err != nil {
-		log.Errorf("Error while serialising json: %v", err)
-		http.Error(w, "Error while serialising response json", http.StatusInternalServerError)
-		return
-	}
-
-	r.Header.Set("content-type", "application/json")
 }
 
 // SetBootSetup adds an image to the schedule to be flashed onto the machine
@@ -265,7 +253,13 @@ func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine, err := api.store.GetMachineByMac(mac)
+	hex, err := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
+	if err != nil {
+		http.Error(w, "invalid mac address", http.StatusBadRequest)
+		log.Error("Invalid mac address given")
+		return
+	}
+	machine, err := api.store.GetMachineByMac(hex)
 
 	if err != nil {
 		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)

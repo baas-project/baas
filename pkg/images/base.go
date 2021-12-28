@@ -1,6 +1,8 @@
-package model
+package images
 
 import (
+	"bytes"
+	"encoding/json"
 	"gorm.io/gorm"
 )
 
@@ -10,26 +12,32 @@ type DiskType int
 const (
 	// DiskTypeRaw is the simplest DiskType of which nothing extra is known
 	DiskTypeRaw DiskType = iota
+	DiskTypeQCow2
 )
 
-// DiskTransferStrategy describes the strategy used to down- and upload a disk image
-type DiskTransferStrategy int
+func (s DiskType) String() string {
+	return toString[s]
+}
 
-const (
-	// DiskTransferStrategyHTTP uses HTTP to transfer the disk image
-	DiskTransferStrategyHTTP DiskTransferStrategy = iota
-)
+var toString = map[DiskType]string{
+	DiskTypeRaw:   "raw",
+	DiskTypeQCow2: "qcow2",
+}
 
-// DiskCompressionStrategy the various available disk compression strategies
-type DiskCompressionStrategy int
+var toId = map[string]DiskType{
+	"raw":   DiskTypeRaw,
+	"qcow2": DiskTypeQCow2,
+}
+
+type DiskCompressionStrategy string
 
 const (
 	// DiskCompressionStrategyNone doesn't compress
-	DiskCompressionStrategyNone DiskCompressionStrategy = iota
+	DiskCompressionStrategyNone DiskCompressionStrategy = "none"
 	// DiskCompressionStrategyZSTD compresses disk images with zstd.
-	DiskCompressionStrategyZSTD
+	DiskCompressionStrategyZSTD = "zstd"
 	// DiskCompressionStrategyGZip uses the standard GZip compression algorithm for disks.
-	DiskCompressionStrategyGZip
+	DiskCompressionStrategyGZip = "GZip"
 )
 
 // DiskImage describes a single disk image on the machine
@@ -37,16 +45,28 @@ type DiskImage struct {
 	gorm.Model `json:"-"`
 
 	DiskType                DiskType
-	DiskTransferStrategy    DiskTransferStrategy
 	DiskCompressionStrategy DiskCompressionStrategy
-
-	// Location is the place on the booting system, where the disk should be written to.
-	// This is usually a /dev device, like /dev/sda or /dev/nvme0n1
-	Location string
 }
 
-// DiskUUID is the linux by-uuid of a disk
-type DiskUUID = string
+// MarshalJSON marshals the enum as a quoted json string
+func (s DiskType) MarshalJSON() ([]byte, error) {
+	buffer := bytes.NewBufferString(`"`)
+	buffer.WriteString(toString[s])
+	buffer.WriteString(`"`)
+	return buffer.Bytes(), nil
+}
+
+// UnmarshalJSON unmashals a quoted json string to the enum value
+func (s *DiskType) UnmarshalJSON(b []byte) error {
+	var j string
+	err := json.Unmarshal(b, &j)
+	if err != nil {
+		return err
+	}
+	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+	*s = toId[j]
+	return nil
+}
 
 // ImageUUID is a UUID distinguishing each disk image
 type ImageUUID string
@@ -55,9 +75,21 @@ type ImageUUID string
 type Version struct {
 	gorm.Model `json:"-"`
 
-	Version      int64
+	Version      uint64 `gorm:"autoIncrement;primaryKey;not null;unique"`
 	ImageModelID uint
 }
+
+/* Disk Layout on control_server
+/disks
+	/abc  <-- First image UUID
+		/1.img
+		/2.img
+		/3.img
+		/4.img
+	/cdf  <-- Second image UUID
+		/1.img
+		/2.img
+*/
 
 // ImageModel defines the database structure for storing the metadata about images
 type ImageModel struct {
@@ -74,27 +106,8 @@ type ImageModel struct {
 	Versions []Version
 
 	// ImageUUID is a universally unique identifier for images
-	UUID ImageUUID `gorm:"uniqueIndex"`
-
-	// DiskUUID is these disks linux by-uuid
-	DiskUUID DiskUUID
+	UUID ImageUUID `gorm:"uniqueIndex;primaryKey;unique"`
 
 	// Foreign key for gorm
-	UserModelID uint
+	UserModelID uint32
 }
-
-/* Disk Layout on control_server
-This contradicts the actual implementation and other documentation.
-TODO: Bring this inline, I prefer this method as well
-where 'abc' and 'cdf' are ImageUUIDs
-
-/disks
-	/abc
-		/1.img
-		/2.img
-		/3.img
-		/4.img
-	/cdf
-		/1.img
-		/2.img
-*/

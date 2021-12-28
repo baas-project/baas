@@ -24,7 +24,7 @@ func TestApi_CreateImage(t *testing.T) {
 	err = store.CreateUser(&user)
 	assert.NoError(t, err)
 
-	image := model.ImageModel{
+	image := images.ImageModel{
 		Name:     "yeet",
 		DiskUUID: "abc",
 	}
@@ -39,7 +39,7 @@ func TestApi_CreateImage(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, resp.Code)
 
-	decoded := model.ImageModel{}
+	decoded := images.ImageModel{}
 	err = json.NewDecoder(resp.Body).Decode(&decoded)
 	assert.NoError(t, err)
 
@@ -67,7 +67,7 @@ func TestApi_GetImage(t *testing.T) {
 	err = store.CreateUser(&user)
 	assert.NoError(t, err)
 
-	image := model.ImageModel{
+	image := images.ImageModel{
 		Name:     "abc",
 		UUID:     "def",
 		DiskUUID: "ghi",
@@ -82,7 +82,7 @@ func TestApi_GetImage(t *testing.T) {
 
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	decoded := model.ImageModel{}
+	decoded := images.ImageModel{}
 	err = json.NewDecoder(resp.Body).Decode(&decoded)
 	assert.NoError(t, err)
 
