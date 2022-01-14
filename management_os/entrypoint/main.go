@@ -88,17 +88,9 @@ func main() {
 		log.Info("Uploading disks disabled in configuration file.")
 	}
 
-	if !prov.Prev.Ephemeral {
-		if err = ReadInDisks(c, prov.Prev); err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		log.Info("Not downloading any disk because previous session was ephemeral")
-	}
-
-	if err = WriteOutDisks(c, mac, prov.Next); err != nil {
+	/*if err = WriteOutDisks(c, mac, prov.Next); err != nil {
 		log.Fatal(err)
-	}
+	}*/
 
 	log.Info("reprovisioning done")
 	// This presumes that the second option is the hard disk

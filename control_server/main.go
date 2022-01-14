@@ -3,12 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/model"
+	"os"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 
@@ -23,9 +21,9 @@ var (
 )
 
 func init() {
-	lvlstring := os.Getenv("LOG_LEVEL")
+	levelString := os.Getenv("LOG_LEVEL")
 
-	loglevel, err := log.ParseLevel(lvlstring)
+	loglevel, err := log.ParseLevel(levelString)
 	if err != nil {
 		loglevel = log.DebugLevel
 	}
@@ -35,8 +33,8 @@ func init() {
 	log.SetLevel(loglevel)
 
 	// log error after the logger is initialised
-	if err != nil && lvlstring != "" {
-		log.Errorf("loglevel string %s could not be parsed, defaulting to Info: %v", lvlstring, err)
+	if err != nil && levelString != "" {
+		log.Errorf("loglevel string %s could not be parsed, defaulting to Info: %v", levelString, err)
 	}
 }
 
@@ -51,10 +49,9 @@ func main() {
 	}
 
 	mac := "52:54:00:d9:71:93"
-	hex, _ := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
-
 	err = store.UpdateMachine(&model.MachineModel{
-		MacAddress:   hex,
+		Name:         "Jan's Machine",
+		MacAddress:   model.MacAddress{Address: mac},
 		Architecture: model.X86_64,
 	})
 	if err != nil {
