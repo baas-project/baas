@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/baas-project/baas/pkg/images"
 	"io"
 
 	"github.com/baas-project/baas/pkg/compression"
@@ -40,7 +41,7 @@ func ReadInDisks(api *APIClient, setup model.MachineSetup) error {
 }
 
 // UploadDisk uploads a disk to the control server given a transfer strategy.
-func UploadDisk(api *APIClient, reader io.Reader, uuid model.DiskUUID, image model.DiskImage) error {
+func UploadDisk(api *APIClient, reader io.Reader, uuid model.DiskUUID, image images.DiskImage) error {
 	log.Debugf("DiskUUID transfer strategy: %v", image.DiskTransferStrategy)
 	switch image.DiskTransferStrategy {
 	case model.DiskTransferStrategyHTTP:

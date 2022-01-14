@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/baas-project/baas/pkg/database"
+	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,8 +26,7 @@ func TestApi_CreateImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	image := images.ImageModel{
-		Name:     "yeet",
-		DiskUUID: "abc",
+		Name: "yeet",
 	}
 
 	var mi bytes.Buffer
@@ -45,14 +45,12 @@ func TestApi_CreateImage(t *testing.T) {
 
 	assert.NotEmpty(t, decoded.UUID)
 	assert.Equal(t, image.Name, decoded.Name)
-	assert.Equal(t, image.DiskUUID, decoded.DiskUUID)
 
 	res, err := store.GetImageByUUID(decoded.UUID)
 	assert.NoError(t, err)
 
 	assert.Equal(t, decoded.UUID, res.UUID)
 	assert.Equal(t, image.Name, res.Name)
-	assert.Equal(t, image.DiskUUID, res.DiskUUID)
 }
 
 func TestApi_GetImage(t *testing.T) {
@@ -68,9 +66,8 @@ func TestApi_GetImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	image := images.ImageModel{
-		Name:     "abc",
-		UUID:     "def",
-		DiskUUID: "ghi",
+		Name: "abc",
+		UUID: "def",
 	}
 
 	err = store.CreateImage(user.Name, &image)
@@ -88,5 +85,4 @@ func TestApi_GetImage(t *testing.T) {
 
 	assert.Equal(t, image.UUID, decoded.UUID)
 	assert.Equal(t, image.Name, decoded.Name)
-	assert.Equal(t, image.DiskUUID, decoded.DiskUUID)
 }

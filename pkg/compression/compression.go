@@ -2,23 +2,22 @@
 package compression
 
 import (
+	"github.com/baas-project/baas/pkg/images"
 	"io"
 
 	gzip "github.com/klauspost/pgzip"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/gozstd"
-
-	"github.com/baas-project/baas/pkg/model"
 )
 
 // Decompress is a decorator to decompress a disk image stream
-func Decompress(reader io.Reader, strategy model.DiskCompressionStrategy) (io.Reader, error) {
+func Decompress(reader io.Reader, strategy images.DiskCompressionStrategy) (io.Reader, error) {
 	log.Debugf("DiskUUID compression strategy: %v", strategy)
 	switch strategy {
-	case model.DiskCompressionStrategyNone:
+	case images.DiskCompressionStrategyNone:
 		return reader, nil
-	case model.DiskCompressionStrategyZSTD:
+	case images.DiskCompressionStrategyZSTD:
 		return gozstd.NewReader(reader), nil
 	default:
 		return nil, errors.New("unknown decompression strategy")
@@ -26,13 +25,13 @@ func Decompress(reader io.Reader, strategy model.DiskCompressionStrategy) (io.Re
 }
 
 // Compress is a decorator to compress a disk image stream
-func Compress(reader io.Reader, strategy model.DiskCompressionStrategy) (io.Reader, error) {
+func Compress(reader io.Reader, strategy images.DiskCompressionStrategy) (io.Reader, error) {
 	log.Debugf("DiskUUID compression strategy: %v", strategy)
 
 	switch strategy {
-	case model.DiskCompressionStrategyNone:
+	case images.DiskCompressionStrategyNone:
 		return reader, nil
-	case model.DiskCompressionStrategyGZip:
+	case images.DiskCompressionStrategyGZip:
 		pr, pw := io.Pipe()
 		log.Info("Compress the disk using gunzip")
 		go func() {
@@ -55,7 +54,7 @@ func Compress(reader io.Reader, strategy model.DiskCompressionStrategy) (io.Read
 		}()
 
 		return pr, nil
-	case model.DiskCompressionStrategyZSTD:
+	case images.DiskCompressionStrategyZSTD:
 		pr, pw := io.Pipe()
 		go func() {
 			err := gozstd.StreamCompress(pw, reader)

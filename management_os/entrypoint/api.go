@@ -11,8 +11,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/baas-project/baas/pkg/model"
-
 	"github.com/pkg/errors"
 
 	"github.com/baas-project/baas/pkg/api"
@@ -61,7 +59,7 @@ func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
 }
 
 // DownloadDiskHTTP Downloads a disk image from the control_server over HTTP
-func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID, version uint) (io.ReadCloser, error) {
+func (a *APIClient) DownloadDiskHTTP(uuid string, version uint) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s/image/%s/%d", a.baseURL, uuid, version)
 	log.Infof("downloading disk %v over http from %s", uuid, url)
 
@@ -83,11 +81,11 @@ func (a *APIClient) DownloadDiskHTTP(uuid model.DiskUUID, version uint) (io.Read
 }
 
 // UploadDiskHTTP uploads a disk image given the http strategy
-func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid model.DiskUUID) error {
+func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid string) error {
 	url := fmt.Sprintf("%s/image/%s", a.baseURL, uuid)
 	log.Debugf("uploading disk %v over http to %s", uuid, url)
 
-	// Create a pipe so we only pass around the streams, if we try to write the actual file or program will be reaped
+	// Create a pipe, so we only pass around the streams, if we try to write the actual file or program will be reaped
 	// Dammit Calli
 	boundary := "JanRellermeyer"
 	fileName := "image.img"

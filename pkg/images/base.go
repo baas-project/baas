@@ -3,8 +3,13 @@ package images
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"gorm.io/gorm"
+	"os"
 )
+
+// FilePathFmt is the format string to create the path the image should be written to
+const FilePathFmt = "/%s/%v.img"
 
 // DiskType describes the type of disk image, this can also describe the filesystem contained within
 type DiskType int
@@ -110,4 +115,39 @@ type ImageModel struct {
 
 	// Foreign key for gorm
 	UserModelID uint32
+}
+
+const (
+	SizeMegabyte uint = 1024 * 1024
+	SizeGigabyte      = 1024 * 1024 * 1024
+)
+
+// CreateImageFile creates the actual image on disk with a given size.
+func (image ImageModel) CreateImageFile(imageSize uint, diskpath string, baseSize uint) error {
+	f, err := os.OpenFile(fmt.Sprintf(diskpath+FilePathFmt, image.UUID, image.Versions[0].Version),
+		os.O_WRONLY|os.O_CREATE, 0644)
+
+	if err != nil {
+		return err
+	}
+
+	// Create an image of a specified size in GiB
+	size := int64(imageSize * baseSize)
+
+	_, err = f.Seek(size-1, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Write([]byte{0})
+	if err != nil {
+		return err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

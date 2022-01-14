@@ -51,31 +51,41 @@ func (s SqliteStore) GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, 
 
 // GetImagesByUsername fetches all the images associated to a user.
 func (s SqliteStore) GetImagesByUsername(username string) ([]images.ImageModel, error) {
-	var images []images.ImageModel
+	var userImages []images.ImageModel
 
 	res := s.Table("image_models").
 		Preload("Versions").
 		Joins("join user_models on user_models.id = image_models.user_model_id").
 		Where("user_models.name = ?", username).
-		Find(&images)
+		Find(&userImages)
 
-	return images, res.Error
+	return userImages, res.Error
+}
+
+// CreateImageSetup creates a collection of images in history.
+func (s SqliteStore) CreateImageSetup(username string, image *images.ImageSetup) error {
+	user, err := s.GetUserByUsername(username)
+	if err != nil {
+		return errors.Wrap(err, "get user by name")
+	}
+	res := s.Model(user).Association("Images").Append(image)
+	return res
 }
 
 // GetImagesByNameAndUsername gets all the images associated with a user which have the same human-readable name.
 // This theoretically possible, but it is unsure whether this actually holds in any real-world scenario.
 func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([]images.ImageModel, error) {
-	var images []images.ImageModel
+	var userImages []images.ImageModel
 	res := s.Table("image_models").
 		Preload("Versions").
 		Joins("join user_models on user_models.id = image_models.user_model_id").
 		Where("user_models.name = ? AND image_models.name = ?", username, name).
-		Find(&images)
-	return images, res.Error
+		Find(&userImages)
+	return userImages, res.Error
 }
 
 // GetMachineByMac gets any machine with the associated MAC addresses from the database
-func (s SqliteStore) GetMachineByMac(mac uint64) (*model.MachineModel, error) {
+func (s SqliteStore) GetMachineByMac(mac model.MacAddress) (*model.MachineModel, error) {
 	machine := model.MachineModel{}
 	res := s.Table("machine_models").
 		Where("mac_address = ?", mac).
@@ -87,29 +97,25 @@ func (s SqliteStore) GetMachineByMac(mac uint64) (*model.MachineModel, error) {
 // GetMachines returns the values in the machine_models database.
 // TODO: Fetch foreign relations.
 func (s SqliteStore) GetMachines() (machines []model.MachineModel, _ error) {
-	res := s.
-		Preload("DiskUUIDs").
-		Preload("MacAddresses").
-		Find(&machines)
-
+	res := s.Find(&machines)
 	return machines, res.Error
 }
 
 // UpdateMachine updates the information about the machine or creates a machine where one does not yet exist.
 func (s SqliteStore) UpdateMachine(machine *model.MachineModel) error {
-	_, err := s.GetMachineByMac(machine.MacAddress)
+	m, err := s.GetMachineByMac(machine.MacAddress)
 
 	if errors2.Is(err, gorm.ErrRecordNotFound) {
-
+		return s.Save(machine).Error
 	} else if err != nil {
 		return errors.Wrap(err, "get machine")
 	}
 
-	// Create a new array containing the old MacAddresses
-	// O(nm) operation to add those MacAddresses which filters out the MAC addresses already registered for this
-	// machine. This is fairly slow, but this is a fairly rare operation and the nm is bounded by the amount of netwok
-	// cards associated with any given machine. In all likelihood this will be somewhere around 1 <= n <= 5.
-	return s.Save(machine).Error
+	m.Architecture = machine.Architecture
+	m.Managed = machine.Managed
+	m.Name = machine.Name
+	s.Save(&m)
+	return nil
 }
 
 // AddBootSetupToMachine adds a configuration for booting to the specified machine
@@ -179,6 +185,7 @@ func NewSqliteStore(dbpath string) (Store, error) {
 
 	err = db.AutoMigrate(
 		&model.BootSetup{},
+		&images.ImageSetup{},
 		&images.ImageModel{},
 		&model.MachineModel{},
 		&model.UserModel{},

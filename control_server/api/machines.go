@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/baas-project/baas/pkg/fs"
@@ -30,14 +28,7 @@ func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hex, err := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
-	if err != nil {
-		http.Error(w, "invalid mac address", http.StatusBadRequest)
-		log.Error("Invalid mac address given")
-		return
-	}
-
-	machine, err := api.store.GetMachineByMac(hex)
+	machine, err := api.store.GetMachineByMac(model.MacAddress{Address: mac})
 	if err != nil {
 		http.Error(w, "couldn't get machine", http.StatusInternalServerError)
 		log.Errorf("get machine by mac: %v", err)
@@ -253,13 +244,7 @@ func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hex, err := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
-	if err != nil {
-		http.Error(w, "invalid mac address", http.StatusBadRequest)
-		log.Error("Invalid mac address given")
-		return
-	}
-	machine, err := api.store.GetMachineByMac(hex)
+	machine, err := api.store.GetMachineByMac(model.MacAddress{Address: mac})
 
 	if err != nil {
 		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)

@@ -10,7 +10,7 @@ import (
 type Store interface {
 
 	// GetMachineByMac retrieves a machine based on its mac address.
-	GetMachineByMac(mac uint64) (*model.MachineModel, error)
+	GetMachineByMac(mac model.MacAddress) (*model.MachineModel, error)
 
 	// GetMachines returns a list of all machines in the database
 	GetMachines() ([]model.MachineModel, error)
@@ -32,4 +32,5 @@ type Store interface {
 	GetImagesByNameAndUsername(name string, username string) ([]images.ImageModel, error)
 	CreateImage(username string, image *images.ImageModel) error
 	CreateNewImageVersion(version images.Version)
+	CreateImageSetup(username string, image *images.ImageSetup) error
 }

@@ -18,9 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// filePathFmt is the format string to create the path the image should be written to
-const filePathFmt = "/%s/%v.img"
-
 // imageFileSize is the size of the standard image that is created in MiB.
 const imageFileSize = 6 // size in Gib
 
@@ -42,36 +39,6 @@ func GetTag(tag string, w http.ResponseWriter, r *http.Request) (string, error) 
 // GetName is a shorthand for GetTag(name, r, w)
 func GetName(w http.ResponseWriter, r *http.Request) (string, error) {
 	return GetTag("name", w, r)
-}
-
-// CreateImageFile creates the actual image on disk with a given size.
-func CreateImageFile(imageSize uint, image images.ImageModel, api *API) error {
-	f, err := os.OpenFile(fmt.Sprintf(api.diskpath+filePathFmt, image.UUID, image.Versions[0].Version),
-		os.O_WRONLY|os.O_CREATE, 0644)
-
-	if err != nil {
-		return err
-	}
-
-	// Create an image of a specified size in GiB
-	size := int64(imageSize * 1024 * 1024 * 1024)
-
-	_, err = f.Seek(size-1, 0)
-	if err != nil {
-		return err
-	}
-
-	_, err = f.Write([]byte{0})
-	if err != nil {
-		return err
-	}
-
-	err = f.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // createNewVersion creates a new version for a specified image
@@ -145,7 +112,7 @@ func (api *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = CreateImageFile(imageFileSize, image, api)
+	err = image.CreateImageFile(imageFileSize, api.diskpath, images.SizeMegabyte)
 
 	if err != nil {
 		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
@@ -180,15 +147,15 @@ func (api *API) GetImagesByUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	images, err := api.store.GetImagesByUsername(name)
+	userImages, err := api.store.GetImagesByUsername(name)
 
 	if err != nil {
-		http.Error(w, "couldn't get images", http.StatusInternalServerError)
-		log.Errorf("get images by users: %v", err)
+		http.Error(w, "couldn't get userImages", http.StatusInternalServerError)
+		log.Errorf("get userImages by users: %v", err)
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(images)
+	_ = json.NewEncoder(w).Encode(userImages)
 }
 
 // GetImagesByName gets any image based on the user who created it and human-readable name assigned to it.
@@ -213,8 +180,7 @@ func (api *API) GetImagesByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Security needs to be done using auth system instead, no role checking in this route code.
-	images, err := api.store.GetImagesByNameAndUsername(imageName, username)
+	userImages, err := api.store.GetImagesByNameAndUsername(imageName, username)
 
 	if err != nil {
 		http.Error(w, "couldn't get image", http.StatusInternalServerError)
@@ -222,7 +188,7 @@ func (api *API) GetImagesByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(images)
+	_ = json.NewEncoder(w).Encode(userImages)
 }
 
 // GetImage gets any image based on it's unique id.
@@ -252,7 +218,7 @@ func (api *API) GetImage(w http.ResponseWriter, r *http.Request) {
 
 // DownloadImageFile gets the specified version of the image off the disk and offers it to the client
 func DownloadImageFile(uniqueID string, version string, api *API, w http.ResponseWriter) {
-	f, err := os.Open(fmt.Sprintf(api.diskpath+filePathFmt, uniqueID, version))
+	f, err := os.Open(fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version))
 	if err != nil {
 		http.Error(w, "Cannot download the image", http.StatusNotFound)
 		log.Errorf("Download image: %v", err)
@@ -367,7 +333,7 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the file onto the disk
-	dest, err := os.OpenFile(fmt.Sprintf(api.diskpath+filePathFmt, uniqueID, version.Version), os.O_WRONLY|os.O_CREATE, 0644)
+	dest, err := os.OpenFile(fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version.Version), os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		http.Error(w, "Cannot open destination file", http.StatusInternalServerError)
 		log.Errorf("Cannot open destination file: %v", err)
@@ -387,6 +353,26 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	http.Error(w, "Successfully uploaded image: "+strconv.FormatUint(version.Version, 10), http.StatusOK)
+}
+
+func (api *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
+	username, err := GetName(w, r)
+	if err != nil {
+		http.Error(w, "Failed to create image setup", http.StatusBadRequest)
+		log.Errorf("Username not found in URI: %v", err)
+		return
+	}
+
+	image := images.ImageSetup{}
+	err = json.NewDecoder(r.Body).Decode(&image)
+	image.User = username
+
+	if image.Name == "" {
+		http.Error(w, "Did not set image setup name", http.StatusBadRequest)
+		log.Errorf("Did not sent image setup name: %v", err)
+		return
+	}
+
 }
 
 // RegisterImageHandlers sets the metadata for each of the routes and registers them to the global handler
@@ -434,6 +420,15 @@ func (api *API) RegisterImageHandlers() {
 		Handler:     api.UploadImage,
 		Method:      http.MethodPost,
 		Description: "Uploads a new version of the image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/{name}/image_setup",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.createImageSetup,
+		Method:      http.MethodPost,
+		Description: "Creates an image setup",
 	})
 }
 
@@ -531,7 +526,8 @@ func (api *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := os.Rename(dir+"/"+"image.img", fmt.Sprintf(api.diskpath+filePathFmt, uniqueID, version.Version)); err != nil {
+	if err := os.Rename(dir+"/"+"image.img",
+		fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version.Version)); err != nil {
 		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
 		log.Errorf("Failed to move image file: %v", err)
 		return
