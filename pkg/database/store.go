@@ -34,6 +34,7 @@ type Store interface {
 	CreateNewImageVersion(version images.Version)
 
 	CreateImageSetup(username string, image *images.ImageSetup) error
+	AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version)
 	FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error)
 	GetImageSetup(username string, imageSetup string) (images.ImageSetup, error)
 }

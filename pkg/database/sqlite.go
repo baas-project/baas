@@ -3,7 +3,6 @@ package database
 import (
 	errors2 "errors"
 	"github.com/baas-project/baas/pkg/images"
-
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
 	"gorm.io/driver/sqlite"
@@ -60,6 +59,7 @@ func (s SqliteStore) CreateImageSetup(username string, image *images.ImageSetup)
 	return s.Create(&image).Error
 }
 
+// FindImageSetupsByUsername finds all ImageSetups associated with a particular user.
 func (s SqliteStore) FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error) {
 	var userImageSetup []images.ImageSetup
 	res := s.Table("image_setups").
@@ -81,13 +81,17 @@ func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([
 	return userImages, res.Error
 }
 
-func (s SqliteStore) AddImageToImageSetup(username string, _ *images.ImageModel) {
-	s.FindImageSetupsByUsername(username)
+// AddImageToImageSetup adds an image pegged to a particular version to the setup.
+func (s SqliteStore) AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version) {
+	setup.AddImage(image, version)
+	s.DB.Updates(setup)
 }
 
+// GetImageSetup an image setup associated with a particular UUID.
 func (s SqliteStore) GetImageSetup(username string, uuid string) (images.ImageSetup, error) {
 	var imageSetup images.ImageSetup
 	res := s.Table("image_setups").
+		Preload("Images").
 		Where("image_setups.user = ? AND image_setups.uuid = ?", username, uuid).
 		First(&imageSetup)
 	return imageSetup, res.Error
@@ -199,6 +203,7 @@ func NewSqliteStore(dbpath string) (Store, error) {
 		&model.MachineModel{},
 		&model.UserModel{},
 		&images.Version{},
+		&images.ImageFrozen{},
 	)
 
 	if err != nil {
