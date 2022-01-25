@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/baas-project/baas/pkg/images"
+	"github.com/baas-project/baas/pkg/util"
 	"io"
 	"net/http"
 	"os"
@@ -356,6 +357,9 @@ func (api *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Successfully uploaded image: "+strconv.FormatUint(version.Version, 10), http.StatusOK)
 }
 
+// createImageSetup defines an endpoint which creates an ImageSetup in the database
+// Example request: POST /user/[name]/image_setup
+// Example response: Succesfully created image setup.
 func (api *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 	username, err := GetName(w, r)
 	if err != nil {
@@ -364,6 +368,7 @@ func (api *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create an ImageSetup and associate it with an user
 	image := images.ImageSetup{}
 	err = json.NewDecoder(r.Body).Decode(&image)
 	image.User = username
@@ -385,6 +390,17 @@ func (api *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Successfully created image setup", http.StatusOK)
 }
 
+// findImageSetupsByUsername returns all ImageSetups associated with a specific user
+// Example request: GET /user/{name}/image_setup
+// Example response:
+// [{"Name": "Linux Kernel",
+//   "Images": [],
+//   "User": "ValentijnvdBeek",
+//    "UUID": "fcc0ed46-1f55-4366-a1fd-73b61473bbd5"},
+//  {"Name": "Linux Kernel 2",
+//   "Images": [],
+//   "User": "ValentijnvdBeek",
+//   "UUID": "2b59ff94-7fb6-4239-b2e6-82f1e30f4355"}]
 func (api *API) findImageSetupsByUsername(w http.ResponseWriter, r *http.Request) {
 	username, err := GetName(w, r)
 	if err != nil {
@@ -404,6 +420,14 @@ func (api *API) findImageSetupsByUsername(w http.ResponseWriter, r *http.Request
 	_ = json.NewEncoder(w).Encode(imageSetup)
 }
 
+// getImageSetup returns the ImageSetup associated with an UUID
+// Example request: GET /[name]/image_setup/[uuid]
+// Example response:
+// { "Name": "Linux Kernel 2",
+//   "Images": [{"UUIDImage": "3a760707-c160-40fa-81be-430b75131ddc",
+//               "VersionNumber": 3 }],
+//   "User": "ValentijnvdBeek",
+//   "UUID": "2b59ff94-7fb6-4239-b2e6-82f1e30f4355" }
 func (api *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
 	username, err := GetName(w, r)
 	if err != nil {
@@ -425,10 +449,18 @@ func (api *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Cannot find image setup: %v", err)
 		return
 	}
-
+	util.PrettyPrintStruct(setup.Images)
 	_ = json.NewEncoder(w).Encode(setup)
 }
 
+// addImageToImageSetup add an ImageModel to the associated ImageSetup
+// Example request: POST /[name]/image_setup/[uuid]
+// Example body: {"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}
+// Example response:
+//  {"Name": "Linux Kernel 2",
+//   "Images": [{"UUIDImage":"3a760707-c160-40fa-81be-430b75131ddc","VersionNumber":3}],
+//   "User":"ValentijnvdBeek",
+//   "UUID":"2b59ff94-7fb6-4239-b2e6-82f1e30f4355"}
 func (api *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 	username, err := GetName(w, r)
 	if err != nil {
@@ -468,10 +500,12 @@ func (api *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageSetup.AddImage(*image, images.Version{
+	version := images.Version{
 		Version:        imageMsg.Version,
 		ImageModelUUID: image.UUID,
-	})
+	}
+
+	api.store.AddImageToImageSetup(&imageSetup, image, version)
 
 	_ = json.NewEncoder(w).Encode(imageSetup)
 }
@@ -524,7 +558,7 @@ func (api *API) RegisterImageHandlers() {
 	})
 
 	api.routes = append(api.routes, Route{
-		URI:         "/{name}/image_setup",
+		URI:         "/user/{name}/image_setup",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api.createImageSetup,
@@ -560,6 +594,8 @@ func (api *API) RegisterImageHandlers() {
 	})
 }
 
+// RunDocker takes a Dockerfile and generates a bootable OS image
+// Request request: /image/{uuid}/docker
 func (api *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 	// Get the reader to the multireader
 	mr, err := r.MultipartReader()

@@ -20,6 +20,7 @@ const (
 	DiskTypeQCow2
 )
 
+// String returns a string associated with a DiskType
 func (s DiskType) String() string {
 	return toString[s]
 }

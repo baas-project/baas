@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/baas-project/baas/pkg/database"
-	"github.com/baas-project/baas/pkg/model"
 	"os"
 	"strconv"
+
+	"github.com/baas-project/baas/pkg/database"
+	"github.com/baas-project/baas/pkg/model"
 
 	log "github.com/sirupsen/logrus"
 
