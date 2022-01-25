@@ -51,9 +51,8 @@ func createNewVersion(uuid string, api *API) (images.Version, error) {
 		return images.Version{}, errors.New("Cannot fetch image from database")
 	}
 
-	version := images.Version{
-		ImageModelID: image.ID,
-	}
+	version := images.Version{Version: image.Versions[len(image.Versions)-1].Version + 1,
+		ImageModelUUID: image.UUID}
 
 	api.store.CreateNewImageVersion(version)
 	return version, nil
@@ -97,7 +96,9 @@ func (api *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	// Generate the UUID and create the entry in the database.
 	// We don't actually make an image file yet.
 	image.UUID = images.ImageUUID(uuid.New().String())
-	err = api.store.CreateImage(name, &image)
+	image.Username = name
+	api.store.CreateImage(&image)
+
 	if err != nil {
 		http.Error(w, "couldn't create image model", http.StatusInternalServerError)
 		log.Errorf("decode create model: %v", err)
@@ -366,6 +367,7 @@ func (api *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 	image := images.ImageSetup{}
 	err = json.NewDecoder(r.Body).Decode(&image)
 	image.User = username
+	image.UUID = images.ImageUUID(uuid.New().String())
 
 	if image.Name == "" {
 		http.Error(w, "Did not set image setup name", http.StatusBadRequest)
@@ -373,6 +375,105 @@ func (api *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = api.store.CreateImageSetup(username, &image)
+	if err != nil {
+		http.Error(w, "Failed to create image setup", http.StatusBadRequest)
+		log.Errorf("Error creating database entry: %v", err)
+		return
+	}
+
+	http.Error(w, "Successfully created image setup", http.StatusOK)
+}
+
+func (api *API) findImageSetupsByUsername(w http.ResponseWriter, r *http.Request) {
+	username, err := GetName(w, r)
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("Username not found in URI: %v", err)
+		return
+	}
+
+	// TODO: Better unique error returns
+	imageSetup, err := api.store.FindImageSetupsByUsername(username)
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("Find image setups cannot be found: %v", err)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(imageSetup)
+}
+
+func (api *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
+	username, err := GetName(w, r)
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("Username not found in URI: %v", err)
+		return
+	}
+
+	uuid_, err := GetTag("uuid", w, r)
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("UUID not found in URI: %v", err)
+		return
+	}
+
+	setup, err := api.store.GetImageSetup(username, uuid_)
+	if err != nil {
+		http.Error(w, "Failed to find image setup", http.StatusBadRequest)
+		log.Errorf("Cannot find image setup: %v", err)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(setup)
+}
+
+func (api *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
+	username, err := GetName(w, r)
+	if err != nil {
+		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
+		log.Errorf("Username not found in URI: %v", err)
+		return
+	}
+
+	uuid_, err := GetTag("uuid", w, r)
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("UUID not found in URI: %v", err)
+		return
+	}
+
+	imageMsg := model.ImageSetupMessage{}
+	err = json.NewDecoder(r.Body).Decode(&imageMsg)
+	if err != nil {
+		http.Error(w, "Cannot find image UUID in JSON message.", http.StatusBadRequest)
+		log.Errorf("Cannot find image UUID: %v", err)
+		return
+	}
+
+	image, err := api.store.GetImageByUUID(images.ImageUUID(imageMsg.Uuid))
+
+	if err != nil {
+		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
+		log.Errorf("Cannot find images: %v", err)
+		return
+	}
+
+	imageSetup, err := api.store.GetImageSetup(username, uuid_)
+
+	if err != nil {
+		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
+		log.Errorf("Cannot find image setup: %v", err)
+		return
+	}
+
+	imageSetup.AddImage(*image, images.Version{
+		Version:        imageMsg.Version,
+		ImageModelUUID: image.UUID,
+	})
+
+	_ = json.NewEncoder(w).Encode(imageSetup)
 }
 
 // RegisterImageHandlers sets the metadata for each of the routes and registers them to the global handler
@@ -415,7 +516,7 @@ func (api *API) RegisterImageHandlers() {
 
 	api.routes = append(api.routes, Route{
 		URI:         "/image/{uuid}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api.UploadImage,
 		Method:      http.MethodPost,
@@ -429,6 +530,33 @@ func (api *API) RegisterImageHandlers() {
 		Handler:     api.createImageSetup,
 		Method:      http.MethodPost,
 		Description: "Creates an image setup",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/{name}/image_setup",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.findImageSetupsByUsername,
+		Method:      http.MethodGet,
+		Description: "Find image setups by username",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/{name}/image_setup/{uuid}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.getImageSetup,
+		Method:      http.MethodGet,
+		Description: "Get a specific image setup",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/{name}/image_setup/{uuid}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.addImageToImageSetup,
+		Method:      http.MethodPost,
+		Description: "Add image to the setup system",
 	})
 }
 
@@ -489,6 +617,7 @@ func (api *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Cannot write to DockerImage file: %v", err)
 		return
 	}
+
 	defer f.Close()
 
 	err = fs.CopyStream(p, f)

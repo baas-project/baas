@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/baas-project/baas/pkg/images"
 	"gorm.io/gorm"
 )
 
@@ -26,7 +25,4 @@ type UserModel struct {
 	Name     string `gorm:"not null"`
 	Email    string `gorm:"unique;not null"`
 	Role     UserRole
-
-	// Images is a list of ImageModel of this user
-	Images []images.ImageModel
 }

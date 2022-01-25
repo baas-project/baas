@@ -10,9 +10,10 @@ type ImageFrozen struct {
 // ImageSetup defines a collection of images
 type ImageSetup struct {
 	gorm.Model `json:"-"`
-	Name       string
+	Name       string `gorm:"not null"`
 	images     []ImageFrozen
-	User       string `gorm:"foreignKey:Username"`
+	User       string    `gorm:"foreignKey:Username"`
+	UUID       ImageUUID `gorm:"uniqueIndex;primaryKey;unique"`
 }
 
 func CreateImageSetup(name string) ImageSetup {
