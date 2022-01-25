@@ -42,9 +42,9 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 
 	api.RegisterMachineHandlers()
 	api.RegisterUserHandlers()
-	api.RegisterImageHandlers()
+	api.RegisterImagePackageHandlers()
 
-	for _, route := range api.routes {
+	for _, route := range api.Routes {
 		r.HandleFunc(route.URI, api.CheckRole(route, route.Handler)).Methods(route.Method)
 	}
 

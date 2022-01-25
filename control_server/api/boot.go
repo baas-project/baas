@@ -48,7 +48,7 @@ func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
 }
 
 // ServeBootConfigurations actually responds to requests from pixiecore.
-func (api *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac := vars["mac"]
 
@@ -61,7 +61,7 @@ func (api *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request) 
 
 	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
-	m, err := api.store.GetMachineByMac(model.MacAddress{Address: mac})
+	m, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
 
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)
