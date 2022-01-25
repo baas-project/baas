@@ -25,7 +25,7 @@ type API struct {
 	store    database.Store
 	diskpath string
 	session  *sessions.CookieStore
-	routes   []Route
+	Routes   []Route
 }
 
 // NewAPI creates a new API struct.
@@ -46,10 +46,9 @@ func NewAPI(store database.Store, diskpath string) *API {
 
 // CheckRole verifies whether a user is allowed to use this particular route or not.
 // lint:
-func (api *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc { // nolint
+func (api_ *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc { // nolint
 	return func(w http.ResponseWriter, r *http.Request) {
-		session, _ := api.session.Get(r, "session-name")
-
+		session, _ := api_.session.Get(r, "session-name")
 		role, ok := session.Values["Role"].(string)
 		if !ok {
 			http.Error(w, "User's role not found", http.StatusNotFound)
@@ -64,7 +63,7 @@ func (api *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// If this resource is from the same user they might be able to access it
-		if !found && !checkSameUser(route, w, r, api) {
+		if !found && !checkSameUser(route, w, r, api_) {
 			http.Error(w, fmt.Sprintf("User role '%s' not permitted to access this resource.", role), http.StatusForbidden)
 			return
 		}

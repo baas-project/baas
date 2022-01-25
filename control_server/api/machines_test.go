@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/database/sqlite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
 func TestApi_UpdateMachine(t *testing.T) {
-	store, err := database.NewSqliteStore(database.InMemoryPath)
+	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
@@ -48,7 +48,7 @@ func TestApi_UpdateMachine(t *testing.T) {
 }
 
 func TestApi_UpdateMachineExists(t *testing.T) {
-	store, err := database.NewSqliteStore(database.InMemoryPath)
+	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
@@ -99,7 +99,7 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 }
 
 func TestApi_GetMachine(t *testing.T) {
-	store, err := database.NewSqliteStore(database.InMemoryPath)
+	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
@@ -135,7 +135,7 @@ func TestApi_GetMachine(t *testing.T) {
 }
 
 func TestApi_GetMachines(t *testing.T) {
-	store, err := database.NewSqliteStore(database.InMemoryPath)
+	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
 	machine1 := model.MachineModel{

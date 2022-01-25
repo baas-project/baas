@@ -3,18 +3,18 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/baas-project/baas/pkg/database/sqlite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestApi_CreateImage(t *testing.T) {
-	store, err := database.NewSqliteStore(database.InMemoryPath)
+	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
 	user := model.UserModel{
@@ -54,7 +54,7 @@ func TestApi_CreateImage(t *testing.T) {
 }
 
 func TestApi_GetImage(t *testing.T) {
-	store, err := database.NewSqliteStore(database.InMemoryPath)
+	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
 	user := model.UserModel{

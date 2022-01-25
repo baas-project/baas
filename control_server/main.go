@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/baas-project/baas/pkg/database/sqlite"
 	"os"
 	"strconv"
 
-	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/model"
 
 	log "github.com/sirupsen/logrus"
@@ -44,7 +44,7 @@ func main() {
 
 	log.Info("Starting BAAS control server")
 
-	store, err := database.NewSqliteStore("store.db")
+	store, err := sqlite.NewSqliteStore("store.db")
 	if err != nil {
 		log.Fatal(err)
 	}

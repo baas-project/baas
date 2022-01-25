@@ -19,7 +19,7 @@ import (
 // Example response: {"name": "Machine 1",
 //                    "Architecture": "x86_64",
 //                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
-func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	mac, ok := vars["mac"]
 	if !ok || mac == "" {
@@ -28,7 +28,7 @@ func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine, err := api.store.GetMachineByMac(model.MacAddress{Address: mac})
+	machine, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
 	if err != nil {
 		http.Error(w, "couldn't get machine", http.StatusInternalServerError)
 		log.Errorf("get machine by mac: %v", err)
@@ -44,8 +44,8 @@ func (api *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 // Example response: {"name": "Machine 1",
 //                    "Architecture": "x86_64",
 //                    "MacAddresses": [{"Mac": "00:11:22:33:44:55:66}]}
-func (api *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
-	machines, err := api.store.GetMachines()
+func (api_ *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
+	machines, err := api_.store.GetMachines()
 	if err != nil {
 		http.Error(w, "couldn't get machines", http.StatusInternalServerError)
 		log.Errorf("get machines: %v", err)
@@ -70,7 +70,7 @@ func (api *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
 //        }]
 //     }
 //
-func (api *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 	var machine model.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
 	if err != nil {
@@ -79,7 +79,7 @@ func (api *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = api.store.UpdateMachine(&machine)
+	err = api_.store.UpdateMachine(&machine)
 	if err != nil {
 		http.Error(w, "couldn't update machine", http.StatusInternalServerError)
 		log.Errorf("get update machine: %v", err)
@@ -88,7 +88,7 @@ func (api *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 }
 
 // UploadDiskImage allows the management os to upload disk images
-func (api *API) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -104,7 +104,7 @@ func (api *API) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path := fmt.Sprintf("%s/%s", api.diskpath, id)
+	path := fmt.Sprintf("%s/%s", api_.diskpath, id)
 	temppath := fmt.Sprintf("%s.%s.tmp", path, uuid.New().String())
 
 	f, err := os.OpenFile(temppath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
@@ -130,7 +130,7 @@ func (api *API) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // DownloadDiskImage provides disk images for the management os to download
-func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, ok := vars["uuid"]
 	if !ok || id == "" {
@@ -146,7 +146,7 @@ func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.OpenFile(fmt.Sprintf("%s/%s", api.diskpath, id), syscall.O_RDONLY, os.ModePerm)
+	f, err := os.OpenFile(fmt.Sprintf("%s/%s", api_.diskpath, id), syscall.O_RDONLY, os.ModePerm)
 	if err != nil {
 		http.NotFound(w, r)
 		log.Errorf("failed to read disk image (%v)", err)
@@ -164,7 +164,7 @@ func (api *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // BootInform handles all incoming boot inform requests
-func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	/*
 		// First we fetch the id associated of the
 		vars := mux.Vars(r)
@@ -233,7 +233,7 @@ func (api *API) BootInform(w http.ResponseWriter, r *http.Request) {
 //   "Version": 1636116090,
 //   "ImageUUID": "74368cec-7903-4233-87b7-564195619dce",
 //   "Update": true}
-func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 	// First we fetch the id associated of the
 	vars := mux.Vars(r)
 	mac, ok := vars["mac"]
@@ -244,7 +244,7 @@ func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine, err := api.store.GetMachineByMac(model.MacAddress{Address: mac})
+	machine, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
 
 	if err != nil {
 		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
@@ -264,7 +264,7 @@ func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 	// pkgapi.PrettyPrintStruct(bootSetup)
 
 	bootSetup.MachineModelID = machine.ID
-	err = api.store.AddBootSetupToMachine(&bootSetup)
+	err = api_.store.AddBootSetupToMachine(&bootSetup)
 
 	if err != nil {
 		http.Error(w, "cannot add the bootsetup to the machine", http.StatusBadRequest)
@@ -277,66 +277,66 @@ func (api *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 }
 
 // RegisterMachineHandlers sets the metadata for each of the routes and registers them to the global handler
-func (api *API) RegisterMachineHandlers() {
-	api.routes = append(api.routes, Route{
+func (api_ *API) RegisterMachineHandlers() {
+	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
-		Handler:     api.GetMachine,
+		Handler:     api_.GetMachine,
 		Method:      http.MethodGet,
 		Description: "Gets a machine from the database",
 	})
 
-	api.routes = append(api.routes, Route{
+	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machines",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
-		Handler:     api.GetMachines,
+		Handler:     api_.GetMachines,
 		Method:      http.MethodGet,
 		Description: "Gets all the machines from the database",
 	})
 
-	api.routes = append(api.routes, Route{
+	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine",
 		Permissions: []model.UserRole{model.Admin},
 		UserAllowed: false,
-		Handler:     api.UpdateMachine,
+		Handler:     api_.UpdateMachine,
 		Method:      http.MethodPost,
 		Description: "Updates a machine",
 	})
 
-	api.routes = append(api.routes, Route{
+	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/disk/{uuid}",
 		Permissions: []model.UserRole{model.Moderator, model.Admin},
 		UserAllowed: true,
-		Handler:     api.UploadDiskImage,
+		Handler:     api_.UploadDiskImage,
 		Method:      http.MethodPost,
 		Description: "Uploads the image",
 	})
 
-	api.routes = append(api.routes, Route{
+	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/disk/{uuid}",
 		Permissions: []model.UserRole{model.Moderator, model.Admin},
 		UserAllowed: true,
-		Handler:     api.DownloadDiskImage,
+		Handler:     api_.DownloadDiskImage,
 		Method:      http.MethodGet,
 		Description: "Downloads the disk image",
 	})
 
-	api.routes = append(api.routes, Route{
+	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/boot",
 		Permissions: []model.UserRole{model.Moderator, model.Admin},
 		UserAllowed: true,
-		Handler:     api.BootInform,
+		Handler:     api_.BootInform,
 		Method:      http.MethodGet,
 		Description: "Gets the next configuration a machine is going to boot into",
 	})
 
-	api.routes = append(api.routes, Route{
+	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/boot",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: false,
-		Handler:     api.SetBootSetup,
+		Handler:     api_.SetBootSetup,
 		Method:      http.MethodPost,
 		Description: "Adds a boot configuration to the queue",
 	})

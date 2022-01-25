@@ -21,8 +21,8 @@ var conf = &oauth2.Config{
 }
 
 // returnUserByOAuth gets or creates the associated user from the database.
-func (api *API) returnUserByOAuth(username string, email string, realName string) (*model.UserModel, error) {
-	user, err := api.store.GetUserByUsername(username)
+func (api_ *API) returnUserByOAuth(username string, email string, realName string) (*model.UserModel, error) {
+	user, err := api_.store.GetUserByUsername(username)
 
 	// Create the user if we cannot find it in the database.
 	if err == gorm.ErrRecordNotFound {
@@ -33,7 +33,7 @@ func (api *API) returnUserByOAuth(username string, email string, realName string
 			Role:     model.User,
 		}
 
-		api.store.CreateUser(user)
+		api_.store.CreateUser(user)
 	} else if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (api *API) returnUserByOAuth(username string, email string, realName string
 }
 
 // LoginGithub defines the entrypoint to start the OAuth flow
-func (api *API) LoginGithub(w http.ResponseWriter, _ *http.Request) {
+func (api_ *API) LoginGithub(w http.ResponseWriter, _ *http.Request) {
 	// Redirect the user
 	uri := conf.AuthCodeURL("state", oauth2.AccessTypeOffline)
 
@@ -51,9 +51,9 @@ func (api *API) LoginGithub(w http.ResponseWriter, _ *http.Request) {
 }
 
 // LoginGithubCallback gets the token and creates the user model for the GitHub User
-func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
+func (api_ *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	// Get the session
-	session, _ := api.session.Get(r, "session-name")
+	session, _ := api_.session.Get(r, "session-name")
 
 	// Fetch the single-use code from the URI
 	ctx := context.Background()
@@ -84,7 +84,7 @@ func (api *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	user, err := api.returnUserByOAuth(loginInfo.Login, loginInfo.Email, loginInfo.Email)
+	user, err := api_.returnUserByOAuth(loginInfo.Login, loginInfo.Email, loginInfo.Email)
 
 	if err != nil {
 		http.Error(w, "Cannot find the user in the database", http.StatusBadRequest)
