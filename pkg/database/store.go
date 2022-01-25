@@ -30,7 +30,10 @@ type Store interface {
 	GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, error)
 	GetImagesByUsername(username string) ([]images.ImageModel, error)
 	GetImagesByNameAndUsername(name string, username string) ([]images.ImageModel, error)
-	CreateImage(username string, image *images.ImageModel) error
+	CreateImage(image *images.ImageModel)
 	CreateNewImageVersion(version images.Version)
+
 	CreateImageSetup(username string, image *images.ImageSetup) error
+	FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error)
+	GetImageSetup(username string, imageSetup string) (images.ImageSetup, error)
 }

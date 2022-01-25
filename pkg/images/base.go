@@ -80,8 +80,8 @@ type ImageUUID string
 type Version struct {
 	gorm.Model `json:"-"`
 
-	Version      uint64 `gorm:"autoIncrement;primaryKey;not null;unique"`
-	ImageModelID uint
+	Version        uint64    `gorm:"not null;primaryKey;autoIncrement;default:0"`
+	ImageModelUUID ImageUUID `gorm:"primaryKey"`
 }
 
 /* Disk Layout on control_server
@@ -108,13 +108,13 @@ type ImageModel struct {
 	// Versions are all possible versions of this image, represented as unix
 	// timestamps of their creation. A new version is created whenever a reprovisioning
 	// takes place, and this image is replaced.
-	Versions []Version
+	Versions []Version `gorm:"foreignKey:ImageModelUUID;not null;references:UUID"`
 
 	// ImageUUID is a universally unique identifier for images
 	UUID ImageUUID `gorm:"uniqueIndex;primaryKey;unique"`
 
 	// Foreign key for gorm
-	UserModelID uint32
+	Username string `gorm:"foreignKey:Username"`
 }
 
 const (

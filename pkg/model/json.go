@@ -34,3 +34,8 @@ type GitHubLogin struct {
 	CreatedAt         string
 	UpdatedAt         string
 }
+
+type ImageSetupMessage struct {
+	Uuid    string
+	Version uint64
+}

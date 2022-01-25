@@ -20,23 +20,10 @@ type SqliteStore struct {
 }
 
 // CreateImage creates the image entity in the database and adds the first version to it.
-func (s SqliteStore) CreateImage(username string, image *images.ImageModel) error {
-	user, err := s.GetUserByUsername(username)
-	if err != nil {
-		return errors.Wrap(err, "get user by name")
-	}
-	res := s.Model(user).Association("Images").Append(image)
-
-	if res != nil {
-		return res
-	}
-	v := images.Version{
-		ImageModelID: image.ID,
-	}
-	image.Versions = append(image.Versions, v)
-
-	s.DB.Create(&v)
-	return res
+func (s SqliteStore) CreateImage(image *images.ImageModel) {
+	var versions []images.Version
+	image.Versions = append(versions, images.Version{Version: 0, ImageModelUUID: image.UUID})
+	s.DB.Create(image)
 }
 
 // GetImageByUUID fetches the image with the versions using their UUID as a key
@@ -55,8 +42,8 @@ func (s SqliteStore) GetImagesByUsername(username string) ([]images.ImageModel, 
 
 	res := s.Table("image_models").
 		Preload("Versions").
-		Joins("join user_models on user_models.id = image_models.user_model_id").
-		Where("user_models.name = ?", username).
+		Joins("join user_models on user_models.username = image_models.username").
+		Where("user_models.username = ?", username).
 		Find(&userImages)
 
 	return userImages, res.Error
@@ -64,12 +51,22 @@ func (s SqliteStore) GetImagesByUsername(username string) ([]images.ImageModel, 
 
 // CreateImageSetup creates a collection of images in history.
 func (s SqliteStore) CreateImageSetup(username string, image *images.ImageSetup) error {
-	user, err := s.GetUserByUsername(username)
+	_, err := s.GetUserByUsername(username)
 	if err != nil {
 		return errors.Wrap(err, "get user by name")
 	}
-	res := s.Model(user).Association("Images").Append(image)
-	return res
+
+	//res := s.Model(user).Association("Image_Setups").Append(image)
+	return s.Create(&image).Error
+}
+
+func (s SqliteStore) FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error) {
+	var userImageSetup []images.ImageSetup
+	res := s.Table("image_setups").
+		Joins("join user_models on image_setups.user = user_models.username").
+		Where("user_models.username = ?", username).
+		Find(&userImageSetup)
+	return &userImageSetup, res.Error
 }
 
 // GetImagesByNameAndUsername gets all the images associated with a user which have the same human-readable name.
@@ -82,6 +79,18 @@ func (s SqliteStore) GetImagesByNameAndUsername(name string, username string) ([
 		Where("user_models.name = ? AND image_models.name = ?", username, name).
 		Find(&userImages)
 	return userImages, res.Error
+}
+
+func (s SqliteStore) AddImageToImageSetup(username string, _ *images.ImageModel) {
+	s.FindImageSetupsByUsername(username)
+}
+
+func (s SqliteStore) GetImageSetup(username string, uuid string) (images.ImageSetup, error) {
+	var imageSetup images.ImageSetup
+	res := s.Table("image_setups").
+		Where("image_setups.user = ? AND image_setups.uuid = ?", username, uuid).
+		First(&imageSetup)
+	return imageSetup, res.Error
 }
 
 // GetMachineByMac gets any machine with the associated MAC addresses from the database
