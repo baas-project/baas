@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/util"
+	"gorm.io/gorm"
 	"net/http"
 	"os"
 	"syscall"
@@ -165,63 +167,67 @@ func (api_ *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 
 // BootInform handles all incoming boot inform requests
 func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
-	/*
-		// First we fetch the id associated of the
-		vars := mux.Vars(r)
-		mac, ok := vars["mac"]
+	// First we fetch the id associated of the
+	vars := mux.Vars(r)
+	mac, ok := vars["mac"]
 
-		if !ok || mac == "" {
-			http.Error(w, "mac address is not found", http.StatusBadRequest)
-			log.Errorf("mac not provided")
-			return
-		}
+	if !ok || mac == "" {
+		http.Error(w, "mac address is not found", http.StatusBadRequest)
+		log.Errorf("mac not provided")
+		return
+	}
 
-		hex, err := strconv.ParseUint(strings.ReplaceAll(mac, ":", ""), 16, 32)
-		if err != nil {
-			http.Error(w, "mac address is not found", http.StatusBadRequest)
-			log.Errorf("mac not provided")
-			return
-		}
-		machine, err := api.store.GetMachineByMac(hex)
+	machine, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
 
-		if err != nil {
-			http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
-			log.Errorf("Machine not found")
-			return
-		}
+	if err != nil {
+		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
+		log.Errorf("Machine not found")
+		return
+	}
 
-		log.Debug("Received BootInform request, serving Reprovisioning information")
+	log.Debug("Received BootInform request, serving Reprovisioning information")
 
-		// Get the next boot configuration based on a FIFO queue.
-		//bootInfo, err := api.store.GetNextBootSetup(machine.ID)
+	// Get the next boot configuration based on a FIFO queue.
+	bootInfo, err := api_.store.GetNextBootSetup(machine.ID)
 
-		if err == gorm.ErrRecordNotFound {
-			http.Error(w, "No boot setup found", http.StatusNotFound)
-			return
-		}
+	if err == gorm.ErrRecordNotFound {
+		http.Error(w, "No boot setup found", http.StatusNotFound)
+		return
+	}
 
-		if err != nil {
-			http.Error(w, "Error with finding boot setup", http.StatusBadRequest)
-			log.Errorf("Database error: %v", err)
-			return
-		}
+	if err != nil {
+		http.Error(w, "Error with finding boot setup", http.StatusBadRequest)
+		log.Errorf("Database error: %v", err)
+		return
+	}
 
-		// Use the same table to get the last deleted setup (which is the one running now)
-		lastSetup, err := api.store.GetLastDeletedBootSetup(machine.ID)
+	// Use the same table to get the last deleted setup (which is the one running now)
+	lastSetup, err := api_.store.GetLastDeletedBootSetup(machine.ID)
 
-		if err != gorm.ErrRecordNotFound && err != nil {
-			http.Error(w, "Error with fetching the boot history", http.StatusBadRequest)
-			return
-		}
+	if err != gorm.ErrRecordNotFound && err != nil {
+		http.Error(w, "Error with fetching the boot history", http.StatusBadRequest)
+		return
+	}
 
-		if err := json.NewEncoder(w).Encode(&resp); err != nil {
-			log.Errorf("Error while serialising json: %v", err)
-			http.Error(w, "Error while serialising response json", http.StatusInternalServerError)
-			return
-		}
+	if err != gorm.ErrRecordNotFound && lastSetup.Update {
+		util.PrettyPrintStruct(lastSetup)
+	}
 
-		r.Header.Set("content-type", "application/json")
-	*/
+	resp, err := api_.store.GetImageSetup(string(bootInfo.SetupUUID))
+
+	if err != nil {
+		http.Error(w, "Failed to get the next boot setup", http.StatusBadRequest)
+		log.Errorf("Failed to fetch image setup: %v", err)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(&resp); err != nil {
+		log.Errorf("Error while serialising json: %v", err)
+		http.Error(w, "Error while serialising response json", http.StatusInternalServerError)
+		return
+	}
+
+	r.Header.Set("content-type", "application/json")
 
 }
 
@@ -261,7 +267,7 @@ func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// pkgapi.PrettyPrintStruct(bootSetup)
+	util.PrettyPrintStruct(bootSetup)
 
 	bootSetup.MachineModelID = machine.ID
 	err = api_.store.AddBootSetupToMachine(&bootSetup)

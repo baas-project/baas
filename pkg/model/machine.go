@@ -39,7 +39,7 @@ type BootSetup struct {
 	MachineModelID uint `gorm:"foreignKey:ID"`
 
 	// Store the setup that should be loaded onto the machine
-	Setup images.ImageSetup `gorm:"foreignKey:ID"`
+	SetupUUID images.ImageUUID
 
 	// Should the image changes be uploaded to the server?
 	Update bool

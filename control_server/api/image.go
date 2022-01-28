@@ -3,15 +3,16 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strconv"
+
 	"github.com/baas-project/baas/pkg/fs"
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	"io"
-	"net/http"
-	"os"
-	"strconv"
 )
 
 // CreateImage creates an image based on a name
@@ -129,11 +130,15 @@ func (api_ *API) GetImagesByUser(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) GetImagesByName(w http.ResponseWriter, r *http.Request) {
 	username, err := GetName(w, r)
 	if err != nil {
+		http.Error(w, "Couldn't find images by name.", http.StatusInternalServerError)
+		log.Errorf("could not find name in request: %v", err)
 		return
 	}
 
 	imageName, err := GetTag("image_name", w, r)
 	if err != nil {
+		http.Error(w, "Couldn't find images by name.", http.StatusInternalServerError)
+		log.Errorf("could not find image name in request: %v", err)
 		return
 	}
 

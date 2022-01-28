@@ -32,22 +32,6 @@ func (s Store) GetImagesByUsername(username string) ([]images.ImageModel, error)
 	return userImages, res.Error
 }
 
-// AddImageToImageSetup adds an image pegged to a particular version to the setup.
-func (s Store) AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version) {
-	setup.AddImage(image, version)
-	s.DB.Updates(setup)
-}
-
-// GetImageSetup an image setup associated with a particular UUID.
-func (s Store) GetImageSetup(username string, uuid string) (images.ImageSetup, error) {
-	var imageSetup images.ImageSetup
-	res := s.Table("image_setups").
-		Preload("Images").
-		Where("image_setups.user = ? AND image_setups.uuid = ?", username, uuid).
-		First(&imageSetup)
-	return imageSetup, res.Error
-}
-
 // CreateNewImageVersion creates a new version in the database
 func (s Store) CreateNewImageVersion(version images.Version) {
 	s.Create(&version)

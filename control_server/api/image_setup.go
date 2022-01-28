@@ -95,10 +95,15 @@ func (api_ *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setup, err := api_.store.GetImageSetup(username, uuid_)
+	setup, err := api_.store.GetImageSetup(uuid_)
 	if err != nil {
 		http.Error(w, "Failed to find image setup", http.StatusBadRequest)
 		log.Errorf("Cannot find image setup: %v", err)
+		return
+	}
+	if setup.User != username {
+		http.Error(w, "Image not owned by this user", http.StatusUnauthorized)
+		log.Errorf("Image not owned by requesting user: %v", err)
 		return
 	}
 
@@ -144,7 +149,12 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageSetup, err := api_.store.GetImageSetup(username, uuid_)
+	imageSetup, err := api_.store.GetImageSetup(uuid_)
+	if imageSetup.User != username {
+		http.Error(w, "This UUID is not owned by you", http.StatusUnauthorized)
+		log.Errorf("Image not owned by user: %v", err)
+		return
+	}
 
 	if err != nil {
 		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
