@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/partition/part"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"time"
 )
 
 const path = "partitions_cache.json"
@@ -24,23 +25,24 @@ type Partition struct {
 	DeviceFile      string
 }
 
+// getPartitions populates the partitionList by either generating the cache or loading from disk
 func getPartitions(machine *MachineImage) {
 	v, err := machine.Exists(path)
 	if err != nil {
-		log.Warn("Cannot find existence of cache path: %v", err)
+		log.Warnf("Cannot find existence of cache path: %v", err)
 	}
 
 	if !v {
 		f, err := machine.Create(path)
 		if err != nil {
-			log.Warnf("Cannot create partition cache file ")
+			log.Warnf("Cannot create partition cache file: %v", err)
 		}
 		partitionList = generatePartitionList()
-		writePartitionJson(f)
+		writePartitionJSON(f)
 
 		err = f.Close()
 		if err != nil {
-			log.Warnf("Cannot close the partition cache file")
+			log.Warnf("Cannot close the partition cache file: %v", err)
 		}
 	} else {
 		log.Warn("Load cache from file")
@@ -58,6 +60,8 @@ func getPartitions(machine *MachineImage) {
 		}
 	}
 }
+
+// generatePartitionList generates a new instance of the cache
 func generatePartitionList() []Partition {
 	disk, err := diskfs.OpenWithMode("/dev/sda", diskfs.ReadOnly)
 	if err != nil {
@@ -69,10 +73,10 @@ func generatePartitionList() []Partition {
 		fmt.Printf("%v\n", err)
 	}
 
-	var partitionList []Partition
+	var partitions []Partition
 	for i, partition := range table.GetPartitions() {
 		if partition.GetSize() != 512 && partition.GetStart() != 0 {
-			partitionList = append(partitionList, Partition{
+			partitions = append(partitions, Partition{
 				Partition:       partition,
 				Number:          uint32(i + 1),
 				AssociatedImage: "",
@@ -82,13 +86,14 @@ func generatePartitionList() []Partition {
 		}
 	}
 
-	return partitionList
+	return partitions
 }
 
+// getPartition finds a partition which can be used to store the image. It will either try to find where it was stored prior or use the least recently used partition.
 func getPartition(image images.ImageUUID) *Partition {
 	chosenPartition := &partitionList[0]
 
-	for i, _ := range partitionList {
+	for i := range partitionList {
 		if partitionList[i].AssociatedImage == image {
 			log.Info("Found a cached version on disk")
 			partitionList[i].LastUsedTime = time.Now().Unix()
@@ -102,24 +107,28 @@ func getPartition(image images.ImageUUID) *Partition {
 	}
 
 	// Set the partition metadata
-	(*chosenPartition).LastUsedTime = time.Now().Unix()
-	(*chosenPartition).AssociatedImage = image
+	chosenPartition.LastUsedTime = time.Now().Unix()
+	chosenPartition.AssociatedImage = image
 	return chosenPartition
 }
 
-func writePartitionJson(file *os.File) {
+// writePartitionJSON writes the partition cache to a file on disk.
+func writePartitionJSON(file *os.File) { //nolint
 	err := json.NewEncoder(file).Encode(partitionList)
 
 	if err != nil {
 		fmt.Printf("Cannot encode JSON to file: %v", err)
 	}
 }
+
+// printPartitions prints all the partitions in the cache
 func printPartitions() {
 	for _, partition := range partitionList {
 		printPartition(partition)
 	}
 }
 
+// printPartition prints information about a given partition
 func printPartition(partition Partition) {
 	log.Debugf("%s %s %d\n",
 		partition.DeviceFile, partition.AssociatedImage,

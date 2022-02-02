@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/baas-project/baas/pkg/images"
 	"io"
+
+	"github.com/baas-project/baas/pkg/images"
 
 	"github.com/baas-project/baas/pkg/compression"
 	gzip "github.com/klauspost/pgzip"
@@ -26,9 +27,9 @@ func setupDisk(api *APIClient, mac string, image *images.ImageModel, version uin
 	// is a neater way out there. Feel free to change this.
 	var dec io.Reader
 	if image.DiskCompressionStrategy == images.DiskCompressionStrategyGZip {
-		r, err := gzip.NewReader(reader)
+		r, err2 := gzip.NewReader(reader)
 
-		if err != nil {
+		if err2 != nil {
 			return errors.Wrap(err, "Opening GZip stream")
 		}
 

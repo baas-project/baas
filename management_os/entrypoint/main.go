@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/baas-project/baas/pkg/images"
 	"os"
 	"os/exec"
+
+	"github.com/baas-project/baas/pkg/images"
 
 	"net"
 
@@ -72,24 +73,7 @@ func init() {
 	log.AddHook(httplog.NewLogHook(fmt.Sprintf("%s/log", baseurl), "MMOS"))
 }
 
-func main() {
-	conf := getConfig()
-	var machine MachineImage
-	machine.initialize("/dev/sda1", "/mnt/machine")
-	c := NewAPIClient(baseurl)
-
-	// Get the partition cache
-	getPartitions(&machine)
-	printPartitions()
-	mac, err := getMacAddr()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	imageSetup, err := c.BootInform(mac)
-	if err != nil {
-		log.Fatal(err)
-	}
+func getLastSetup(machine *MachineImage) images.ImageSetup {
 	var lastSetup images.ImageSetup
 	// Fetch information on the last setup
 	if v, _ := machine.Exists("last_setup.json"); v {
@@ -108,7 +92,7 @@ func main() {
 		if err != nil {
 			log.Warnf("Cannot create the last setup: %v", err)
 		}
-		imageSetup = nil
+		lastSetup = images.ImageSetup{}
 		err = f.Close()
 
 		if err != nil {
@@ -116,7 +100,31 @@ func main() {
 		}
 	}
 
-	if conf.UploadDisk && imageSetup != nil {
+	return lastSetup
+}
+
+func main() {
+	conf := getConfig()
+	var machine MachineImage
+	machine.Initialise("/dev/sda1", "/mnt/machine")
+	c := NewAPIClient(baseurl)
+
+	// Get the partition cache
+	getPartitions(&machine)
+	printPartitions()
+	mac, err := getMacAddr()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	lastSetup := getLastSetup(&machine)
+
+	imageSetup, err := c.BootInform(mac)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if conf.UploadDisk && lastSetup.UUID != "" {
 		if err = ReadInDisks(c, lastSetup); err != nil {
 			log.Fatalf("Failed to read the disks: %v", err)
 		}
@@ -148,7 +156,7 @@ func main() {
 	}
 
 	printPartitions()
-	writePartitionJson(f)
+	writePartitionJSON(f)
 	err = f.Close()
 
 	if err != nil {

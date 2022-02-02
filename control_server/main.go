@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/baas-project/baas/pkg/database/sqlite"
 	"os"
 	"strconv"
+
+	"github.com/baas-project/baas/pkg/database/sqlite"
 
 	"github.com/baas-project/baas/pkg/model"
 

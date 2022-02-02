@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/baas-project/baas/pkg/images"
 	"io"
+
+	"github.com/baas-project/baas/pkg/images"
 
 	"github.com/baas-project/baas/pkg/compression"
 
@@ -19,7 +20,7 @@ func ReadInDisks(api *APIClient, setup images.ImageSetup) error {
 		log.Debugf("reading disk: %v", image.Image.UUID)
 
 		if !image.Update {
-			log.Debug("Image %s update is set", image.UUIDImage)
+			log.Debugf("Image %s update is set", image.UUIDImage)
 			continue
 		}
 
