@@ -34,14 +34,20 @@ func (api *API) GetUsers(w http.ResponseWriter, _ *http.Request) {
 func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user model.UserModel
 	err := json.NewDecoder(r.Body).Decode(&user)
+
 	if err != nil {
 		http.Error(w, "invalid user given", http.StatusBadRequest)
 		log.Errorf("Invalid user given: %v", err)
 		return
 	}
 
-	if user.Name == "" {
+	if user.Username == "" {
 		http.Error(w, "No username given", http.StatusBadRequest)
+		return
+	}
+
+	if user.Name == "" {
+		http.Error(w, "No name given", http.StatusBadRequest)
 		return
 	}
 
@@ -64,12 +70,41 @@ func (api *API) CreateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Successfully created user\n")
 }
 
+// GetLoggedInUser gets the currently logged in user and returns it.
+// Example request: user/me
+func (api *API) GetLoggedInUser(w http.ResponseWriter, r *http.Request) {
+	session, _ := api.session.Get(r, "session-name")
+	username, ok := session.Values["Username"].(string)
+
+	if !ok {
+		http.Error(w, "Cannot find username", http.StatusBadRequest)
+		return
+	}
+
+	user, err := api.store.GetUserByUsername(username)
+
+	if err != nil {
+		http.Error(w, "Cannot find user: "+username, http.StatusNotFound)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(user)
+}
+
 // GetUser fetches a user based on their name and returns it
 // Example request: user/Jan
 // Response: {"Name": "Jan",
 //            "Email": "v.d.vandebeek@student.tudelft.nl",
 //            "role": "admin"}
 func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
+	session, _ := api.session.Get(r, "session-name")
+
+	username, ok := session.Values["Username"].(string)
+	if !ok {
+		http.Error(w, "Username not found", http.StatusBadRequest)
+		return
+	}
+
 	vars := mux.Vars(r)
 	name, ok := vars["name"]
 	if !ok || name == "" {
@@ -78,7 +113,7 @@ func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, err := api.store.GetUserByName(name)
+	user, err := api.store.GetUserByUsername(name)
 
 	// Annoyingly enough we can't be more specific due to error wrapping... I swear, this language.
 	if err != nil {
@@ -87,5 +122,77 @@ func (api *API) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(users)
+	// Check if the user is allowed to access the profile.
+	if user.Role != model.Admin && user.Username != username {
+		http.Error(w, "Cannot access this user", http.StatusUnauthorized)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(user)
+}
+
+// RegisterUserHandlers sets the metadata for each of the routes and registers them to the global handler
+func (api *API) RegisterUserHandlers() {
+	api.routes = append(api.routes, Route{
+		URI:         "/users",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: false,
+		Handler:     api.GetUsers,
+		Method:      http.MethodGet,
+		Description: "Gets all the users from the database",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user",
+		Permissions: []model.UserRole{model.Admin},
+		UserAllowed: false,
+		Handler:     api.CreateUser,
+		Method:      http.MethodPost,
+		Description: "Adds a new user to the database",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/me",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetLoggedInUser,
+		Method:      http.MethodGet,
+		Description: "Gets the user who is currently logged in",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetUser,
+		Method:      http.MethodGet,
+		Description: "Gets information about a particular user",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}/image",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.CreateImage,
+		Method:      http.MethodPost,
+		Description: "Creates a new image",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}/images",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetImagesByUser,
+		Method:      http.MethodGet,
+		Description: "Gets all the images owned by a particular user",
+	})
+
+	api.routes = append(api.routes, Route{
+		URI:         "/user/{name}/images/{image_name}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api.GetImagesByName,
+		Method:      http.MethodGet,
+		Description: "Finds all the images by this user with a particular name",
+	})
 }
