@@ -27,8 +27,9 @@ func (s Store) FindImageSetupsByUsername(username string) (*[]images.ImageSetup,
 }
 
 // AddImageToImageSetup adds an image pegged to a particular version to the setup.
-func (s Store) AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version) {
-	setup.AddImage(image, version)
+func (s Store) AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version,
+	update bool) {
+	setup.AddImage(image, version, update)
 	s.DB.Updates(setup)
 }
 
@@ -37,6 +38,7 @@ func (s Store) GetImageSetup(uuid string) (images.ImageSetup, error) {
 	var imageSetup images.ImageSetup
 	res := s.Table("image_setups").
 		Preload("Images").
+		Preload("Images.Image").
 		Where("image_setups.uuid = ?", uuid).
 		First(&imageSetup)
 	return imageSetup, res.Error

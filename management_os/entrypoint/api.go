@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/images"
 	"io"
 	"io/ioutil"
 
@@ -12,8 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
-
-	"github.com/baas-project/baas/pkg/api"
 	//	"github.com/baas-project/baas/pkg/util"
 )
 
@@ -30,11 +29,18 @@ func NewAPIClient(baseURL string) *APIClient {
 }
 
 // BootInform informs the server that we have booted
-func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
+func (a *APIClient) BootInform(mac string) (*images.ImageSetup, error) {
 	url := fmt.Sprintf("%s/machine/%s/boot", a.baseURL, mac)
 	log.Debugf("Sending boot inform request to %s", url)
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Errorf("Cannot create request: %v", err)
+	}
+
+	req.Header.Set("type", "system")
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed sending inform request")
 	}
@@ -49,7 +55,7 @@ func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
 		return nil, errors.Errorf("inform request failed (%s) to %s", strings.TrimSpace(string(msg)), url)
 	}
 
-	var info api.ReprovisioningInfo
+	var info images.ImageSetup
 
 	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
 		return nil, errors.Wrap(err, "couldn't deserialize inform request response")
@@ -59,12 +65,19 @@ func (a *APIClient) BootInform(mac string) (*api.ReprovisioningInfo, error) {
 }
 
 // DownloadDiskHTTP Downloads a disk image from the control_server over HTTP
-func (a *APIClient) DownloadDiskHTTP(uuid string, version uint) (io.ReadCloser, error) {
+func (a *APIClient) DownloadDiskHTTP(uuid images.ImageUUID, version uint64) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s/image/%s/%d", a.baseURL, uuid, version)
 	log.Infof("downloading disk %v over http from %s", uuid, url)
 
 	//nolint we are returning a readcloser so the body will be closed later
-	resp, err := http.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Errorf("Cannot create request: %v", err)
+	}
+
+	req.Header.Set("type", "system")
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "error dl disk")
 	}
@@ -86,7 +99,7 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid string) error {
 	log.Debugf("uploading disk %v over http to %s", uuid, url)
 
 	// Create a pipe, so we only pass around the streams, if we try to write the actual file or program will be reaped
-	// Dammit Calli
+	// Dammit Calli, leave my processes alone.
 	boundary := "JanRellermeyer"
 	fileName := "image.img"
 	fileHeader := "Content-Type: application/octet-stream"

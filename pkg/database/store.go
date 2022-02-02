@@ -20,7 +20,6 @@ type Store interface {
 	UpdateMachine(machine *model.MachineModel) error
 	AddBootSetupToMachine(bootSetup *model.BootSetup) error
 	GetNextBootSetup(machineID uint) (model.BootSetup, error)
-	GetLastDeletedBootSetup(machineID uint) (model.BootSetup, error)
 
 	GetUserByUsername(name string) (*model.UserModel, error)
 	GetUserByID(id uint) (*model.UserModel, error)
@@ -34,7 +33,7 @@ type Store interface {
 	CreateNewImageVersion(version images.Version)
 
 	CreateImageSetup(username string, image *images.ImageSetup) error
-	AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version)
+	AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version, update bool)
 	FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error)
 	GetImageSetup(imageSetup string) (images.ImageSetup, error)
 }

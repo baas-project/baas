@@ -48,6 +48,14 @@ func NewAPI(store database.Store, diskpath string) *API {
 // lint:
 func (api_ *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc { // nolint
 	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO: dear god, security here needs to be done beter.
+		if r.Header.Get("type") == "system" {
+			next.ServeHTTP(w, r)
+			return
+		} else if !route.UserAllowed {
+			http.Error(w, "Users are not allowed to access this endpoint", http.StatusBadRequest)
+			return
+		}
 		session, _ := api_.session.Get(r, "session-name")
 		role, ok := session.Values["Role"].(string)
 		if !ok {

@@ -10,14 +10,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
-
-	"github.com/baas-project/baas/pkg/model"
 )
 
-func setupDisk(api *APIClient, mac string, uuid string, disk images.DiskImage, version uint) error {
+func setupDisk(api *APIClient, mac string, image *images.ImageModel, version uint64) error {
 	log.Debugf("writing disk: %v", mac)
 
-	reader, err := DownloadDisk(api, uuid, disk, version)
+	reader, err := DownloadDisk(api, image, version)
 	if err != nil {
 		return errors.Wrap(err, "error downloading disk")
 	}
@@ -27,7 +25,7 @@ func setupDisk(api *APIClient, mac string, uuid string, disk images.DiskImage, v
 	// somehow. Casting it upwards is not allowed, hence this is the only solution I could find. Maybe there
 	// is a neater way out there. Feel free to change this.
 	var dec io.Reader
-	if disk.DiskCompressionStrategy == images.DiskCompressionStrategyGZip {
+	if image.DiskCompressionStrategy == images.DiskCompressionStrategyGZip {
 		r, err := gzip.NewReader(reader)
 
 		if err != nil {
@@ -44,12 +42,12 @@ func setupDisk(api *APIClient, mac string, uuid string, disk images.DiskImage, v
 		// Cast down to common Reader
 		dec = r // nolint: ineffassign
 	} else {
-		dec, err = compression.Decompress(reader, disk.DiskCompressionStrategy)
+		dec, err = compression.Decompress(reader, image.DiskCompressionStrategy)
 		if err != nil {
 			return errors.Wrap(err, "error decompressing disk")
 		}
 
-		err = WriteDisk(dec, disk)
+		err = WriteDisk(dec, image)
 		if err != nil {
 			return errors.Wrap(err, "error writing disk")
 		}
@@ -65,25 +63,26 @@ func setupDisk(api *APIClient, mac string, uuid string, disk images.DiskImage, v
 }
 
 // WriteOutDisks Downloads, Decompresses and finally Writes a disk image to disk
-func WriteOutDisks(api *APIClient, mac string, setup model.BootSetup) error {
+func WriteOutDisks(api *APIClient, mac string, setup *images.ImageSetup) error {
 	log.Info("Downloading and writing disks")
-	/*
-		for _, disk := range setup.Disks {
-			// Yes, you could inline this function but this screws with the defers mechanism that Go has.
-			// By using a separate method call we ensure that the file are closed whenever they are no longer
-			// needed rather than waiting for the entire cycle.
-			err := setupDisk(api, mac, disk.UUID, disk.Image, disk.Version)
 
-			if err != nil {
-				return errors.Wrap(err, "couldn't close download body")
-			}
+	for _, image := range setup.Images {
+		log.Warnf("Image UUID: %s", image.Image.UUID)
+		// Yes, you could inline this function but this screws with the defers mechanism that Go has.
+		// By using a separate method call we ensure that the file are closed whenever they are no longer
+		// needed rather than waiting for the entire cycle.
+		err := setupDisk(api, mac, &image.Image, image.VersionNumber)
+
+		if err != nil {
+			return errors.Wrap(err, "couldn't close download body")
 		}
-	*/
+	}
 
 	return nil
 }
 
 // DownloadDisk downloads a disk from the network using the image's DiskTransferStrategy
-func DownloadDisk(api *APIClient, uuid model.BootInfo, image images.DiskImage, version uint) (reader io.ReadCloser, _ error) {
-	return api.DownloadDiskHTTP(uuid, version)
+func DownloadDisk(api *APIClient, image *images.ImageModel, version uint64) (reader io.ReadCloser, _ error) {
+	log.Debugf("Downloading image: %s", image.UUID)
+	return api.DownloadDiskHTTP(image.UUID, version)
 }

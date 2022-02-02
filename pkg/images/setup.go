@@ -7,11 +7,12 @@ import (
 // ImageFrozen defines a collection of Images where are pegged to a specific version.
 type ImageFrozen struct {
 	gorm.Model     `json:"-"`
-	Image          *ImageModel `json:"-" gorm:"foreignKey:UUIDImage;references:UUID"`
+	Image          ImageModel `gorm:"foreignKey:UUIDImage;references:UUID"`
 	UUIDImage      ImageUUID
 	Version        Version `json:"-" gorm:"foreignKey:VersionNumber;references:Version"`
 	VersionNumber  uint64
 	ImageSetupUUID ImageUUID `json:"-"`
+	Update         bool
 }
 
 // ImageSetup defines a collection of Images
@@ -32,10 +33,11 @@ func CreateImageSetup(name string) ImageSetup {
 }
 
 // AddImage takes an Image and a Version to adds both to Image list in ImageSetup
-func (setup *ImageSetup) AddImage(image *ImageModel, version Version) {
+func (setup *ImageSetup) AddImage(image *ImageModel, version Version, update bool) {
 	setup.Images = append(setup.Images, ImageFrozen{
-		Image:   image,
+		Image:   *image,
 		Version: version,
+		Update:  update,
 	})
 }
 
@@ -49,7 +51,7 @@ func (setup ImageSetup) GetImageFromSetup(name string) (*ImageModel, *Version) {
 	for _, frozenImage := range setup.Images {
 		image := frozenImage.Image
 		if image.Name == name {
-			return image, &frozenImage.Version
+			return &image, &frozenImage.Version
 		}
 	}
 	return nil, nil
