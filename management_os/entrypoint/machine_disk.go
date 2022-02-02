@@ -1,11 +1,13 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"os"
 	"syscall"
+
+	log "github.com/sirupsen/logrus"
 )
 
+// MachineImage stores the target directory and device file associated with an image.
 type MachineImage struct {
 	DeviceFile string
 	target     string
@@ -18,7 +20,8 @@ type MachineImage struct {
 // the machine storage
 var ext4MountOptions = "journal_checksum,errors=remount-ro,data=ordered"
 
-func (image *MachineImage) initialize(file string, target string) {
+// Initialise creates the image using a particular partition and a target directory
+func (image *MachineImage) Initialise(file string, target string) {
 	image.DeviceFile = file
 	image.target = target
 
@@ -38,27 +41,33 @@ func (image *MachineImage) initialize(file string, target string) {
 	}
 }
 
+// Open opens a file for read or write on disk
 func (image *MachineImage) Open(file string) (*os.File, error) {
 	return os.OpenFile(image.target+"/"+file, os.O_CREATE|os.O_RDWR,
 		0755)
 }
 
+// Create file creates a file on disk
 func (image *MachineImage) Create(file string) (*os.File, error) {
 	return os.Create(image.target + "/" + file)
 }
 
+// MkdirAll creates all directories given to it on disk
 func (image *MachineImage) MkdirAll(dir string, perm os.FileMode) error {
 	return os.MkdirAll(image.target+"/"+dir, perm)
 }
 
+// Remove deletes a file on disk
 func (image *MachineImage) Remove(name string) error {
 	return os.Remove(image.target + "/" + name)
 }
 
+// RemoveAll removes all files or directories in it's path
 func (image *MachineImage) RemoveAll(path string) error {
 	return os.RemoveAll(image.target + "/" + path)
 }
 
+// Exists checks if the path exists on disk
 func (image *MachineImage) Exists(path string) (bool, error) {
 	_, err := os.Stat(image.target + "/" + path)
 	if os.IsNotExist(err) {

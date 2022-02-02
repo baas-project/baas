@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	errors2 "errors"
+
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"

@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/baas-project/baas/pkg/images"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"syscall"
+
+	"github.com/baas-project/baas/pkg/images"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/baas-project/baas/pkg/fs"
 )
