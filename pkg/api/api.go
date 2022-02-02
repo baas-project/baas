@@ -7,6 +7,3 @@ const Port int = 4848
 // BootInformRequest is the data which the machine (client) sends to the control server on initial boot
 type BootInformRequest struct {
 }
-
-type ReprovisioningInfo struct {
-}

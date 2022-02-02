@@ -201,18 +201,6 @@ func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use the same table to get the last deleted setup (which is the one running now)
-	lastSetup, err := api_.store.GetLastDeletedBootSetup(machine.ID)
-
-	if err != gorm.ErrRecordNotFound && err != nil {
-		http.Error(w, "Error with fetching the boot history", http.StatusBadRequest)
-		return
-	}
-
-	if err != gorm.ErrRecordNotFound && lastSetup.Update {
-		util.PrettyPrintStruct(lastSetup)
-	}
-
 	resp, err := api_.store.GetImageSetup(string(bootInfo.SetupUUID))
 
 	if err != nil {
@@ -332,7 +320,7 @@ func (api_ *API) RegisterMachineHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/boot",
 		Permissions: []model.UserRole{model.Moderator, model.Admin},
-		UserAllowed: true,
+		UserAllowed: false,
 		Handler:     api_.BootInform,
 		Method:      http.MethodGet,
 		Description: "Gets the next configuration a machine is going to boot into",

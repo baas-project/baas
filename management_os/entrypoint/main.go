@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/images"
 	"os"
 	"os/exec"
 
@@ -72,27 +74,87 @@ func init() {
 
 func main() {
 	conf := getConfig()
+	var machine MachineImage
+	machine.initialize("/dev/sda1", "/mnt/machine")
 	c := NewAPIClient(baseurl)
 
+	// Get the partition cache
+	getPartitions(&machine)
+	printPartitions()
 	mac, err := getMacAddr()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	prov, err := c.BootInform(mac)
+	imageSetup, err := c.BootInform(mac)
 	if err != nil {
 		log.Fatal(err)
 	}
+	var lastSetup images.ImageSetup
+	// Fetch information on the last setup
+	if v, _ := machine.Exists("last_setup.json"); v {
+		f, err := machine.Open("last_setup.json")
+		if err != nil {
+			log.Warnf("Cannot read the last setup information: %v", err)
+		}
 
-	if !conf.UploadDisk {
+		_ = json.NewDecoder(f).Decode(&lastSetup)
+		err = f.Close()
+		if err != nil {
+			log.Warnf("Cannot close the image: %v", err)
+		}
+	} else {
+		f, err := machine.Create("last_setup.json")
+		if err != nil {
+			log.Warnf("Cannot create the last setup: %v", err)
+		}
+		imageSetup = nil
+		err = f.Close()
+
+		if err != nil {
+			log.Warnf("Cannot close the last setup file: %v", err)
+		}
+	}
+
+	if conf.UploadDisk && imageSetup != nil {
+		if err = ReadInDisks(c, lastSetup); err != nil {
+			log.Fatalf("Failed to read the disks: %v", err)
+		}
+	} else {
 		log.Info("Uploading disks disabled in configuration file.")
 	}
 
-	/*if err = WriteOutDisks(c, mac, prov.Next); err != nil {
+	if err = WriteOutDisks(c, mac, imageSetup); err != nil {
 		log.Fatal(err)
-	}*/
-
+	}
 	log.Info("reprovisioning done")
+
+	// Store the current image setup
+	f, err := machine.Open("last_setup.json")
+	if err != nil {
+		log.Fatalf("Cannot write setup to disk: %v", err)
+	}
+	err = json.NewEncoder(f).Encode(imageSetup)
+
+	if err != nil {
+		log.Fatalf("Cannot encode the image setup: %v", err)
+	}
+
+	// Write the partition list
+	f, err = machine.Open("partitions_cache.json")
+	if err != nil {
+		log.Fatalf("Cannot open the partition cache: %v", err)
+		return
+	}
+
+	printPartitions()
+	writePartitionJson(f)
+	err = f.Close()
+
+	if err != nil {
+		log.Warnf("Cannot close the partition cache file: %v", err)
+	}
+
 	// This presumes that the second option is the hard disk
 	if conf.SetNextBoot {
 		log.Info("Setting the BootNext parameter")

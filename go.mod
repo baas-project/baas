@@ -3,6 +3,8 @@ module github.com/baas-project/baas
 go 1.15
 
 require (
+	github.com/diskfs/go-diskfs v1.2.0
+	github.com/frankban/quicktest v1.14.1 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/sessions v1.2.1

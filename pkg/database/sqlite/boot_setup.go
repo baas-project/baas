@@ -16,13 +16,3 @@ func (s Store) GetNextBootSetup(machineID uint) (model.BootSetup, error) {
 		Delete(&bootSetup)
 	return bootSetup, res.Error
 }
-
-// GetLastDeletedBootSetup fetches the previously flashed image from the database which should tell us whether to update the image or not.
-func (s Store) GetLastDeletedBootSetup(machineID uint) (model.BootSetup, error) {
-	var bootSetup model.BootSetup
-	res := s.Table("boot_setups").
-		Unscoped().
-		Where("machine_model_id = ? and DELETED_AT IS NOT NULL", machineID).
-		Last(&bootSetup)
-	return bootSetup, res.Error
-}

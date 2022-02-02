@@ -2,11 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // createImageSetup defines an endpoint which creates an ImageSetup in the database
@@ -167,7 +168,7 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		ImageModelUUID: image.UUID,
 	}
 
-	api_.store.AddImageToImageSetup(&imageSetup, image, version)
+	api_.store.AddImageToImageSetup(&imageSetup, image, version, imageMsg.Update)
 
 	_ = json.NewEncoder(w).Encode(imageSetup)
 }

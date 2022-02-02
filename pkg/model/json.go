@@ -38,4 +38,5 @@ type GitHubLogin struct {
 type ImageSetupMessage struct {
 	Uuid    string
 	Version uint64
+	Update  bool
 }

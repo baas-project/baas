@@ -283,3 +283,4 @@ store.db
 .docker*
 #*
 *~
+management_os/build

@@ -46,14 +46,6 @@ const (
 	DiskCompressionStrategyGZip = "GZip"
 )
 
-// DiskImage describes a single disk image on the machine
-type DiskImage struct {
-	gorm.Model `json:"-"`
-
-	DiskType                DiskType
-	DiskCompressionStrategy DiskCompressionStrategy
-}
-
 // MarshalJSON marshals the enum as a quoted json string
 func (s DiskType) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
@@ -116,6 +108,12 @@ type ImageModel struct {
 
 	// Foreign key for gorm
 	Username string `gorm:"foreignKey:Username"`
+
+	// Compression algorithm used for this image
+	DiskCompressionStrategy DiskCompressionStrategy
+
+	// The Image Filetype
+	ImageFileType DiskType
 }
 
 const (
