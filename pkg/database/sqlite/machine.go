@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	errors2 "errors"
+	"github.com/baas-project/baas/pkg/util"
 
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
@@ -9,7 +10,7 @@ import (
 )
 
 // GetMachineByMac gets any machine with the associated MAC addresses from the database
-func (s Store) GetMachineByMac(mac model.MacAddress) (*model.MachineModel, error) {
+func (s Store) GetMachineByMac(mac util.MacAddress) (*model.MachineModel, error) {
 	machine := model.MachineModel{}
 	res := s.Table("machine_models").
 		Where("mac_address = ?", mac).
@@ -40,4 +41,8 @@ func (s Store) UpdateMachine(machine *model.MachineModel) error {
 	m.Name = machine.Name
 	s.Save(&m)
 	return nil
+}
+
+func (s Store) CreateMachine(machine *model.MachineModel) {
+	s.Create(machine)
 }

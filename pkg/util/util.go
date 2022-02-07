@@ -2,8 +2,15 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"io"
+	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -45,4 +52,43 @@ func PrettyPrintStruct(a interface{}) {
 	// structure and printing that, I would have two nickels. That is not a lot, but it is funny that it happened twice.
 	s, _ := json.MarshalIndent(a, "", "\t")
 	log.Info(string(s))
+}
+
+// MacAddress is a structure containing the unique Mac Address
+type MacAddress struct {
+	Address string
+}
+
+func (mac MacAddress) GormDataType() string {
+	return "INTEGER"
+}
+
+func (mac MacAddress) GormValue(_ context.Context, _ *gorm.DB) clause.Expr {
+	hex, err := strconv.ParseUint(strings.ReplaceAll(mac.Address, ":", ""), 16, 64)
+	if err != nil {
+
+	}
+	return clause.Expr{
+		SQL:  "?",
+		Vars: []interface{}{fmt.Sprintf("%d", hex)},
+	}
+}
+
+func (mac *MacAddress) Scan(v interface{}) error {
+	bs, ok := v.(int64)
+	if !ok {
+		return errors.New("cannot parse mac address")
+	}
+
+	builder := strings.Builder{}
+	num := fmt.Sprintf("%x", bs)
+	for i, v := range []byte(num) {
+		if i != 0 && i%2 == 0 {
+			builder.WriteByte(':')
+		}
+		builder.WriteByte(v)
+	}
+	mac.Address = builder.String()
+	return nil
+
 }

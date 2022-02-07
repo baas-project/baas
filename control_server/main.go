@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/baas-project/baas/pkg/util"
 	"os"
 	"strconv"
 
@@ -53,9 +54,10 @@ func main() {
 	mac := "52:54:00:d9:71:93"
 	err = store.UpdateMachine(&model.MachineModel{
 		Name:         "Jan's Machine",
-		MacAddress:   model.MacAddress{Address: mac},
+		MacAddress:   util.MacAddress{Address: mac},
 		Architecture: model.X86_64,
 	})
+
 	if err != nil {
 		log.Fatal(err)
 	}

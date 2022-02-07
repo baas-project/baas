@@ -4,16 +4,19 @@ package database
 import (
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"
+	"github.com/baas-project/baas/pkg/util"
 )
 
 // Store defines the functions which should be exported by any concrete database implementation
 type Store interface {
 
 	// GetMachineByMac retrieves a machine based on its mac address.
-	GetMachineByMac(mac model.MacAddress) (*model.MachineModel, error)
+	GetMachineByMac(mac util.MacAddress) (*model.MachineModel, error)
+	GetMachineImageByMac(mac util.MacAddress) (*images.MachineImageModel, error)
 
 	// GetMachines returns a list of all machines in the database
 	GetMachines() ([]model.MachineModel, error)
+	CreateMachine(machine *model.MachineModel)
 
 	// UpdateMachine changes the value of a machine based.
 	// The mac address is used as key.
@@ -31,6 +34,10 @@ type Store interface {
 	GetImagesByNameAndUsername(name string, username string) ([]images.ImageModel, error)
 	CreateImage(image *images.ImageModel)
 	CreateNewImageVersion(version images.Version)
+
+	// You could use weird Go polymorphisms here, but I guess I will just copy and paste code
+
+	CreateMachineImage(image *images.MachineImageModel)
 
 	CreateImageSetup(username string, image *images.ImageSetup) error
 	AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version, update bool)
