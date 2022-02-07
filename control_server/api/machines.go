@@ -3,10 +3,12 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/util"
 	"gorm.io/gorm"
 	"net/http"
 	"os"
+	"os/exec"
 	"syscall"
 
 	"github.com/baas-project/baas/pkg/fs"
@@ -30,7 +32,7 @@ func (api_ *API) GetMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
+	machine, err := api_.store.GetMachineByMac(util.MacAddress{Address: mac})
 	if err != nil {
 		http.Error(w, "couldn't get machine", http.StatusInternalServerError)
 		log.Errorf("get machine by mac: %v", err)
@@ -87,6 +89,70 @@ func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("get update machine: %v", err)
 		return
 	}
+}
+
+func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
+	var machine model.MachineModel
+	err := json.NewDecoder(r.Body).Decode(&machine)
+	if err != nil {
+		http.Error(w, "invalid machine given", http.StatusBadRequest)
+		log.Errorf("Invalid machine given: %v", err)
+		return
+	}
+
+	api_.store.CreateMachine(&machine)
+	// Generate the UUID and create the entry in the database.
+	// We don't actually make an image file yet.
+	machineImage, err := images.CreateMachineModel(images.ImageModel{}, machine.MacAddress)
+	if err != nil {
+
+	}
+
+	// Fill the machine image with default values, in particular ensure that it
+	// is not compressed
+	machineImage.UUID = images.ImageUUID(uuid.New().String())
+	machineImage.Type = "machine"
+	machineImage.DiskCompressionStrategy = images.DiskCompressionStrategyNone
+	machineImage.Name = machine.MacAddress.Address
+
+	api_.store.CreateImage(&machineImage.ImageModel)
+	api_.store.CreateMachineImage(machineImage)
+
+	if err != nil {
+		http.Error(w, "couldn't create image model", http.StatusInternalServerError)
+		log.Errorf("decode create model: %v", err)
+		return
+	}
+
+	// Create the actual image together with the first empty version which a user may or may not use.
+	err = os.Mkdir(fmt.Sprintf(api_.diskpath+"/%s", machineImage.UUID), os.ModePerm)
+	if err != nil {
+		http.Error(w, "could not create image", http.StatusInternalServerError)
+		log.Errorf("cannot create image directory: %v", err)
+		return
+	}
+
+	err = machineImage.CreateImageFile(machineImage.Size, api_.diskpath, images.SizeMegabyte)
+
+	if err != nil {
+		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
+		log.Errorf("image creation failed: %v", err)
+		return
+	}
+
+	// Create an EXT4 partition scheme on disk
+	path := fmt.Sprintf(api_.diskpath+"/%s/0.img", machineImage.UUID)
+	cmd := exec.Command("mkfs.ext4", path)
+	err = cmd.Run()
+	if err != nil {
+		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
+		log.Fatalf("Creating ext4 partition failed: %v", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(&machineImage)
+
 }
 
 // UploadDiskImage allows the management os to upload disk images
@@ -177,7 +243,7 @@ func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
+	machine, err := api_.store.GetMachineByMac(util.MacAddress{Address: mac})
 
 	if err != nil {
 		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
@@ -202,6 +268,28 @@ func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, err := api_.store.GetImageSetup(string(bootInfo.SetupUUID))
+
+	if err != nil {
+		http.Error(w, "Failed to get the next boot setup", http.StatusInternalServerError)
+		log.Errorf("Failed to get the image setup: %v", err)
+		return
+	}
+
+	image, err := api_.store.GetMachineImageByMac(util.MacAddress{Address: mac})
+
+	if err != nil {
+		http.Error(w, "Failed to get the next boot setup", http.StatusBadRequest)
+		log.Errorf("Failed to get the machine image: %v", err)
+		return
+	}
+
+	// Add the machine image to the list
+	resp.Images = append(resp.Images, images.ImageFrozen{
+		Image: image.ImageModel,
+		Version: images.Version{
+			Version: 0,
+		},
+	})
 
 	if err != nil {
 		http.Error(w, "Failed to get the next boot setup", http.StatusBadRequest)
@@ -238,7 +326,7 @@ func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
+	machine, err := api_.store.GetMachineByMac(util.MacAddress{Address: mac})
 
 	if err != nil {
 		http.Error(w, "Cannot find the machine in the database", http.StatusBadRequest)
@@ -295,8 +383,17 @@ func (api_ *API) RegisterMachineHandlers() {
 		Permissions: []model.UserRole{model.Admin},
 		UserAllowed: false,
 		Handler:     api_.UpdateMachine,
-		Method:      http.MethodPost,
+		Method:      http.MethodPut,
 		Description: "Updates a machine",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/machine",
+		Permissions: []model.UserRole{model.Admin},
+		UserAllowed: false,
+		Handler:     api_.CreateMachine,
+		Method:      http.MethodPost,
+		Description: "Creates a new machine",
 	})
 
 	api_.Routes = append(api_.Routes, Route{

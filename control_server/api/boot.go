@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"github.com/baas-project/baas/pkg/model"
+	"github.com/baas-project/baas/pkg/util"
 	"net"
 	"net/http"
 
@@ -61,7 +62,7 @@ func (api_ *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request)
 
 	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
-	m, err := api_.store.GetMachineByMac(model.MacAddress{Address: mac})
+	m, err := api_.store.GetMachineByMac(util.MacAddress{Address: mac})
 
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)

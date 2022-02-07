@@ -114,6 +114,9 @@ type ImageModel struct {
 
 	// The Image Filetype
 	ImageFileType DiskType
+
+	// The image type
+	Type string
 }
 
 const (

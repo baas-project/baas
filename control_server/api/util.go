@@ -10,7 +10,7 @@ import (
 )
 
 // imageFileSize is the size of the standard image that is created in MiB.
-const imageFileSize = 6 // size in Gib
+const imageFileSize = 512 // size in MiB
 
 // GetTag helper function which gets the name out of the request
 // Returns the name in the URI

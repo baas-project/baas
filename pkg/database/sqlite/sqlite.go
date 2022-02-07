@@ -32,6 +32,7 @@ func NewSqliteStore(dbpath string) (database.Store, error) {
 		&model.BootSetup{},
 		&images.ImageSetup{},
 		&images.ImageModel{},
+		&images.MachineImageModel{},
 		&model.MachineModel{},
 		&model.UserModel{},
 		&images.Version{},

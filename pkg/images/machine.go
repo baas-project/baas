@@ -1,5 +1,9 @@
 package images
 
+import (
+	"github.com/baas-project/baas/pkg/util"
+)
+
 type FilesystemType string
 
 const (
@@ -7,34 +11,19 @@ const (
 	FilesystemEXT4                     = "ext4"
 )
 
-type MachineModel struct {
+type MachineImageModel struct {
 	ImageModel
-	machineID  uint
-	filesystem FilesystemType
-	size       uint // filesize in MiB
+	MachineMAC util.MacAddress
+	Filesystem FilesystemType
+	Size       uint // filesize in MiB
 }
 
-/*
-func (m MachineModel) create(machine model.MachineModel) (*MachineModel, error) {
-	uuId, err := uuid.NewUUID()
-
-	if err != nil {
-		return nil, err
+func CreateMachineModel(image ImageModel, mac util.MacAddress) (*MachineImageModel, error) {
+	machineImage := MachineImageModel{ImageModel: image,
+		MachineMAC: mac,
+		Size:       128,
+		Filesystem: FilesystemEXT4,
 	}
-
-	image := ImageModel{
-		Versions: []Version{},
-		UUID:     ImageUUID(uuId.String()),
-	}
-
-	machineImage := MachineModel{ImageModel: image,
-		machineID:  machine.ID,
-		size:       128,
-		filesystem: FilesystemEXT4,
-	}
-
-	machineImage.CreateImageFile(machineImage.size, "/tmp/test.img", SizeMegabyte)
 
 	return &machineImage, nil
 }
-*/

@@ -54,6 +54,7 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	// We don't actually make an image file yet.
 	image.UUID = images.ImageUUID(uuid.New().String())
 	image.Username = name
+	image.Type = "base"
 	api_.store.CreateImage(&image)
 
 	if err != nil {
