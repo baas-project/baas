@@ -8,6 +8,7 @@ There are exists six root uri paths where all other resources have been clustere
 
 - `/machine(s)` which defines the functions to manipulate the machines that the images are run on. <br>
 - `/user(s)` which allows for the management and creation of users. <br>
+- `/user/[name]/image_setups` are the image setups owned by a user <br>
 - `/image(s)` is used to access the created images. <br>
 - `/v1/boot` is only used for the iPXE server. <br>
 - `/static` are the static images and irrelevant for users. <br>
@@ -82,6 +83,33 @@ Receives information about every currently registered machine.
 }]
 ```
 
+#### Create machine
+Creates a new machine in the database and creates the base image for
+the machine.
+
+**Request:** `POST /machine` <br>
+**Body:** <br>
+- *Name:* Human-readable for the machine. <br>
+- *Architecture:* Architecture of the machine, typically x86\_64 <br>
+- *Managed:* Unknown <br>
+- *MacAddresses:* A list of MAC addresses associated with the system in the form of `{"mac": "value"}"`. <br>
+**Response:** None
+**Permissions:** Administrators <br>
+**Example body:**
+```json
+{
+	"name": "Hello World",
+	"Architecture": "x86_64",
+	"Managed": true,
+	"DiskUUIDs": null,
+	"MacAddresses": [{
+		"Mac": "52:54:00:d9:71:15",
+		"MachineModelID": 12
+	}]
+}
+```
+**Example curl command:** `curl -X POST localhost:4848/machine -H 'Content-Type: application/json' -d '{"name": "Test", "Architecture": "x86_64", "Managed": true, "DiskUUIDs": null, "MacAddress": [{"Mac": "52:54:00:d9:71:12", "MachineModelID": 12}]}'` <br>
+
 #### Update machine
 Change the information of a machine, this also used to create a machine.
 
@@ -114,79 +142,80 @@ Fetches configuration for the next boot for this particular machine using a SQL 
 **Request:** `GET /machine/mac/boot` <br>
 **Body:** None <br>
 **Response:** <br>
-- *Prev* A description of the last boot configuration. <br>
-- *Next* Boot configuration that is going to be downloaded to the server. <br>
-- *\*.Ephemeral:* Unused <br>
-- *\*.Disks:* List of the disks on the machine. <br>
-- *\*.Disks.UUID:* Image UUID. <br>
-- *\*.Disks.Version:* Version of image that should be downloaded. <br>
-- *\*.Disks.Image:* Nested object describing where the image is flashed to. <br>
-- *\*.Disks.Image.DiskType:* Format of the image file. <br>
-- *\*.Disks.Image.DiskTransferStrategy:* Strategy for the downloading the images. <br>
-- *\*.Disks.Image.Location:* Disk UUID or disk file on a GNU/Linux machine <br>
+- *Name:* The name of the image setup. <br>
+- *Images:* A list of the images associated with the setup and the
+  machine image <br>
+- *User:* Username of the image setup <br>
+- *UUID:* UUID for the image setup <br>
+
 **Permissions:** Management OS <br>
 **Example curl request**:` curl localhost:4848/machine/42:DE:AD:BE:EF:42/boot` <br>
 **Example response:**
 ```json
 {
-   "Prev":{
-      "Ephemeral":false,
-      "Disks":[
-         {
-            "UUID":"0d0a60c4-7718-4d2e-9aef-3abbfd4209ea",
-            "Version":5,
-            "Image":{
-               "DiskType":0,
-               "DiskTransferStrategy":1,
-               "Location":"/dev/sda"
-            }
-         }
-      ]
-   },
-   "Next":{
-      "Ephemeral":false,
-      "Disks":[
-         {
-            "UUID":"4563e2a1-c77a-4427-a47a-acf7695f6329",
-            "Version":2,
-            "Image":{
-               "DiskType":0,
-               "DiskTransferStrategy":0,
-               "Location":"/dev/sdk2"
-            }
-         }
-      ]
-   }
+  "Name": "Linux Kernel 2",
+  "Images": [
+        {
+      "Image": {
+        "Name": "52:54:00:d9:71:93",
+        "Versions": [
+          {
+            "Version": 0,
+            "ImageModelUUID": "6c63d514-7314-4d80-bf04-12f1dfa005c5"
+          },
+          {
+            "Version": 0,
+            "ImageModelUUID": "6c63d514-7314-4d80-bf04-12f1dfa005c5"
+          }
+        ],
+        "UUID": "6c63d514-7314-4d80-bf04-12f1dfa005c5",
+        "Username": "",
+        "DiskCompressionStrategy": "none",
+        "ImageFileType": "raw",
+        "Type": "machine",
+        "Checksum": "80654151"
+      },
+      "UUIDImage": "",
+      "VersionNumber": 0,
+      "Update": false
+    }
+  ],
+  "User": "ValentijnvdBeek",
+  "UUID": "f02dc9d1-833e-45e9-9d28-87a5390cbee3"
 }
 ```
 
 #### Add another configuration to a machine queue
-Push a boot configuration to the queue in a machine's FIFO boot queue. In this future this should probably be machine agnostic.
+Push a boot configuration to the queue in a machine's FIFO boot
+queue. In this future this should probably be machine agnostic.
 
 **Request:** `POST /machine/[mac]/boot` <br>
 **Body:** <br>
-- *Version:* The version of the image that you want to boot <br>
-- *ImageUUID:* UUID associated with the image <br>
+- *MachineModelID:* Machine that the image should be falsed to. <br>
+- *SetupUUID:* UUID associated with the image setup <br>
 - *Update:* Should the changes to the image by synced? <br>
 **Response:** <br>
 - *MachineModelID:* Machine that the image should be flashed to. <br>
-- *Version:* Image iteration that is downloaded to the machine. <br>
 - *ImageUUID:* UUID for the image. <br>
 - *Update:* Should the changes be synced to the disk. <br>
-**Permissions:** All <br>
-**Example curl request:** `curl -X POST "localhost:4848/machine/52:54:00:d9:71:93/boot" -H 'Content-Type: application/json' -d '{"Version": 1636116090, "ImageUUID": "74368cec-7903-4233-87b7-564195619dce", "update": true}' `<br>
+**Permissions:** System <br>
+**Example curl request:** `curl "localhost:4848/machine/52:54:00:d9:71:93/boot" -H 'application/json' -d '{"Update": false, "SetupUUID": "2b59ff94-7fb6-4239-b2e6-82f1e30f4355", "MachineModelId": 1}' -H "type: system"`
+
 **Example response:**
 ```json
 {
   "MachineModelID": 1,
-  "Version": 1636116090,
   "ImageUUID": "74368cec-7903-4233-87b7-564195619dce",
   "Update": true
 }
 ```
 
 ### Users
-Users are the access control mechanism which is used in the BAAS project. There are exists three kinds of users: administrators, moderators and users. Users can only access system images and modify their own images. Moderators can modify assigned system images. Administrators can modify any part of the program.
+Users are the access control mechanism which is used in the BAAS
+project. There are exists three kinds of users: administrators,
+moderators and users. Users can only access system images and modify
+their own images. Moderators can modify assigned system
+images. Administrators can modify any part of the program.
 
 #### Create a new user
 Add user to the system.
@@ -199,7 +228,6 @@ Add user to the system.
 **Response:** Successfully created user <br>
 **Permissions:** Administrators/System <br>
 **Example curl request:** `curl -X POST "localhost:4848/user -h 'Content-Type: application/json' -d {"name": "William Narchi", "email": "w.narchi1@student.tudelft.net", "role": "user"}`
-
 
 #### Login using GitHub
 Starts the OAuth2 process as described in [logging in](logging_in.md)
@@ -279,7 +307,7 @@ Creates a new image entity and file.
 - *UserModelID:* Identifies the owner of the image.
 **Permissions:** User in question or administrator <br>
 **Example curl request:** `curl -x POST "localhost:4848/user/[name]/image" -h 'Content-Type: application/json' -d '{"name": "Fedora", "DiskUUID": "30DF-844C"}'` <br>
-**Response:**
+**Example Response:**
 ```json
 {
    "Name": "Fedora",
@@ -292,6 +320,17 @@ Creates a new image entity and file.
 	"UserModelID": 0
 }
 ```
+
+#### Generate a docker image
+Takes a Dockerfile, generates an associated image and adds it as
+another version to the database.
+
+**Request:** `POST /image/[uuid]/docker` <br>
+**Body:** Multipart file with the Dockerfile <br>
+**Response:** `Successfully uploaded image: [version]` <br>
+**Permissions:** Moderator, Admin and same user <br>
+**Example curl request:** `curl -X POST "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a/docker" -F "file=@Dockerfile"` <br>
+**Example response:** `Successfully uploaded image: 12` <br>
 
 #### Find all the images made by a user
 Returns every image created by the human without versions.
@@ -365,9 +404,11 @@ Find all the images which are associated with user which share the same human-re
 ]
 ```
 
-
 ### Images
-Represents the images used for the BAAS project. Endpoints can be found in the `/image/` resource pool, but also as a part of the `/user` pool. In particular, the creation of user system images are typically in the latter rather than the former.
+Represents the images used for the BAAS project. Endpoints can be
+found in the `/image/` resource pool, but also as a part of the
+`/user` pool. In particular, the creation of user system images are
+typically in the latter rather than the former.
 
 #### Get image info
 Offers the underlying image file to the user.
@@ -427,4 +468,106 @@ Updates the image with either an entirely new file or a modified version of the 
 **Body:** Multi-Part image file with the image. <br>
 **Response:** Successfuly uploaded image: 5
 **Permissions:** User in question or the system. <br>
-**Example curl request:** `curl  -X POST localhost:4848/image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data" -F "file=@/tmp/test3.img"` <br>
+**Example curl request:** `curl  -X POST localhost:4848/image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data" -F "file=@/tmp/test3.img"** <br>
+
+### Image setups
+Although useful, simply being able to flash a singular image onto a
+server is not a particularly novel feature. BAAS differs from other
+solutions by allow for any configuration of images to a system where
+each image may have particular semantic meanings to it. For example,
+an user image contains only information owned by a user and should
+always be updated while a system image is owned by the system and
+should rarely be updated.
+
+##### Create a new image setup
+Adds a new image setup with no associated images to the database.
+
+**Request:** `POST /user/[name]/image_setup` <br>
+**Body:** None <br>
+**Response:** `Successfully created image setup` <br>
+**Permissions:** All <br>
+**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup"` <br>
+
+##### Get image setup
+Gets the data associated particular image setup, in particular
+those images that are linked to it together with which version.
+
+**Request:** `GET /user/[name]/image_setup/[UUID]` <br>
+**Body:** None <br>
+**Response:** <br>
+- *User:* Username of the user who owns the setup. <br>
+- *UUID:* UUID of the setup. <br>
+- *Name:* The name of the image setup. <br>
+- *Images:* A list of images and version numbers. <br>
+- *Images.Image:* An object containing the image. <br>
+- *Images.UUIDImage:* UUID of the image. <br>
+- *Images.VersionNumber:* Version linked to the setup. <br>
+- *Images.Update:* Should the image be updated after running <br>
+**Permissions:** User in question, system, moderator and administrator <br>
+**Example curl request:** `curl -X GET
+"localhost:4848/user/ValentijnvdBeek/image_setup/f02dc9d1-833e-45e9-9d28-87a5390cbee3"`
+<br>
+**Example response:**<br>
+```json
+{
+  "Name": "Linux Kernel 2",
+  "Images": [
+    {
+      "Image": {
+        "Name": "Fedora",
+        "Versions": null,
+        "UUID": "e9c62845-7a03-4d9d-8132-2dbf715d6159",
+        "Username": "ValentijnvdBeek",
+        "DiskCompressionStrategy": "none",
+        "ImageFileType": "raw",
+        "Type": "base",
+        "Checksum": ""
+      },
+      "UUIDImage": "e9c62845-7a03-4d9d-8132-2dbf715d6159",
+      "VersionNumber": 0,
+      "Update": false
+    }
+  ],
+  "User": "ValentijnvdBeek",
+  "UUID": "f02dc9d1-833e-45e9-9d28-87a5390cbee3"
+}
+```
+
+##### Add image to image setup
+Links an image to the given image setup.
+
+**Request:** `POST /user/[name]/image_setup/[uuid]` <br>
+**Body:** <br>
+- *Uuid:* UUID of the image you wnt to link. <br>
+- *Version:* Version that you would like to link. <br>
+**Response:** The same response as getting the image setup. <br>
+**Permissions:** User in question, moderator and administrator. <br>
+**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'` <br>
+**Example body:** `{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}` <br>
+**Example response:** See get image setup <br>
+
+##### Find an image setups based on name
+Adds a new image setup with no associated images to the database.
+
+**Request:** `GET /user/[name]/image_setup` <br>
+**Body:** None. <br>
+**Response:** A list containing the following: <br>
+- *Name:* Name of the image setup. <br>
+- *Images:* Possibly optional empty list of images associated with the
+  setup. <br>
+- *User:* Username of the user owning the setup. <br>
+- *UUID:* UUID of the image setup <br>
+**Permissions:** User in question, moderator and administrator <br>
+**Example curl request:** `curl "localhost:4848/user/ValentijnvdBeek/image_setup"`
+**Example response:** <br>
+```json
+[
+  {
+    "Name": "Linux Kernel 2",
+    "Images": null,
+    "User": "ValentijnvdBeek",
+    "UUID": "f02dc9d1-833e-45e9-9d28-87a5390cbee3"
+  }
+]
+```
+<br>

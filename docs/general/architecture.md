@@ -22,9 +22,6 @@
 
 Generic images + specialized linux-focused utilities
 
-* Disk images (with corresponding partitions) (maybe support for mounting one disk image in the other)
+* Disk images (with one partition partition)
 * Partition list (with partition metadata)
-* Metadata about persistence, architecture (arm, x86), boot information etc, 
-
-
-
+* Metadata about persistence, architecture (arm, x86), boot information etc,
