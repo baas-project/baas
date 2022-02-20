@@ -117,6 +117,9 @@ type ImageModel struct {
 
 	// The image type
 	Type string
+
+	// Checksum for this image as alternative for versioning
+	Checksum string
 }
 
 const (
@@ -126,7 +129,7 @@ const (
 
 // CreateImageFile creates the actual image on disk with a given size.
 func (image ImageModel) CreateImageFile(imageSize uint, diskpath string, baseSize uint) error {
-	f, err := os.OpenFile(fmt.Sprintf(diskpath+FilePathFmt, image.UUID, image.Versions[0].Version),
+	f, err := os.OpenFile(fmt.Sprintf(diskpath+FilePathFmt, image.UUID, "0"),
 		os.O_WRONLY|os.O_CREATE, 0644)
 
 	if err != nil {

@@ -29,14 +29,24 @@ func (image *MachineImage) Initialise(file string, target string) {
 		log.Warnf("Failed to create mount target: %v", err)
 		return
 	}
+}
 
+func (image *MachineImage) Mount() {
 	var flags uintptr
 	flags = syscall.MS_NOATIME | syscall.MS_SILENT | syscall.MS_NODEV
 	flags |= syscall.MS_NOEXEC | syscall.MS_NOSUID
 
-	err := syscall.Mount(file, target, "ext4", flags, ext4MountOptions)
+	err := syscall.Mount(image.DeviceFile, image.target, "ext4", flags, ext4MountOptions)
 	if err != nil {
-		log.Warnf("Failed to mount %s to %s: %v", file, target, err)
+		log.Warnf("Failed to mount %s to %s: %v", image.DeviceFile, image.target, err)
+		return
+	}
+}
+
+func (image *MachineImage) Unmount() {
+	err := syscall.Unmount(image.target, 0)
+	if err != nil {
+		log.Warnf("Failed to mount %s: %v", image.target, err)
 		return
 	}
 }

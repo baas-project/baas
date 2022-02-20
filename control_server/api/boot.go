@@ -6,6 +6,7 @@ import (
 	"github.com/baas-project/baas/pkg/util"
 	"net"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -27,10 +28,11 @@ type bootConfigResponse struct {
 }
 
 func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
-	switch arch {
-	case model.X86_64:
-		// TODO: refactor
-		return &bootConfigResponse{
+	var bootConfig bootConfigResponse
+	arch = model.SystemArchitecture(strings.ToLower(string(arch)))
+
+	if arch == model.X86_64 {
+		bootConfig = bootConfigResponse{
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
 				"http://localhost:4848/static/initramfs",
@@ -38,14 +40,11 @@ func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
 			Message: "Booting into X86 management kernel.",
 			Cmdline: "root=sr0",
 		}
-	case model.Arm64:
+	} else if arch == model.Arm64 {
 		log.Warn("Received request to boot an ARM64 machine, which has not been implemented yet.")
-		fallthrough
-	case model.Unknown:
-		fallthrough
-	default:
-		return nil
 	}
+
+	return &bootConfig
 }
 
 // ServeBootConfigurations actually responds to requests from pixiecore.
@@ -63,7 +62,6 @@ func (api_ *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request)
 	log.Infof("Serving boot config for %v at ip: %v", mac, addr)
 
 	m, err := api_.store.GetMachineByMac(util.MacAddress{Address: mac})
-
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)
 		w.WriteHeader(http.StatusNotFound)

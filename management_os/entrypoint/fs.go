@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/codingsince1985/checksum"
 	"io"
 	"os"
 	"syscall"
@@ -30,6 +31,15 @@ func WriteDisk(reader io.Reader, image *images.ImageModel) error {
 	if partition != nil {
 		printPartition(*partition)
 	}
+	checksum, err := checksum.CRC32(partition.DeviceFile)
+	if err != nil {
+		logrus.Errorf("Cannot get checksum: %v", err)
+	}
+
+	if image.Checksum != "" && image.Checksum == checksum {
+		return nil
+	}
+
 	file, err := os.OpenFile(partition.DeviceFile, syscall.O_RDWR, os.ModePerm)
 	if err != nil {
 		return errors.Wrapf(err, "error opening path %s", partition.DeviceFile)

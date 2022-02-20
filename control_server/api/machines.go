@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/util"
+	"github.com/codingsince1985/checksum"
 	"gorm.io/gorm"
 	"net/http"
 	"os"
@@ -115,15 +116,6 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 	machineImage.DiskCompressionStrategy = images.DiskCompressionStrategyNone
 	machineImage.Name = machine.MacAddress.Address
 
-	api_.store.CreateImage(&machineImage.ImageModel)
-	api_.store.CreateMachineImage(machineImage)
-
-	if err != nil {
-		http.Error(w, "couldn't create image model", http.StatusInternalServerError)
-		log.Errorf("decode create model: %v", err)
-		return
-	}
-
 	// Create the actual image together with the first empty version which a user may or may not use.
 	err = os.Mkdir(fmt.Sprintf(api_.diskpath+"/%s", machineImage.UUID), os.ModePerm)
 	if err != nil {
@@ -137,6 +129,32 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
 		log.Errorf("image creation failed: %v", err)
+		return
+	}
+
+	f, err := OpenImageFile(string(machineImage.UUID), "0", api_)
+
+	if err != nil {
+		http.Error(w, "couldn't decode image model", http.StatusBadRequest)
+		log.Errorf("failed to open the image file: %v", err)
+		return
+	}
+
+	chk, err := checksum.CRCReader(f)
+	if err != nil {
+		http.Error(w, "couldn't decode image model", http.StatusBadRequest)
+		log.Errorf("Can't generate the checksum: %v", err)
+		return
+	}
+
+	machineImage.Checksum = chk
+
+	api_.store.CreateImage(&machineImage.ImageModel)
+	api_.store.CreateMachineImage(machineImage)
+
+	if err != nil {
+		http.Error(w, "couldn't create image model", http.StatusInternalServerError)
+		log.Errorf("decode create model: %v", err)
 		return
 	}
 

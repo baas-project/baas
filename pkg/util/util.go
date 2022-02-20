@@ -90,5 +90,4 @@ func (mac *MacAddress) Scan(v interface{}) error {
 	}
 	mac.Address = builder.String()
 	return nil
-
 }
