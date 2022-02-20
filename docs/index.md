@@ -13,10 +13,8 @@ This project was made student developers from the Bsc Computer Science & Enginee
 3. [Control Server](control_server/index.md)
     1. [Running the Server](control_server/running_baas_control_server.md)
     2. [REST API](control_server/REST API.md)
-4. [Management OS](management/index.md)
-    1. [Reprovision Flow](management_os/repovision_flow.md)
-
-
+4. [Management OS](management_os/index.md)
+    1. [Reprovision Flow](management_os/reprovision_flow.md)
 
 ## Project structure
 At the moment the project three subprojects which are all separate self-contained programs which communicate to each other over well defined REST interfaces. The highest level abstraction, and the one most users will use, is the website interface which allows for the graphical management of the images. In turn, the website communicates over the network to a Control Server which deals with authentication, the storage of the images, and ensuring that the right configuration is sent to the server. On the server there is a management OS which takes configurations from the server, flashes them to the server and ensures that the server is always returned into a valid neutral state. A diagram of a typical interaction can be found in the [control server overview](control_server/index.md).
