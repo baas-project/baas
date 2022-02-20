@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/baas-project/baas/pkg/fs"
 	"github.com/baas-project/baas/pkg/images"
@@ -55,6 +57,7 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	image.UUID = images.ImageUUID(uuid.New().String())
 	image.Username = name
 	image.Type = "base"
+
 	api_.store.CreateImage(&image)
 
 	if err != nil {
@@ -179,9 +182,18 @@ func (api_ *API) GetImage(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(res)
 }
 
+func OpenImageFile(uniqueID string, version string, api *API) (*os.File, error) {
+	f, err := os.Open(fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version))
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
 // DownloadImageFile gets the specified version of the image off the disk and offers it to the client
 func DownloadImageFile(uniqueID string, version string, api *API, w http.ResponseWriter) {
-	f, err := os.Open(fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version))
+	f, err := OpenImageFile(uniqueID, version, api)
 	if err != nil {
 		http.Error(w, "Cannot download the image", http.StatusNotFound)
 		log.Errorf("Download image: %v", err)
@@ -270,6 +282,52 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Cannot parse POST form: %v", err)
 		return
 	}
+	
+	// Get the parameters for this update
+	versionPart, err := mr.NextPart()
+	if err != nil {
+		http.Error(w, "File upload failed", http.StatusInternalServerError)
+		log.Errorf("Cannot find update parameters: %v", err)
+		return
+	}
+	// One liner which closes the file at the end of the call.
+	defer func() {
+		if err = versionPart.Close(); err != nil {
+			log.Errorf("Cannot close upload file: %v", err)
+		}
+	}()
+
+	var newVersion bool
+	data, err := ioutil.ReadAll(versionPart)
+	val := strings.ToLower(string(data))
+
+	if err != nil || (val != "true" && val != "false") {
+		http.Error(w, "File upload failed", http.StatusInternalServerError)
+		log.Errorf("Cannot find update parameters: %v", err)
+		return
+	}
+
+	newVersion = val == "true"
+
+	var version images.Version
+	if newVersion {
+		version, err = CreateNewVersion(uniqueID, api_.store)
+		if err != nil {
+			http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
+			log.Errorf("cannot fetch image from database: %v", err)
+			return
+		}
+	} else {
+		image, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
+		if err != nil {
+			http.Error(w, "cannot fetch image from the database", http.StatusNotFound)
+			log.Errorf("Cannot fetch image from database: %v", err)
+			return
+		}
+
+		// Update the latest version
+		version = image.Versions[len(image.Versions)-1]
+	}
 
 	// We only use the first part right now, but this might change
 	p, err := mr.NextPart()
@@ -287,13 +345,6 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 			log.Errorf("Cannot close upload file: %v", err)
 		}
 	}()
-
-	version, err := CreateNewVersion(uniqueID, api_.store)
-	if err != nil {
-		http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
-		log.Errorf("cannot fetch image from database: %v", err)
-		return
-	}
 
 	// Write the file onto the disk
 	dest, err := os.OpenFile(fmt.Sprintf(api_.diskpath+images.FilePathFmt, uniqueID, version.Version), os.O_WRONLY|os.O_CREATE, 0644)

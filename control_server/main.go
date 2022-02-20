@@ -3,13 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/baas-project/baas/pkg/util"
 	"os"
 	"strconv"
 
 	"github.com/baas-project/baas/pkg/database/sqlite"
-
-	"github.com/baas-project/baas/pkg/model"
 
 	log "github.com/sirupsen/logrus"
 
@@ -51,13 +48,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	mac := "52:54:00:d9:71:93"
-	err = store.UpdateMachine(&model.MachineModel{
-		Name:         "Jan's Machine",
-		MacAddress:   util.MacAddress{Address: mac},
-		Architecture: model.X86_64,
-	})
+	//mac := "52:54:00:d9:71:93"
 
+	// mac
 	if err != nil {
 		log.Fatal(err)
 	}

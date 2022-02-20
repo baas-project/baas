@@ -47,11 +47,11 @@ func setupDisk(api *APIClient, mac string, image *images.ImageModel, version uin
 		if err != nil {
 			return errors.Wrap(err, "error decompressing disk")
 		}
+	}
 
-		err = WriteDisk(dec, image)
-		if err != nil {
-			return errors.Wrap(err, "error writing disk")
-		}
+	err = WriteDisk(dec, image)
+	if err != nil {
+		return errors.Wrap(err, "error writing disk")
 	}
 
 	err = reader.Close()

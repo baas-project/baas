@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strconv"
 
 	"github.com/baas-project/baas/pkg/images"
 
@@ -101,14 +102,18 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid string) error {
 
 	// Create a pipe, so we only pass around the streams, if we try to write the actual file or program will be reaped
 	// Dammit Calli, leave my processes alone.
-	boundary := "JanRellermeyer"
+	boundary := "ProfessorDrIngJanRellermeyer"
 	fileName := "image.img"
 	fileHeader := "Content-Type: application/octet-stream"
 	fileFormat := "--%s\r\nContent-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n%s\r\n\r\n"
 	filePart := fmt.Sprintf(fileFormat, boundary, fileName, fileHeader)
+
+	newVersionFormat := "--%s\r\nContent-Disposition: form-data; name=\"newVersion\"\r\n%s\r\n\r\n"
+	newVersionPart := fmt.Sprintf(newVersionFormat, boundary, strconv.FormatBool(true))
+
 	end := fmt.Sprintf("\r\n--%s\r\n", boundary)
 
-	body := io.MultiReader(strings.NewReader(filePart), r, strings.NewReader(end))
+	body := io.MultiReader(strings.NewReader(newVersionPart), strings.NewReader(filePart), r, strings.NewReader(end))
 
 	resp, err := http.Post(url, fmt.Sprintf("multipart/form-data; boundary=%s", boundary),
 		body)

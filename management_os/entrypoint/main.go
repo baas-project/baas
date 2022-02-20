@@ -107,6 +107,7 @@ func main() {
 	conf := getConfig()
 	var machine MachineImage
 	machine.Initialise("/dev/sda1", "/mnt/machine")
+	machine.Mount()
 	c := NewAPIClient(baseurl)
 
 	// Get the partition cache
@@ -118,6 +119,8 @@ func main() {
 	}
 
 	lastSetup := getLastSetup(&machine)
+	// Unmount the machine partition so it can be overwritten if needed, the partition should remain the same.
+	machine.Unmount()
 
 	imageSetup, err := c.BootInform(mac)
 	if err != nil {
@@ -136,6 +139,9 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Info("reprovisioning done")
+
+	// Reopen the machine file target
+	machine.Mount()
 
 	// Store the current image setup
 	f, err := machine.Open("last_setup.json")
@@ -162,6 +168,8 @@ func main() {
 	if err != nil {
 		log.Warnf("Cannot close the partition cache file: %v", err)
 	}
+
+	machine.Unmount()
 
 	// This presumes that the second option is the hard disk
 	if conf.SetNextBoot {
