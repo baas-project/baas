@@ -8,12 +8,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/baas-project/baas/pkg/database/sqlite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/baas-project/baas/pkg/database/sqlite"
 	"github.com/baas-project/baas/pkg/model"
+	"github.com/baas-project/baas/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
@@ -23,12 +24,9 @@ func TestApi_UpdateMachine(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
-		MacAddresses: []model.MacAddress{
-			{Mac: "abc"},
-		},
+		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
 		Architecture: model.X86_64,
-		DiskUUIDs:    nil,
 		Managed:      false,
 	}
 
@@ -43,12 +41,12 @@ func TestApi_UpdateMachine(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	m, err := store.GetMachineByMac(machine.MacAddresses[0].Mac)
+	m, err := store.GetMachineByMac(machine.MacAddress)
 	assert.NoError(t, err)
 
 	assert.Equal(t, m.Name, machine.Name)
 	assert.Equal(t, m.Architecture, machine.Architecture)
-	assert.Equal(t, m.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
+	assert.Equal(t, m.MacAddress, machine.MacAddress)
 }
 
 func TestApi_UpdateMachineExists(t *testing.T) {
@@ -56,12 +54,9 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
-		MacAddresses: []model.MacAddress{
-			{Mac: "abc"},
-		},
+		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
 		Architecture: model.X86_64,
-		DiskUUIDs:    nil,
 		Managed:      false,
 	}
 
@@ -75,13 +70,13 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	m, err := store.GetMachineByMac(machine.MacAddresses[0].Mac)
+	m, err := store.GetMachineByMac(machine.MacAddress)
 	m.Model = gorm.Model{}
 
 	assert.NoError(t, err)
 	assert.Equal(t, m.Name, machine.Name)
 	assert.Equal(t, m.Architecture, machine.Architecture)
-	assert.Equal(t, m.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
+	assert.Equal(t, m.MacAddress, machine.MacAddress)
 
 	machine.Name = "xxx"
 
@@ -94,12 +89,12 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	m, err = store.GetMachineByMac(machine.MacAddresses[0].Mac)
+	m, err = store.GetMachineByMac(machine.MacAddress)
 
 	assert.NoError(t, err)
 	assert.Equal(t, m.Name, machine.Name)
 	assert.Equal(t, m.Architecture, machine.Architecture)
-	assert.Equal(t, m.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
+	assert.Equal(t, m.MacAddress, machine.MacAddress)
 }
 
 func TestApi_GetMachine(t *testing.T) {
@@ -107,12 +102,9 @@ func TestApi_GetMachine(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine := model.MachineModel{
-		MacAddresses: []model.MacAddress{
-			{Mac: "abc"},
-		},
+		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
 		Architecture: model.X86_64,
-		DiskUUIDs:    nil,
 		Managed:      false,
 	}
 
@@ -122,7 +114,8 @@ func TestApi_GetMachine(t *testing.T) {
 	resp := httptest.NewRecorder()
 
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/machine/"+machine.MacAddresses[0].Mac, nil))
+	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet,
+		"/machine/"+machine.MacAddress.Address, nil))
 
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
@@ -135,7 +128,7 @@ func TestApi_GetMachine(t *testing.T) {
 
 	assert.Equal(t, dm.Name, machine.Name)
 	assert.Equal(t, dm.Architecture, machine.Architecture)
-	assert.Equal(t, dm.MacAddresses[0].Mac, machine.MacAddresses[0].Mac)
+	assert.Equal(t, dm.MacAddress, machine.MacAddress)
 }
 
 func TestApi_GetMachines(t *testing.T) {
@@ -143,22 +136,16 @@ func TestApi_GetMachines(t *testing.T) {
 	assert.NoError(t, err)
 
 	machine1 := model.MachineModel{
-		MacAddresses: []model.MacAddress{
-			{Mac: "abc"},
-		},
+		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
 		Architecture: model.X86_64,
-		DiskUUIDs:    nil,
 		Managed:      false,
 	}
 
 	machine2 := model.MachineModel{
-		MacAddresses: []model.MacAddress{
-			{Mac: "cba"},
-		},
+		MacAddress:   util.MacAddress{Address: "cba"},
 		Name:         "bcd",
 		Architecture: model.X86_64,
-		DiskUUIDs:    nil,
 		Managed:      false,
 	}
 
@@ -179,7 +166,7 @@ func TestApi_GetMachines(t *testing.T) {
 	err = json.NewDecoder(resp.Body).Decode(&dm)
 	assert.NoError(t, err)
 
-	fmt.Println(dm[0].MacAddresses)
+	fmt.Println(dm[0].MacAddress)
 	assert.Len(t, dm, 2)
 
 	dm1 := dm[0]
@@ -193,9 +180,9 @@ func TestApi_GetMachines(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, dm1.Name, machine1.Name)
 	assert.Equal(t, dm1.Architecture, machine1.Architecture)
-	assert.Equal(t, dm1.MacAddresses[0].Mac, machine1.MacAddresses[0].Mac)
+	assert.Equal(t, dm1.MacAddress, machine1.MacAddress)
 
 	assert.Equal(t, dm2.Name, machine2.Name)
 	assert.Equal(t, dm2.Architecture, machine2.Architecture)
-	assert.Equal(t, dm2.MacAddresses[0].Mac, machine2.MacAddresses[0].Mac)
+	assert.Equal(t, dm2.MacAddress, machine2.MacAddress)
 }

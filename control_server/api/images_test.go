@@ -22,8 +22,7 @@ func TestApi_CreateImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	user := model.UserModel{
-		Name:   "test",
-		Images: nil,
+		Name: "test",
 	}
 
 	err = store.CreateUser(&user)
@@ -62,8 +61,7 @@ func TestApi_GetImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	user := model.UserModel{
-		Name:   "test",
-		Images: nil,
+		Name: "test",
 	}
 
 	err = store.CreateUser(&user)
@@ -74,8 +72,7 @@ func TestApi_GetImage(t *testing.T) {
 		UUID: "def",
 	}
 
-	err = store.CreateImage(user.Name, &image)
-	assert.NoError(t, err)
+	store.CreateImage(&image)
 
 	resp := httptest.NewRecorder()
 	handler := getHandler(store, "", "")

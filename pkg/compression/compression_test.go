@@ -6,13 +6,12 @@ package compression
 
 import (
 	"bytes"
+	"github.com/baas-project/baas/pkg/images"
 	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/gozstd"
-
-	"github.com/baas-project/baas/pkg/model"
 )
 
 func TestCompressZSTD(t *testing.T) {
@@ -20,7 +19,7 @@ func TestCompressZSTD(t *testing.T) {
 	compressed := gozstd.Compress(nil, b)
 	r := bytes.NewReader(compressed)
 
-	decompressed, err := Decompress(r, model.DiskCompressionStrategyZSTD)
+	decompressed, err := Decompress(r, images.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
 	res, err := ioutil.ReadAll(decompressed)
@@ -33,7 +32,7 @@ func TestDecompressZSTD(t *testing.T) {
 	b := []byte("Hello, world")
 	r := bytes.NewReader(b)
 
-	c, err := Compress(r, model.DiskCompressionStrategyZSTD)
+	c, err := Compress(r, images.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
 	cb, err := ioutil.ReadAll(c)
@@ -49,10 +48,10 @@ func TestCompressDecompressZSTD(t *testing.T) {
 	b := []byte("Hello, world")
 	r := bytes.NewReader(b)
 
-	c, err := Compress(r, model.DiskCompressionStrategyZSTD)
+	c, err := Compress(r, images.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
-	d, err := Decompress(c, model.DiskCompressionStrategyZSTD)
+	d, err := Decompress(c, images.DiskCompressionStrategyZSTD)
 	assert.NoError(t, err)
 
 	res, err := ioutil.ReadAll(d)
