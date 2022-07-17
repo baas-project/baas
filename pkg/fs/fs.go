@@ -1,3 +1,7 @@
+// Copyright (c) 2020-2022 TU Delft & Valentijn van de Beek <v.d.vandebeek@student.tudelft.nl> All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // Package fs provides utility functions for writing and reading from the filesystem in baas.
 package fs
 

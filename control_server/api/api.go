@@ -1,3 +1,7 @@
+// Copyright (c) 2020-2022 TU Delft & Valentijn van de Beek <v.d.vandebeek@student.tudelft.nl> All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // Package api provides functions for handling http requests on the control server.
 // This is used to respond to request from pixiecore, to serve files (kernel, initramfs, disk images)
 // and to communicate with machines running the management os.

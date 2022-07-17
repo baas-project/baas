@@ -1,16 +1,21 @@
+// Copyright (c) 2020-2022 TU Delft & Valentijn van de Beek <v.d.vandebeek@student.tudelft.nl> All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package api
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/baas-project/baas/pkg/images"
-	"github.com/baas-project/baas/pkg/util"
-	"github.com/codingsince1985/checksum"
-	"gorm.io/gorm"
 	"net/http"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/baas-project/baas/pkg/images"
+	"github.com/baas-project/baas/pkg/util"
+	"github.com/codingsince1985/checksum"
+	"gorm.io/gorm"
 
 	"github.com/baas-project/baas/pkg/fs"
 	"github.com/baas-project/baas/pkg/model"
@@ -78,6 +83,7 @@ func (api_ *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
 func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 	var machine model.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
+
 	if err != nil {
 		http.Error(w, "invalid machine given", http.StatusBadRequest)
 		log.Errorf("Invalid machine given: %v", err)
@@ -355,6 +361,7 @@ func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 	// Fetch the data from the body
 	var bootSetup model.BootSetup
 	err = json.NewDecoder(r.Body).Decode(&bootSetup)
+
 	if err != nil {
 		http.Error(w, "Invalid machine given", http.StatusBadRequest)
 		log.Errorf("Invalid machine given: %v", err)

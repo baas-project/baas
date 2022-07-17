@@ -1,12 +1,17 @@
+// Copyright (c) 2020-2022 TU Delft & Valentijn van de Beek <v.d.vandebeek@student.tudelft.nl> All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package api
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // imageFileSize is the size of the standard image that is created in MiB.
@@ -47,6 +52,15 @@ func CreateNewVersion(uuid string, store database.Store) (images.Version, error)
 
 	store.CreateNewImageVersion(version)
 	return version, nil
+}
+
+func ErrorWrite(w http.ResponseWriter, err error, msg string) int {
+	if err != nil {
+		http.Error(w, msg, err)
+		log.Errorf("Invalid machine: %v", err)
+	}
+
+	return err
 }
 
 func (api_ *API) RegisterImagePackageHandlers() {

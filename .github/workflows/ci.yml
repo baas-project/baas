@@ -7,20 +7,20 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.18.4
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build
         run: |
                sudo cp management_os/config/config.toml /etc/baas.toml
-               sudo /opt/hostedtoolcache/go/1.16.10/x64/bin/go test ./...
+               sudo /opt/hostedtoolcache/go/1.18.4/x64/bin/go test ./...
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.18.4
       - name: Checkout code
         uses: actions/checkout@v2
         with:
