@@ -1,24 +1,28 @@
 #!/usr/bin/env bash
+# Copyright (c) 2020-2022 TU Delft & Valentijn van de Beek <v.d.vandebeek@student.tudelft.nl> All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
 
 function generateImage {
-	echo "building docker container"
+    echo "building docker container"
 
-	# Build the docker container
-	docker build -t container -f "$1/Dockerfile" .
+    # Build the docker container
+    docker build -t container -f "$1/Dockerfile" .
 
-	# Run the container to get a container id
-	CID=$(docker run -d container /bin/true)
+    # Run the container to get a container id
+    CID=$(docker run -d container /bin/true)
 
-	echo "creating initial ram disk from docker container"
+    echo "creating initial ram disk from docker container"
 
-	# Export the flat container to a tar
-	docker export -o "$1/container.tar" "${CID}"
+    # Export the flat container to a tar
+    docker export -o "$1/container.tar" "${CID}"
 
-	# Extract the tar to ./extract
-	echo "extracting initial ramdisk"
+    # Extract the tar to ./extract
+    echo "extracting initial ramdisk"
 
-	mkdir -p "$1/extract"
-	tar -C "$1/extract" -xf "$1/container.tar"
+    mkdir -p "$1/extract"
+    tar -C "$1/extract" -xf "$1/container.tar"
 }
 
 function cleanupImage {
@@ -40,7 +44,6 @@ function createDisk {
     parted "$2" set 1 boot on
     parted "$2" set 1 esp on
 
-
     # EUFI standard specifies FAT-32
     yes | mkfs.fat -F 32 "${2}"p1
     yes | mkfs.ext4 "${2}"p2
@@ -48,15 +51,15 @@ function createDisk {
 
 function installBootloader {
 
-	# Some distributions do not support bootctl and hence need another solution.
-	# It is probably nicer to not use gummiboot since it is really old, but
-	# out of my experience it is the only that works on GPT EUFI disks
-	DISTRO=$(head Dockerfile -n 1 | awk '{print $2}' | cut -d : -f 1)
-	if [[ $DISTRO == "alpine" ]]; then
-		chroot mnt sh -c 'gummiboot install'
-	else
-	    chroot mnt sh -c 'bootctl install'
-	fi
+    # Some distributions do not support bootctl and hence need another bootloader.
+    # It is probably nicer to not use gummiboot since it is really old, but
+    # out of my experience it is the only that works on GPT EUFI disks
+    DISTRO=$(head Dockerfile -n 1 | awk '{print $2}' | cut -d : -f 1)
+    if [[ $DISTRO == "alpine" ]]; then
+        chroot mnt sh -c 'gummiboot install'
+    else
+        chroot mnt sh -c 'bootctl install'
+    fi
 
     /usr/bin/echo -e "default arch.conf
 timeout 4
@@ -78,7 +81,7 @@ function populateDisk {
     mount "${2}p1" mnt/boot
     cp -r "${1}"/extract/* mnt/
 
-	# Mount all the system directories needed to use some tools
+    # Mount all the system directories needed to use some tools
     mount --types proc /proc mnt/proc
     mount --rbind /sys mnt/sys
     mount --make-rslave mnt/sys
@@ -87,10 +90,10 @@ function populateDisk {
     mount --bind /run mnt/run
     mount --make-rslave mnt/run
 
-	echo "JansFunHouse" > mnt/etc/hostname
-	echo "127.0.0.1 JansFunHouse" >> mnt/etc/hosts
+    echo "JansFunHouse" > mnt/etc/hostname
+    echo "127.0.0.1 JansFunHouse" >> mnt/etc/hosts
 
-	installBootloader
+    installBootloader
 
     umount -l mnt/{sys,dev,run,boot} mnt
 
@@ -106,5 +109,5 @@ function createImage {
     populateDisk "$1" "$LOOPDEVICE"
     cleanupImage "$1"
 
-	losetup -D
+    losetup -D
 }
