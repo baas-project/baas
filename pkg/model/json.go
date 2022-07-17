@@ -39,8 +39,10 @@ type GitHubLogin struct {
 	UpdatedAt         string
 }
 
+// ImageSetupMessage is a stripped down version of the ImageSetup
+// model which can be used as a JSON response
 type ImageSetupMessage struct {
-	Uuid    string
+	UUID    string
 	Version uint64
 	Update  bool
 }

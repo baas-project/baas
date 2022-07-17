@@ -8,8 +8,7 @@ import "github.com/baas-project/baas/pkg/images"
 
 // CreateImage creates the image entity in the database and adds the first version to it.
 func (s Store) CreateImage(image *images.ImageModel) {
-	var versions []images.Version
-	image.Versions = append(versions, images.Version{Version: 0, ImageModelUUID: image.UUID})
+	image.Versions = append(image.Versions, images.Version{Version: 0, ImageModelUUID: image.UUID})
 	s.DB.Create(image)
 }
 

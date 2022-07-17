@@ -6,11 +6,12 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/baas-project/baas/pkg/model"
-	"github.com/baas-project/baas/pkg/util"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/baas-project/baas/pkg/model"
+	"github.com/baas-project/baas/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 

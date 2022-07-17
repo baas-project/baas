@@ -16,7 +16,7 @@ import (
 
 // createImageSetup defines an endpoint which creates an ImageSetup in the database
 // Example request: POST /user/[name]/image_setup
-// Example response: Succesfully created image setup.
+// Example response: Successfully created image setup.
 func (api_ *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 	username, err := GetName(w, r)
 	if err != nil {
@@ -93,14 +93,14 @@ func (api_ *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid_, err := GetTag("uuid", w, r)
+	tagUUID, err := GetTag("uuid", w, r)
 	if err != nil {
 		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
 		log.Errorf("UUID not found in URI: %v", err)
 		return
 	}
 
-	setup, err := api_.store.GetImageSetup(uuid_)
+	setup, err := api_.store.GetImageSetup(tagUUID)
 	if err != nil {
 		http.Error(w, "Failed to find image setup", http.StatusBadRequest)
 		log.Errorf("Cannot find image setup: %v", err)
@@ -131,7 +131,7 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuid_, err := GetTag("uuid", w, r)
+	tagUUID, err := GetTag("uuid", w, r)
 	if err != nil {
 		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
 		log.Errorf("UUID not found in URI: %v", err)
@@ -146,7 +146,7 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image, err := api_.store.GetImageByUUID(images.ImageUUID(imageMsg.Uuid))
+	image, err := api_.store.GetImageByUUID(images.ImageUUID(imageMsg.UUID))
 
 	if err != nil {
 		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
@@ -154,7 +154,7 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageSetup, err := api_.store.GetImageSetup(uuid_)
+	imageSetup, err := api_.store.GetImageSetup(tagUUID)
 	if imageSetup.User != username {
 		http.Error(w, "This UUID is not owned by you", http.StatusUnauthorized)
 		log.Errorf("Image not owned by user: %v", err)
