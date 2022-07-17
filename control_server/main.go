@@ -52,8 +52,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//mac := "52:54:00:d9:71:93"
-
 	// mac
 	if err != nil {
 		log.Fatal(err)

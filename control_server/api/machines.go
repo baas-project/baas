@@ -98,6 +98,7 @@ func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateMachine creates the machine in the database and returns a JSON object representing it
 func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 	var machine model.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
@@ -111,8 +112,8 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 	// Generate the UUID and create the entry in the database.
 	// We don't actually make an image file yet.
 	machineImage, err := images.CreateMachineModel(images.ImageModel{}, machine.MacAddress)
-	if err != nil {
-
+	if ErrorWrite(w, err, "Cannot create machine") != nil {
+		return
 	}
 
 	// Fill the machine image with default values, in particular ensure that it
@@ -176,7 +177,6 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(&machineImage)
-
 }
 
 // UploadDiskImage allows the management os to upload disk images
@@ -328,7 +328,6 @@ func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.Header.Set("content-type", "application/json")
-
 }
 
 // SetBootSetup adds an image to the schedule to be flashed onto the machine

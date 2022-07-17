@@ -10,11 +10,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"io"
 	"strconv"
 	"strings"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -29,6 +30,8 @@ type ProgressReporter struct {
 	atEOF bool
 }
 
+// Read defines a function which keeps track of the amount of data
+// being sent over a reader
 func (pr *ProgressReporter) Read(p []byte) (int, error) {
 	n, err := pr.R.Read(p)
 	pr.sent += n
@@ -63,14 +66,16 @@ type MacAddress struct {
 	Address string
 }
 
+// GormDataType defines the datatype that a mac address is stored as
 func (mac MacAddress) GormDataType() string {
 	return "INTEGER"
 }
 
+// GormValue converts the mac address to an integer
 func (mac MacAddress) GormValue(_ context.Context, _ *gorm.DB) clause.Expr {
 	hex, err := strconv.ParseUint(strings.ReplaceAll(mac.Address, ":", ""), 16, 64)
 	if err != nil {
-
+		log.Warnf("Failed to converted hex: %v", err)
 	}
 	return clause.Expr{
 		SQL:  "?",
@@ -78,6 +83,7 @@ func (mac MacAddress) GormValue(_ context.Context, _ *gorm.DB) clause.Expr {
 	}
 }
 
+// Scan defines how the stored data is converted into a string
 func (mac *MacAddress) Scan(v interface{}) error {
 	bs, ok := v.(int64)
 	if !ok {

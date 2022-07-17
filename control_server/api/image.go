@@ -186,15 +186,6 @@ func (api_ *API) GetImage(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(res)
 }
 
-func OpenImageFile(uniqueID string, version string, api *API) (*os.File, error) {
-	f, err := os.Open(fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version))
-	if err != nil {
-		return nil, err
-	}
-
-	return f, nil
-}
-
 // DownloadImageFile gets the specified version of the image off the disk and offers it to the client
 func DownloadImageFile(uniqueID string, version string, api *API, w http.ResponseWriter) {
 	f, err := OpenImageFile(uniqueID, version, api)
@@ -267,6 +258,39 @@ func (api_ *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
 	DownloadImageFile(uniqueID, strconv.FormatUint(version.Version, 10), api_, w)
 }
 
+func createNewVersion(api *API, uniqueID string) (*images.Version, error) {
+	v, err := CreateNewVersion(uniqueID, api.store)
+	return &v, err
+}
+
+func updateVersion(api *API, uniqueID string) (*images.Version, error) {
+	image, err := api.store.GetImageByUUID(images.ImageUUID(uniqueID))
+	if err != nil {
+		return nil, err
+	}
+
+	// Update the latest version
+	return &image.Versions[len(image.Versions)-1], nil
+}
+
+func manageVersion(api *API, versionPart io.Reader, uniqueID string) (*images.Version, error) {
+	data, err := ioutil.ReadAll(versionPart)
+	val := strings.ToLower(string(data))
+
+	if err != nil || (val != "true" && val != "false") {
+		return nil, err
+	}
+
+	var version *images.Version
+	if val == "true" {
+		version, err = createNewVersion(api, uniqueID)
+	} else {
+		version, err = updateVersion(api, uniqueID)
+	}
+
+	return version, err
+}
+
 // UploadImage takes the uploaded file and stores as a new version of the image
 // Example request: image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data"
 //                     -F "file=@/tmp/test3.img"
@@ -280,20 +304,16 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 
 	// Get the reader to the multireader
 	mr, err := r.MultipartReader()
-
-	if err != nil {
-		http.Error(w, "Cannot parse POST form", http.StatusBadRequest)
-		log.Errorf("Cannot parse POST form: %v", err)
+	if ErrorWrite(w, err, "Cannot parse POST form") != nil {
 		return
 	}
-	
+
 	// Get the parameters for this update
 	versionPart, err := mr.NextPart()
-	if err != nil {
-		http.Error(w, "File upload failed", http.StatusInternalServerError)
-		log.Errorf("Cannot find update parameters: %v", err)
+	if ErrorWrite(w, err, "File upload failed") != nil {
 		return
 	}
+
 	// One liner which closes the file at the end of the call.
 	defer func() {
 		if err = versionPart.Close(); err != nil {
@@ -301,45 +321,16 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	var newVersion bool
-	data, err := ioutil.ReadAll(versionPart)
-	val := strings.ToLower(string(data))
-
-	if err != nil || (val != "true" && val != "false") {
-		http.Error(w, "File upload failed", http.StatusInternalServerError)
-		log.Errorf("Cannot find update parameters: %v", err)
+	version, err := manageVersion(api_, versionPart, uniqueID)
+	if err != nil {
+		http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
+		log.Errorf("cannot fetch image from database: %v", err)
 		return
-	}
-
-	newVersion = val == "true"
-
-	var version images.Version
-	if newVersion {
-		version, err = CreateNewVersion(uniqueID, api_.store)
-		if err != nil {
-			http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
-			log.Errorf("cannot fetch image from database: %v", err)
-			return
-		}
-	} else {
-		image, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
-		if err != nil {
-			http.Error(w, "cannot fetch image from the database", http.StatusNotFound)
-			log.Errorf("Cannot fetch image from database: %v", err)
-			return
-		}
-
-		// Update the latest version
-		version = image.Versions[len(image.Versions)-1]
 	}
 
 	// We only use the first part right now, but this might change
 	p, err := mr.NextPart()
-
-	// Go error's handling is pain
-	if err != nil {
-		http.Error(w, "File upload failed", http.StatusInternalServerError)
-		log.Errorf("Cannot upload image: %v", err)
+	if ErrorWrite(w, err, "File upload failed") != nil {
 		return
 	}
 
@@ -351,17 +342,15 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Write the file onto the disk
-	dest, err := os.OpenFile(fmt.Sprintf(api_.diskpath+images.FilePathFmt, uniqueID, version.Version), os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		http.Error(w, "Cannot open destination file", http.StatusInternalServerError)
-		log.Errorf("Cannot open destination file: %v", err)
+	dest, err := os.OpenFile(fmt.Sprintf(api_.diskpath+images.FilePathFmt, uniqueID, version.Version),
+		os.O_WRONLY|os.O_CREATE, 0644)
+	if ErrorWrite(w, err, "Cannot open destination file") != nil {
 		return
 	}
 
 	err = fs.CopyStream(p, dest)
-	if err != nil {
-		http.Error(w, "Cannot copy over the contents of the file", http.StatusInternalServerError)
-		log.Errorf("Cannot copy the contents of the file: %v", err)
+
+	if ErrorWrite(w, err, "Cannot copy over the contents of the file") != nil {
 		return
 	}
 

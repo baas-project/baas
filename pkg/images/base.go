@@ -2,14 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package images defines the models representing different image types
 package images
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gorm.io/gorm"
 	"os"
+
+	"gorm.io/gorm"
 )
 
 // FilePathFmt is the format string to create the path the image should be written to
@@ -21,6 +23,7 @@ type DiskType int
 const (
 	// DiskTypeRaw is the simplest DiskType of which nothing extra is known
 	DiskTypeRaw DiskType = iota
+	// DiskTypeQCow2 defines an image of the QCow type used by qemu
 	DiskTypeQCow2
 )
 
@@ -34,11 +37,12 @@ var toString = map[DiskType]string{
 	DiskTypeQCow2: "qcow2",
 }
 
-var toId = map[string]DiskType{
+var toID = map[string]DiskType{
 	"raw":   DiskTypeRaw,
 	"qcow2": DiskTypeQCow2,
 }
 
+// DiskCompressionStrategy is how the disk is compressed
 type DiskCompressionStrategy string
 
 const (
@@ -66,7 +70,7 @@ func (s *DiskType) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
-	*s = toId[j]
+	*s = toID[j]
 	return nil
 }
 
@@ -127,8 +131,10 @@ type ImageModel struct {
 }
 
 const (
+	// SizeMegabyte are the bytes equivalent to one megabyte
 	SizeMegabyte uint = 1024 * 1024
-	SizeGigabyte      = 1024 * 1024 * 1024
+	// SizeGigabyte are the bytes equivalent to one gigabyte
+	SizeGigabyte = 1024 * 1024 * 1024
 )
 
 // CreateImageFile creates the actual image on disk with a given size.

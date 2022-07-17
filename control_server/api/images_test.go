@@ -7,10 +7,11 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/baas-project/baas/pkg/database/sqlite"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/baas-project/baas/pkg/database/sqlite"
 
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"

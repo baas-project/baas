@@ -95,7 +95,7 @@ func (api_ *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uuId, err := uuid.NewUUID()
+	uuID, err := uuid.NewUUID()
 
 	if err != nil {
 		http.Error(w, "Cannot generate UUID", http.StatusBadRequest)
@@ -103,7 +103,7 @@ func (api_ *API) LoginGithubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set the session ID and username
-	session.Values["Session"] = uuId.String()
+	session.Values["Session"] = uuID.String()
 	session.Values["Username"] = user.Username
 	session.Values["Role"] = string(user.Role)
 

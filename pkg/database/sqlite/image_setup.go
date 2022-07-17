@@ -16,7 +16,7 @@ func (s Store) CreateImageSetup(username string, image *images.ImageSetup) error
 		return errors.Wrap(err, "get user by name")
 	}
 
-	//res := s.Model(user).Association("Image_Setups").Append(image)
+	// res := s.Model(user).Association("Image_Setups").Append(image)
 	return s.Create(&image).Error
 }
 

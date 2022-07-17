@@ -6,7 +6,9 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/images"
@@ -54,6 +56,27 @@ func CreateNewVersion(uuid string, store database.Store) (images.Version, error)
 	return version, nil
 }
 
+// ErrorWrite writes the same error message on the HTTP stream and log
+func ErrorWrite(w http.ResponseWriter, err error, msg string) error {
+	if err != nil {
+		http.Error(w, msg, http.StatusInternalServerError)
+		log.Errorf("Invalid machine: %v", err)
+	}
+
+	return err
+}
+
+// OpenImageFile opens an image file so it can be read by the system
+func OpenImageFile(uniqueID string, version string, api *API) (*os.File, error) {
+	f, err := os.Open(fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version))
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
+// RegisterImagePackageHandlers runs the handlers which install the routes for the modules
 func (api_ *API) RegisterImagePackageHandlers() {
 	api_.RegisterImageDockerHandlers()
 	api_.RegisterImageHandlers()

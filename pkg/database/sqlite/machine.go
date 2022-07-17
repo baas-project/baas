@@ -6,6 +6,7 @@ package sqlite
 
 import (
 	errors2 "errors"
+
 	"github.com/baas-project/baas/pkg/util"
 
 	"github.com/baas-project/baas/pkg/model"
@@ -47,6 +48,7 @@ func (s Store) UpdateMachine(machine *model.MachineModel) error {
 	return nil
 }
 
+// CreateMachine creates the machine in the database
 func (s Store) CreateMachine(machine *model.MachineModel) {
 	s.Create(machine)
 }

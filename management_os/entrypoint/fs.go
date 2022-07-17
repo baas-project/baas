@@ -5,10 +5,11 @@
 package main
 
 import (
-	"github.com/codingsince1985/checksum"
 	"io"
 	"os"
 	"syscall"
+
+	"github.com/codingsince1985/checksum"
 
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/pkg/errors"

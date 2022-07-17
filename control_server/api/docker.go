@@ -6,29 +6,77 @@ package api
 
 import (
 	"fmt"
-	"github.com/baas-project/baas/pkg/fs"
-	"github.com/baas-project/baas/pkg/images"
-	"github.com/baas-project/baas/pkg/model"
-	log "github.com/sirupsen/logrus"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
+
+	"github.com/baas-project/baas/pkg/fs"
+	"github.com/baas-project/baas/pkg/images"
+	"github.com/baas-project/baas/pkg/model"
+	log "github.com/sirupsen/logrus"
 )
+
+func extractPart(r *http.Request) (*multipart.Part, error) {
+	// Get the reader and writer of the multireader
+	mr, err := r.MultipartReader()
+	if err != nil {
+		log.Errorf("cannot parse POST form: %v", err)
+		return nil, err
+	}
+
+	p, err := mr.NextPart()
+
+	if err != nil {
+		log.Errorf("cannot fetch image from database: %v", err)
+		return nil, err
+	}
+
+	return p, nil
+}
+
+func runDockerCommand(dir string) error {
+	cmd := exec.Command("utils/docker2image.sh", dir)
+
+	stderr, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Errorf("Failed to open a standard output pipe: %v", err)
+		return err
+	}
+
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Cannot run the docker2image script: %v", err)
+
+		// If we error out here we probably don't care
+		slurp, _ := io.ReadAll(stderr)
+		log.Errorf("Output: %s", slurp)
+		return err
+	}
+
+	return nil
+}
+
+func renameFiles(dir string, diskpath string, filepathfmt string, uniqueID string, version uint64) error {
+	if err := os.Rename(dir+"/"+"image.img",
+		fmt.Sprintf(diskpath+filepathfmt, uniqueID, version)); err != nil {
+		log.Errorf("Failed to move image file: %v", err)
+		return err
+	}
+
+	newPath := fmt.Sprintf(diskpath+"/%s/Dockerfile-%d", uniqueID, version)
+	if err := os.Rename(dir+"/"+"Dockerfile", newPath); err != nil {
+		log.Errorf("Failed to move dockerfile: %v", err)
+		return err
+	}
+
+	return nil
+}
 
 // RunDocker takes a Dockerfile and generates a bootable OS image
 // Request request: /image/{uuid}/docker
 func (api_ *API) RunDocker(w http.ResponseWriter, r *http.Request) {
-	// Get the reader to the multireader
-	mr, err := r.MultipartReader()
-
-	if err != nil {
-		http.Error(w, "Cannot parse POST form", http.StatusBadRequest)
-		log.Errorf("Cannot parse POST form: %v", err)
-		return
-	}
-
 	uniqueID, err := GetTag("uuid", w, r)
 	if err != nil {
 		return
@@ -41,13 +89,9 @@ func (api_ *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// We only use the first part right now, but this might change
-	p, err := mr.NextPart()
-
-	// Go error's handling is pain
+	p, err := extractPart(r)
 	if err != nil {
-		http.Error(w, "File upload failed", http.StatusInternalServerError)
-		log.Errorf("Cannot upload image: %v", err)
+		http.Error(w, "cannot parse POST form", http.StatusBadRequest)
 		return
 	}
 
@@ -60,14 +104,8 @@ func (api_ *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 
 	dir := api_.diskpath + "/" + uniqueID
 
-	if err != nil {
-		http.Error(w, "Cannot open destination file", http.StatusInternalServerError)
-		log.Errorf("Cannot open destination file: %v", err)
-		return
-	}
-
 	// Delete the directory at the end of the program
-	//defer os.RemoveAll(dir)
+	// defer os.RemoveAll(dir)
 
 	// Write the docker file to the directory
 	f, err := os.OpenFile(dir+"/Dockerfile", os.O_RDWR|os.O_CREATE, 0755)
@@ -86,51 +124,22 @@ func (api_ *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	path, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
-	fmt.Println(path)
-
 	// Run a shell script which creates the image
 	// It is written in shell for convience, it could be rewritten in Go if someone really cares.
-	cmd := exec.Command("utils/docker2image.sh", dir)
-
-	fmt.Println(cmd)
-	stderr, err := cmd.StdoutPipe()
-	if err != nil {
-		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
-		log.Errorf("Cannot run the docker2image script: %v", err)
+	if runDockerCommand(dir) != nil {
+		http.Error(w, "cannot compile docker image", http.StatusInternalServerError)
 		return
 	}
 
-	if err := cmd.Run(); err != nil {
-		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
-		log.Errorf("Cannot run the docker2image script: %v", err)
-
-		// If we error out here we probably don't care
-		slurp, _ := io.ReadAll(stderr)
-		log.Errorf("Output: %s", slurp)
-		return
-	}
-
-	if err := os.Rename(dir+"/"+"image.img",
-		fmt.Sprintf(api_.diskpath+images.FilePathFmt, uniqueID, version.Version)); err != nil {
-		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
-		log.Errorf("Failed to move image file: %v", err)
-		return
-	}
-
-	newPath := fmt.Sprintf(api_.diskpath+"/%s/Dockerfile-%d", uniqueID, version.Version)
-	if err := os.Rename(dir+"/"+"Dockerfile", newPath); err != nil {
-		http.Error(w, "Cannot compile docker image", http.StatusInternalServerError)
-		log.Errorf("Failed to move dockerfile: %v", err)
+	if renameFiles(dir, api_.diskpath, images.FilePathFmt, uniqueID, version.Version) != nil {
+		http.Error(w, "cannot compile docker image", http.StatusInternalServerError)
 		return
 	}
 
 	http.Error(w, "Successfully uploaded image: "+strconv.FormatUint(version.Version, 10), http.StatusOK)
 }
 
+// RegisterImageDockerHandlers sets the metadata for each of the routes and registers them to the global handler
 func (api_ *API) RegisterImageDockerHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}/docker",

@@ -35,6 +35,7 @@ func (image *MachineImage) Initialise(file string, target string) {
 	}
 }
 
+// Mount attempts to mount the target file to the system
 func (image *MachineImage) Mount() {
 	var flags uintptr
 	flags = syscall.MS_NOATIME | syscall.MS_SILENT | syscall.MS_NODEV
@@ -47,6 +48,7 @@ func (image *MachineImage) Mount() {
 	}
 }
 
+// Unmount removes the target file from the system
 func (image *MachineImage) Unmount() {
 	err := syscall.Unmount(image.target, 0)
 	if err != nil {
