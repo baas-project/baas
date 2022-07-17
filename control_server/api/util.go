@@ -54,15 +54,6 @@ func CreateNewVersion(uuid string, store database.Store) (images.Version, error)
 	return version, nil
 }
 
-func ErrorWrite(w http.ResponseWriter, err error, msg string) int {
-	if err != nil {
-		http.Error(w, msg, err)
-		log.Errorf("Invalid machine: %v", err)
-	}
-
-	return err
-}
-
 func (api_ *API) RegisterImagePackageHandlers() {
 	api_.RegisterImageDockerHandlers()
 	api_.RegisterImageHandlers()

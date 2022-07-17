@@ -52,7 +52,7 @@ Allows a user to get information about a specific machine which is identified by
     "name": "Machine 1",
     "Architecture": "x86_64",
     "MacAddresses": [{
-		 "Mac": "00:11:22:33:44:55:66
+		 "Mac": "00:11:22:33:44:55:66"
 	}]
 }
 ```
@@ -252,8 +252,8 @@ Returns information about a particular user.
 ```json
 {
    "Name": "Jan",
-   "Email:" "j.w.dijkstra@tudelft.nl",
-   "Role:" "admin"
+   "Email": "j.w.dijkstra@tudelft.nl",
+   "Role": "admin"
 }
 ```
 
