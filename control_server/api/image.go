@@ -233,6 +233,8 @@ func (api_ *API) DownloadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Add("Content-Disposition", "filename="+uniqueID+"-"+version+".img")
+
 	DownloadImageFile(uniqueID, version, api_, w)
 }
 
@@ -253,9 +255,12 @@ func (api_ *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	version := image.Versions[len(image.Versions)-1]
+	versionTxt := image.Versions[len(image.Versions)-1]
+	version := strconv.FormatUint(versionTxt.Version, 10)
 
-	DownloadImageFile(uniqueID, strconv.FormatUint(version.Version, 10), api_, w)
+	w.Header().Add("Content-Disposition", "filename="+uniqueID+"-"+version+".img")
+
+	DownloadImageFile(uniqueID, version, api_, w)
 }
 
 func createNewVersion(api *API, uniqueID string) (*images.Version, error) {
@@ -365,7 +370,7 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 // RegisterImageHandlers sets the metadata for each of the routes and registers them to the global handler
 func (api_ *API) RegisterImageHandlers() {
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/image/{uuid}",
+		URI:         "/{name}/image/{uuid}",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetImage,
@@ -374,7 +379,7 @@ func (api_ *API) RegisterImageHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/image/{uuid}/latest",
+		URI:         "/{name}/image/{uuid}/latest",
 		Permissions: []model.UserRole{model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadLatestImage,
@@ -383,7 +388,7 @@ func (api_ *API) RegisterImageHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/image/{uuid}/{version}",
+		URI:         "/{name}/image/{uuid}/{version}",
 		Permissions: []model.UserRole{model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadImage,
@@ -392,7 +397,7 @@ func (api_ *API) RegisterImageHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/image/{uuid}",
+		URI:         "/{name}/image/{uuid}",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.UploadImage,

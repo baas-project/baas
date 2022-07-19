@@ -12,6 +12,7 @@ import (
 	"github.com/baas-project/baas/pkg/httplog"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -59,7 +60,14 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	// Serve boot configurations to pixiecore (this url is hardcoded in pixiecore)
 	r.HandleFunc("/v1/boot/{mac}", api.ServeBootConfigurations)
 
-	return r
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:9090"},
+		AllowedHeaders:   []string{"Authorization", "Set-Cookie"},
+		AllowCredentials: true,
+		Debug:            true,
+	})
+
+	return c.Handler(r)
 }
 
 // StartServer defines all routes and then starts listening for HTTP requests.
