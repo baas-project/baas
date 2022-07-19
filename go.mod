@@ -13,6 +13,7 @@ require (
 	github.com/klauspost/pgzip v1.2.5
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.3
 	github.com/pkg/errors v0.8.0
+	github.com/rs/cors v1.8.2 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.1-0.20210427113832-6241f9ab9942
 	github.com/valyala/gozstd v1.8.3

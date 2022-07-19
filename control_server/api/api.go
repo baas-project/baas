@@ -102,6 +102,7 @@ func checkSameUser(route Route, _ http.ResponseWriter, r *http.Request, api *API
 	// Get the username from the URI
 	vars := mux.Vars(r)
 	name, ok := vars["name"]
+
 	if !ok || name == "" {
 		return false
 	}
