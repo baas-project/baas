@@ -44,11 +44,12 @@ func (s Store) UpdateMachine(machine *model.MachineModel) error {
 	m.Architecture = machine.Architecture
 	m.Managed = machine.Managed
 	m.Name = machine.Name
+
 	s.Save(&m)
 	return nil
 }
 
 // CreateMachine creates the machine in the database
-func (s Store) CreateMachine(machine *model.MachineModel) {
-	s.Create(machine)
+func (s Store) CreateMachine(machine *model.MachineModel) error {
+	return s.Create(machine).Error
 }

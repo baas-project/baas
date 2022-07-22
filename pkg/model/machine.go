@@ -49,12 +49,12 @@ type MachineModel struct {
 	gorm.Model `json:"-"`
 
 	// General Info
-	Name         string
+	Name         string `gorm:"unique"`
 	Architecture SystemArchitecture
 
 	// Managed indicates that a machine should be managed by BAAS (if false baas will not touch the machine in any way)
 	Managed bool
 
 	// MacAddress is the mac address associated with this machine
-	MacAddress util.MacAddress
+	MacAddress util.MacAddress `gorm:"unique"`
 }
