@@ -20,7 +20,7 @@ type Store interface {
 
 	// GetMachines returns a list of all machines in the database
 	GetMachines() ([]model.MachineModel, error)
-	CreateMachine(machine *model.MachineModel)
+	CreateMachine(machine *model.MachineModel) error
 
 	// UpdateMachine changes the value of a machine based.
 	// The mac address is used as key.
@@ -40,11 +40,10 @@ type Store interface {
 	CreateNewImageVersion(version images.Version)
 
 	// You could use weird Go polymorphisms here, but I guess I will just copy and paste code
-
 	CreateMachineImage(image *images.MachineImageModel)
-
 	CreateImageSetup(username string, image *images.ImageSetup) error
 	AddImageToImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version, update bool)
 	FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error)
 	GetImageSetup(imageSetup string) (images.ImageSetup, error)
+	GetImageSetups(username string) (*[]images.ImageSetup, error)
 }

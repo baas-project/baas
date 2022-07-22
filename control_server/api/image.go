@@ -60,7 +60,10 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	// We don't actually make an image file yet.
 	image.UUID = images.ImageUUID(uuid.New().String())
 	image.Username = name
-	image.Type = "base"
+
+	if image.Type == "" {
+		image.Type = "base"
+	}
 
 	api_.store.CreateImage(&image)
 
@@ -314,8 +317,9 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the parameters for this update
+	// TODO: Bad design. Write a new endpoint or use a header for this.
 	versionPart, err := mr.NextPart()
-	if ErrorWrite(w, err, "File upload failed") != nil {
+	if ErrorWrite(w, err, "F2ile upload failed") != nil {
 		return
 	}
 

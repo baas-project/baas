@@ -63,6 +63,7 @@ func getHandler(machineStore database.Store, staticDir string, diskpath string) 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:9090"},
 		AllowedHeaders:   []string{"Authorization", "Set-Cookie"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowCredentials: true,
 		Debug:            true,
 	})

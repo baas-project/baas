@@ -191,7 +191,7 @@ queue. In this future this should probably be machine agnostic.
 
 **Request:** `POST /machine/[mac]/boot` <br>
 **Body:** <br>
-- *MachineModelID:* Machine that the image should be falsed to. <br>
+- *MachineModelID:* Machine that the image should be flashed to. <br>
 - *SetupUUID:* UUID associated with the image setup <br>
 - *Update:* Should the changes to the image by synced? <br>
 **Response:** <br>
@@ -399,7 +399,7 @@ Find all the images which are associated with user which share the same human-re
     "Versions": null,
     "UUID": "57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf",
     "DiskUUID": "30DF-844C",
-    "odelID": 1
+    "ModelID": 1
   }
 ]
 ```
@@ -468,7 +468,7 @@ Updates the image with either an entirely new file or a modified version of the 
 **Body:** Multi-Part image file with the image. <br>
 **Response:** Successfuly uploaded image: 5
 **Permissions:** User in question or the system. <br>
-**Example curl request:** `curl  -X POST localhost:4848/image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data" -F "file=@/tmp/test3.img"** <br>
+**Example curl request:** `curl  -X POST localhost:4848/image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data" -F "newVersion=[false,true];file=@/tmp/test3.img"** <br>
 
 ### Image setups
 Although useful, simply being able to flash a singular image onto a
@@ -486,7 +486,43 @@ Adds a new image setup with no associated images to the database.
 **Body:** None <br>
 **Response:** `Successfully created image setup` <br>
 **Permissions:** All <br>
-**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup"` <br>
+**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup"** <br>
+
+##### Get image setups by user
+Gets all the image setups associated by user
+
+**Request:** `GET /user/[name]/image_setups`<br>
+**Body:** None <br>
+**Response:** List of user images objects similar to [get image
+setup](#get-image-setup** <br>
+**Permission:** User in question, system, moderator and administrator
+**Example curl request:** `curl -X GET
+"localhost:4848/user/ValentijnvdBeek/image_setups"**
+**Example Response:**<br>
+```json
+[{
+  "Name": "Linux Kernel 2",
+  "Images": [
+    {
+      "Image": {
+        "Name": "Fedora",
+        "Versions": null,
+        "UUID": "e9c62845-7a03-4d9d-8132-2dbf715d6159",
+        "Username": "ValentijnvdBeek",
+        "DiskCompressionStrategy": "none",
+        "ImageFileType": "raw",
+        "Type": "base",
+        "Checksum": ""
+      },
+      "UUIDImage": "e9c62845-7a03-4d9d-8132-2dbf715d6159",
+      "VersionNumber": 0,
+      "Update": false
+    }
+  ],
+  "User": "ValentijnvdBeek",
+  "UUID": "f02dc9d1-833e-45e9-9d28-87a5390cbee3"
+}]
+```
 
 ##### Get image setup
 Gets the data associated particular image setup, in particular
@@ -538,7 +574,7 @@ Links an image to the given image setup.
 
 **Request:** `POST /user/[name]/image_setup/[uuid]` <br>
 **Body:** <br>
-- *Uuid:* UUID of the image you wnt to link. <br>
+- *Uuid:* UUID of the image you want to link. <br>
 - *Version:* Version that you would like to link. <br>
 **Response:** The same response as getting the image setup. <br>
 **Permissions:** User in question, moderator and administrator. <br>
@@ -547,7 +583,7 @@ Links an image to the given image setup.
 **Example response:** See get image setup <br>
 
 ##### Find an image setups based on name
-Adds a new image setup with no associated images to the database.
+Finds an image setup based on a name
 
 **Request:** `GET /user/[name]/image_setup` <br>
 **Body:** None. <br>

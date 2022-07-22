@@ -108,10 +108,15 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	api_.store.CreateMachine(&machine)
+	err = api_.store.CreateMachine(&machine)
+	if ErrorWrite(w, err, "Cannot create machine") != nil {
+		return
+	}
+
 	// Generate the UUID and create the entry in the database.
 	// We don't actually make an image file yet.
 	machineImage, err := images.CreateMachineModel(images.ImageModel{}, machine.MacAddress)
+
 	if ErrorWrite(w, err, "Cannot create machine") != nil {
 		return
 	}
@@ -405,7 +410,7 @@ func (api_ *API) RegisterMachineHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine",
 		Permissions: []model.UserRole{model.Admin},
-		UserAllowed: false,
+		UserAllowed: true,
 		Handler:     api_.UpdateMachine,
 		Method:      http.MethodPut,
 		Description: "Updates a machine",
@@ -414,7 +419,7 @@ func (api_ *API) RegisterMachineHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine",
 		Permissions: []model.UserRole{model.Admin},
-		UserAllowed: false,
+		UserAllowed: true,
 		Handler:     api_.CreateMachine,
 		Method:      http.MethodPost,
 		Description: "Creates a new machine",
@@ -450,7 +455,7 @@ func (api_ *API) RegisterMachineHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/boot",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
-		UserAllowed: false,
+		UserAllowed: true,
 		Handler:     api_.SetBootSetup,
 		Method:      http.MethodPost,
 		Description: "Adds a boot configuration to the queue",

@@ -47,3 +47,15 @@ func (s Store) GetImageSetup(uuid string) (images.ImageSetup, error) {
 		First(&imageSetup)
 	return imageSetup, res.Error
 }
+
+// GetImageSetups finds the image setups associated with a user
+func (s Store) GetImageSetups(username string) (*[]images.ImageSetup, error) {
+	var imageSetups []images.ImageSetup
+	res := s.Table("image_setups").
+		Preload("Images").
+		Preload("Images.Image").
+		Preload("image_setups.username = ?", username).
+		Find(&imageSetups)
+
+	return &imageSetups, res.Error
+}

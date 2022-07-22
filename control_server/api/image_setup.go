@@ -26,25 +26,27 @@ func (api_ *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create an ImageSetup and associate it with an user
-	image := images.ImageSetup{}
-	err = json.NewDecoder(r.Body).Decode(&image)
-	image.User = username
-	image.UUID = images.ImageUUID(uuid.New().String())
+	imageSetup := images.ImageSetup{}
+	err = json.NewDecoder(r.Body).Decode(&imageSetup)
+	imageSetup.User = username
+	imageSetup.UUID = images.ImageUUID(uuid.New().String())
 
-	if image.Name == "" {
+	if imageSetup.Name == "" {
 		http.Error(w, "Did not set image setup name", http.StatusBadRequest)
 		log.Errorf("Did not sent image setup name: %v", err)
 		return
 	}
 
-	err = api_.store.CreateImageSetup(username, &image)
+	err = api_.store.CreateImageSetup(username, &imageSetup)
 	if err != nil {
 		http.Error(w, "Failed to create image setup", http.StatusBadRequest)
 		log.Errorf("Error creating database entry: %v", err)
 		return
 	}
 
-	http.Error(w, "Successfully created image setup", http.StatusOK)
+	imageSetup.Images = []images.ImageFrozen{}
+
+	_ = json.NewEncoder(w).Encode(imageSetup)
 }
 
 // findImageSetupsByUsername returns all ImageSetups associated with a specific user
@@ -113,6 +115,19 @@ func (api_ *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(setup)
+}
+
+// getImageSetups fetches all the image setups related to the user
+func (api_ *API) getImageSetups(w http.ResponseWriter, r *http.Request) {
+	username, err := GetName(w, r)
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("Username not found in URI: %v", err)
+		return
+	}
+
+	imageSetups, err := api_.store.GetImageSetups(username)
+	_ = json.NewEncoder(w).Encode(imageSetups)
 }
 
 // addImageToImageSetup add an ImageModel to the associated ImageSetup
@@ -186,6 +201,15 @@ func (api_ *API) RegisterImageSetupHandlers() {
 		Handler:     api_.createImageSetup,
 		Method:      http.MethodPost,
 		Description: "Creates an image setup",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/user/{name}/image_setups",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.getImageSetups,
+		Method:      http.MethodGet,
+		Description: "Gets the image setups associated with a user",
 	})
 
 	api_.Routes = append(api_.Routes, Route{

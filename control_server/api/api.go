@@ -60,8 +60,10 @@ func (api_ *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc 
 			http.Error(w, "Users are not allowed to access this endpoint", http.StatusBadRequest)
 			return
 		}
+
 		session, _ := api_.session.Get(r, "session-name")
 		role, ok := session.Values["Role"].(string)
+
 		if !ok {
 			http.Error(w, "User's role not found", http.StatusNotFound)
 			return
@@ -76,7 +78,8 @@ func (api_ *API) CheckRole(route Route, next http.HandlerFunc) http.HandlerFunc 
 
 		// If this resource is from the same user they might be able to access it
 		if !found && !checkSameUser(route, w, r, api_) {
-			http.Error(w, fmt.Sprintf("User role '%s' not permitted to access this resource.", role), http.StatusForbidden)
+			http.Error(w, fmt.Sprintf("User role '%s' not permitted to access this resource.", role),
+				http.StatusForbidden)
 			return
 		}
 
@@ -92,7 +95,6 @@ func checkSameUser(route Route, _ http.ResponseWriter, r *http.Request, api *API
 	}
 
 	session, _ := api.session.Get(r, "session-name")
-
 	username, ok := session.Values["Username"].(string)
 
 	if !ok {
