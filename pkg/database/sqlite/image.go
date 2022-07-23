@@ -4,7 +4,11 @@
 
 package sqlite
 
-import "github.com/baas-project/baas/pkg/images"
+import (
+	"fmt"
+
+	"github.com/baas-project/baas/pkg/images"
+)
 
 // CreateImage creates the image entity in the database and adds the first version to it.
 func (s Store) CreateImage(image *images.ImageModel) {
@@ -14,6 +18,7 @@ func (s Store) CreateImage(image *images.ImageModel) {
 
 // GetImageByUUID fetches the image with the versions using their UUID as a key
 func (s Store) GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, error) {
+	fmt.Println(uuid)
 	image := images.ImageModel{UUID: uuid}
 	res := s.Where("UUID = ?", uuid).
 		Preload("Versions").
@@ -46,8 +51,8 @@ func (s Store) GetImagesByNameAndUsername(name string, username string) ([]image
 	var userImages []images.ImageModel
 	res := s.Table("image_models").
 		Preload("Versions").
-		Joins("join user_models on user_models.id = image_models.user_model_id").
-		Where("user_models.name = ? AND image_models.name = ?", username, name).
+		Joins("join user_models on user_models.username = image_models.username").
+		Where("image_models.name = ?", name).
 		Find(&userImages)
 	return userImages, res.Error
 }

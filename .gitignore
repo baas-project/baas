@@ -284,3 +284,5 @@ store.db
 #*
 *~
 management_os/build
+docs/REST_API
+.bin

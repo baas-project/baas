@@ -1,3 +1,4 @@
+# Task Division
 
 [Node] <---> [control server]
 
@@ -8,7 +9,7 @@
 
 1. Node boots and requests management kernel from control server (pxe)
 2. Management kernel sets up the system
-3. Reboot, make sure the user's kernel is booted. Make sure boot order is changed in some way so the management kernel doesn't load again. (ipmi?)
+3. Reboot, make sure the user's kernel is booted. Make sure boot order is changed in some way so the management kernel does not load again. (ipmi?)
 
 # Management kernel's jobs:
 

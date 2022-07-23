@@ -1,8 +1,8 @@
 # BAAS Project
 
-BAAS (Baremetal as a Service) is a project aiming to facilitate research into operating systems by simplifying the process of downloading and syncing images to work servers. It allows for the registration of machines, the scheduling of flashing images and the uploading of images. The final goal of the project is to create a server where a research can mxs and match various personal or system images to easily test configurations. By allowing these to be run on servers they don't need to risk dataloss on their own machines and by automating it there also will not be long waiting times.
+BAAS (Baremetal as a Service) is a project aiming to facilitate research into operating systems by simplifying the process of downloading and syncing images to work servers. It allows for the registration of machines, the scheduling of flashing images and the uploading of images. The final goal of the project is to create a server where a research can mxs and match various personal or system images to easily test configurations. By allowing these to be run on servers they don't need to risk data loss on their own machines and by automating it there also will not be long waiting times.
 
-This project was made student developers from the Bsc Computer Science & Engineering at TU Delft and has been made with those machines in mind. Modifications to the project to have it run on other machines are more than welcome, but no garantuees can be made of it actually working on your target hardware.
+This project was made student developers from the Bsc Computer Science & Engineering at TU Delft and has been made with those machines in mind. Modifications to the project to have it run on other machines are more than welcome, but no guarantees can be made of it actually working on your target hardware.
 
 ## Documentation index
 1. [Introduction](index.md)
@@ -23,7 +23,7 @@ At the moment the project three subprojects which are all separate self-containe
 Structure of this manual is as follows: first a general overview is given of the general concepts inside of the BAAS project which is followed by in-depth explanation of each submodule. First, the control server is explored since it is the user facing software and will be of most interest to the vast majority of users. Afterwards, workings of the management OS are explained which contain most of the complexity and is the program that is actually run on the hardware.
 
 ## Installation instructions
-Installing the BAAS project for development can be a bit tricky since, by definition, it requires running more than one machine. Luckily this can be circumvented by using a virtual machine, but using iPXE to serve to a virtual machine is not a typical use case. Adding to this complexity is the fact that every machine and operating system can react slightly differently, therefore if you have any problems with the installation please do not hesistate to file a Github issue.
+Installing the BAAS project for development can be a bit tricky since, by definition, it requires running more than one machine. Luckily this can be circumvented by using a virtual machine, but using iPXE to serve to a virtual machine is not a typical use case. Adding to this complexity is the fact that every machine and operating system can react slightly differently, therefore if you have any problems with the installation please do not hesitate to file a Github issue.
 
 ### Required software
 - Go

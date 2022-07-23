@@ -96,6 +96,8 @@ func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("get update machine: %v", err)
 		return
 	}
+
+	_ = json.NewEncoder(w).Encode(&machine)
 }
 
 // CreateMachine creates the machine in the database and returns a JSON object representing it
@@ -181,7 +183,7 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(&machineImage)
+	_ = json.NewEncoder(w).Encode(&machine)
 }
 
 // UploadDiskImage allows the management os to upload disk images

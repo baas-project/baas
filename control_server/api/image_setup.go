@@ -127,6 +127,13 @@ func (api_ *API) getImageSetups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	imageSetups, err := api_.store.GetImageSetups(username)
+
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("Username not found in URI: %v", err)
+		return
+	}
+
 	_ = json.NewEncoder(w).Encode(imageSetups)
 }
 
