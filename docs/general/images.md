@@ -1,24 +1,23 @@
-# Structure and Implementations of BAAS Images
+# Structure and Implementation of BAAS Images
 Central to the workings of the BAAS Project is, of course, the images
 which the users are interested in running on the machines. In essence
 this project is nothing more than catalogue of various images with
-convience functions to flash them to computers and manage their
+convenience functions to flash them to computers and manage their
 data. Naturally, this means that design of how images look like and
 how they function are of paramount importance of the quality of the
 project.
 
-## What are images?
-To put it simply,
-[images](https://www.pcmag.com/encyclopedia/term/disk-image) are files
-which contain raw disk data which can be flashed onto a storage
-medium. Data can be normal files such as videos or images, but also
-more complex data like copies of a hard drive. After flashing an image
-of the latter type, the computer should turn into an exact replica of
-the original source machine. The BAAS project automates the creation
-of initial images, flashing them to powerful machines, and ensures
-that the images are kept up to date. Images, for now, can only contain
-one partition. More complicated setups can be created with image
-setups for the small additional overhead of the filesystem metadata.
+## What are images? 
+To put it simply, [images](https://www.pcmag.com/encyclopedia/term/disk-image) are files which contain raw disk data which
+can be flashed onto a storage medium. Data can be normal files such as
+videos or images, but also more complex data like copies of a hard
+drive. After flashing an image of the latter type, the computer should
+turn into an exact replica of the original source machine. The BAAS
+project automates the creation of initial images, flashing them to
+powerful machines, and ensures that the images are kept up to date.
+Images, for now, can only contain one partition. More complicated
+setups can be created with image setups for the small additional
+overhead of the filesystem metadata.
 
 ## How do images look like?
 On the server images are stored in the `/disk` directory where they

@@ -21,9 +21,9 @@ interpreter.
 
 During the image generation the code is compiled into binary and added
 to the initialization processes, the IP address of the server is added
-to the hostfile and the kernel is extracted out of the image. A simple
-configuration file is added to the image as well, which is used to set
-various developer debugging options.
+to the host file and the kernel is extracted out of the image. A
+simple configuration file is added to the image as well, which is used
+to set various developer debugging options.
 
 The initramfs and the kernel are moved into the `/static` directory in
 the *Control Server* so they can be offered to any machine requesting

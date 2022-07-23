@@ -4,7 +4,13 @@
 
 site_name: BAAS Project Documentation
 site_url: https://docs.baas-project.nl/
-nav: 
+repo_url: https://github.com/baas-project/baas
+site_description: Documentation for the BAAS imaging software.
+site_author: TU Delft & Valentijn van de Beek
+copyright: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
+strict: true
+
+nav:
     - Home: index.md
     - General:
         - Overview: general/index.md
@@ -21,14 +27,28 @@ nav:
         - Reprovision flow: management_os/reprovision_flow.md
 
 theme: readthedocs
+#  name: material
 
 plugins:
   - search
+  - mkdocs-nav-enhancements
+  - section-index
+  - spellcheck:
+      ignore_code: yes
+      min_length: 4
+      max_capital: 4
+      allow_unicode: yes
+      known_words: known_words.txt
+
 #  - with-pdf
 
 
 markdown_extensions:
   - toc
+  - smarty
+  - sane_lists
   - admonition
+  - nl2br
+  - wikilinks
   - plantuml_markdown:
       server: http://www.plantuml.com/plantuml  # PlantUML server, for remote rendering
