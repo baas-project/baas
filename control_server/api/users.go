@@ -99,6 +99,77 @@ func (api_ *API) GetLoggedInUser(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(user)
 }
 
+// GetImagesByName gets any image based on the user who created it and human-readable name assigned to it.
+// Example Request: user/Jan/images/Gentoo
+// Example Response: [
+//  {
+//    "Name": "Gentoo",
+//    "Versions": null,
+//    "UUID": "57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf",
+//    "DiskUUID": "30DF-844C",
+//    "UserModelID": 1
+//  }
+//]
+func (api_ *API) GetImagesByName(w http.ResponseWriter, r *http.Request) {
+	username, err := GetName(w, r)
+	if err != nil {
+		http.Error(w, "Couldn't find images by name.", http.StatusInternalServerError)
+		log.Errorf("could not find name in request: %v", err)
+		return
+	}
+
+	imageName, err := GetTag("image_name", w, r)
+	if err != nil {
+		http.Error(w, "Couldn't find images by name.", http.StatusInternalServerError)
+		log.Errorf("could not find image name in request: %v", err)
+		return
+	}
+
+	userImages, err := api_.store.GetImagesByNameAndUsername(imageName, username)
+
+	if err != nil {
+		http.Error(w, "couldn't get image", http.StatusInternalServerError)
+		log.Errorf("get image by name: %v", err)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(userImages)
+}
+
+// GetImagesByUser fetches all the images of the given user
+// Example request: user/Jan/images
+// Example result: [
+//  {
+//    "Name": "Windows",
+//    "Versions "a9c11954-6161-410b-b238-c03df5c529e9",
+//    "DiskUUID": "30DF-844C",
+//    "UserModelID": 2
+//  },
+//  {
+//    "Name": "Arch Linux",
+//    "Versions": null,
+//    "UUID": "341b2c69-8776-4e54-9330-7c9692f7ed28",
+//    "DiskUUID": "30DF-844C",
+//    "UserModelID": 2
+//  }
+//]
+func (api_ *API) GetImagesByUser(w http.ResponseWriter, r *http.Request) {
+	name, err := GetName(w, r)
+	if err != nil {
+		return
+	}
+
+	userImages, err := api_.store.GetImagesByUsername(name)
+
+	if err != nil {
+		http.Error(w, "couldn't get userImages", http.StatusInternalServerError)
+		log.Errorf("get userImages by users: %v", err)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(userImages)
+}
+
 // GetUser fetches a user based on their name and returns it
 // Example request: user/Jan
 // Response: {"Name": "Jan",

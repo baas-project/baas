@@ -6,6 +6,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -21,6 +22,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func (api_ *API) checkUserImage(w http.ResponseWriter, r *http.Request, image *images.ImageModel) error {
+	session, _ := api_.session.Get(r, "session-name")
+	username, ok := session.Values["Username"].(string)
+
+	if !ok || username != image.Username {
+		http.Error(w, "user does not own this image", http.StatusForbidden)
+		log.Errorf("access denied: %v", ok)
+		return errors.New("failed to get image")
+	}
+
+	return nil
+}
+
 // CreateImage creates an image based on a name
 // Example request: POST user/Jan/image
 // Example body: {"DiskUUID": "30DF-844C", "Name": "Fedora"}
@@ -31,17 +45,17 @@ import (
 //                    "DiskUUID": "30DF-844C",
 //                    "UserModelID": 0}
 func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
-	name, err := GetName(w, r)
-	if err != nil {
-		return
-	}
-
 	image := images.ImageModel{}
-	err = json.NewDecoder(r.Body).Decode(&image)
+	err := json.NewDecoder(r.Body).Decode(&image)
 
 	// Input validation
 	if image.Name == "" {
 		http.Error(w, "Name is not allowed to be empty", http.StatusBadRequest)
+		return
+	}
+
+	if image.Username == "" {
+		http.Error(w, "Username is not allowed to be empty", http.StatusBadRequest)
 		return
 	}
 
@@ -59,7 +73,6 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	// Generate the UUID and create the entry in the database.
 	// We don't actually make an image file yet.
 	image.UUID = images.ImageUUID(uuid.New().String())
-	image.Username = name
 
 	if image.Type == "" {
 		image.Type = "base"
@@ -93,77 +106,6 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(&image)
 }
 
-// GetImagesByUser fetches all the images of the given user
-// Example request: user/Jan/images
-// Example result: [
-//  {
-//    "Name": "Windows",
-//    "Versions "a9c11954-6161-410b-b238-c03df5c529e9",
-//    "DiskUUID": "30DF-844C",
-//    "UserModelID": 2
-//  },
-//  {
-//    "Name": "Arch Linux",
-//    "Versions": null,
-//    "UUID": "341b2c69-8776-4e54-9330-7c9692f7ed28",
-//    "DiskUUID": "30DF-844C",
-//    "UserModelID": 2
-//  }
-//]
-func (api_ *API) GetImagesByUser(w http.ResponseWriter, r *http.Request) {
-	name, err := GetName(w, r)
-	if err != nil {
-		return
-	}
-
-	userImages, err := api_.store.GetImagesByUsername(name)
-
-	if err != nil {
-		http.Error(w, "couldn't get userImages", http.StatusInternalServerError)
-		log.Errorf("get userImages by users: %v", err)
-		return
-	}
-
-	_ = json.NewEncoder(w).Encode(userImages)
-}
-
-// GetImagesByName gets any image based on the user who created it and human-readable name assigned to it.
-// Example Request: user/Jan/images/Gentoo
-// Example Response: [
-//  {
-//    "Name": "Gentoo",
-//    "Versions": null,
-//    "UUID": "57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf",
-//    "DiskUUID": "30DF-844C",
-//    "UserModelID": 1
-//  }
-//]
-func (api_ *API) GetImagesByName(w http.ResponseWriter, r *http.Request) {
-	username, err := GetName(w, r)
-	if err != nil {
-		http.Error(w, "Couldn't find images by name.", http.StatusInternalServerError)
-		log.Errorf("could not find name in request: %v", err)
-		return
-	}
-
-	imageName, err := GetTag("image_name", w, r)
-	if err != nil {
-		http.Error(w, "Couldn't find images by name.", http.StatusInternalServerError)
-		log.Errorf("could not find image name in request: %v", err)
-		return
-	}
-
-	userImages, err := api_.store.GetImagesByNameAndUsername(imageName, username)
-
-	if err != nil {
-		http.Error(w, "couldn't get image", http.StatusInternalServerError)
-		log.Errorf("get image by name: %v", err)
-		return
-	}
-
-	_ = json.NewEncoder(w).Encode(userImages)
-}
-
 // GetImage gets any image based on it's unique id.
 // Example request: image/57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf
 // Example response: {
@@ -183,6 +125,10 @@ func (api_ *API) GetImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "couldn't get image", http.StatusInternalServerError)
 		log.Errorf("get image: %v", err)
+		return
+	}
+
+	if api_.checkUserImage(w, r, res) != nil {
 		return
 	}
 
@@ -233,6 +179,17 @@ func (api_ *API) DownloadImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
 		log.Errorf("Download image: %v", err)
+		return
+	}
+
+	res, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
+	if err != nil {
+		http.Error(w, "couldn't get image", http.StatusInternalServerError)
+		log.Errorf("get image: %v", err)
+		return
+	}
+
+	if api_.checkUserImage(w, r, res) != nil {
 		return
 	}
 
@@ -310,6 +267,16 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	image, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
+
+	if ErrorWrite(w, err, "Cannot get image") != nil {
+		return
+	}
+
+	if api_.checkUserImage(w, r, image) != nil {
+		return
+	}
+
 	// Get the reader to the multireader
 	mr, err := r.MultipartReader()
 	if ErrorWrite(w, err, "Cannot parse POST form") != nil {
@@ -374,7 +341,7 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 // RegisterImageHandlers sets the metadata for each of the routes and registers them to the global handler
 func (api_ *API) RegisterImageHandlers() {
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/{name}/image/{uuid}",
+		URI:         "/image/{uuid}",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetImage,
@@ -383,8 +350,8 @@ func (api_ *API) RegisterImageHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/{name}/image/{uuid}/latest",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		URI:         "/image/{uuid}/latest",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadLatestImage,
 		Method:      http.MethodPost,
@@ -392,8 +359,8 @@ func (api_ *API) RegisterImageHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/{name}/image/{uuid}/{version}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		URI:         "/image/{uuid}/{version}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadImage,
 		Method:      http.MethodGet,
@@ -401,7 +368,7 @@ func (api_ *API) RegisterImageHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/{name}/image/{uuid}",
+		URI:         "/image/{uuid}",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.UploadImage,
