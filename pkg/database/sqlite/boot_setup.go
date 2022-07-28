@@ -12,10 +12,10 @@ func (s Store) AddBootSetupToMachine(bootSetup *model.BootSetup) error {
 }
 
 // GetNextBootSetup fetches the first machine from the database.
-func (s Store) GetNextBootSetup(machineID uint) (model.BootSetup, error) {
+func (s Store) GetNextBootSetup(machineMAC string) (model.BootSetup, error) {
 	var bootSetup model.BootSetup
 	res := s.Table("boot_setups").
-		Where("machine_model_id = ?", machineID).
+		Where("machine_mac = ?", machineMAC).
 		First(&bootSetup).
 		Delete(&bootSetup)
 	return bootSetup, res.Error

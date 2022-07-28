@@ -26,7 +26,8 @@ type Store interface {
 	// The mac address is used as key.
 	UpdateMachine(machine *model.MachineModel) error
 	AddBootSetupToMachine(bootSetup *model.BootSetup) error
-	GetNextBootSetup(machineID uint) (model.BootSetup, error)
+	GetNextBootSetup(machineMAC string) (model.BootSetup, error)
+	DeleteMachine(machine *model.MachineModel) error
 
 	GetUserByUsername(name string) (*model.UserModel, error)
 	GetUserByID(id uint) (*model.UserModel, error)

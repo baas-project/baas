@@ -18,7 +18,7 @@ import (
 func (s Store) GetMachineByMac(mac util.MacAddress) (*model.MachineModel, error) {
 	machine := model.MachineModel{}
 	res := s.Table("machine_models").
-		Where("mac_address = ?", mac).
+		Where("address = ?", mac.Address).
 		First(&machine)
 
 	return &machine, res.Error
@@ -52,4 +52,9 @@ func (s Store) UpdateMachine(machine *model.MachineModel) error {
 // CreateMachine creates the machine in the database
 func (s Store) CreateMachine(machine *model.MachineModel) error {
 	return s.Create(machine).Error
+}
+
+func (s Store) DeleteMachine(machine *model.MachineModel) error {
+	res := s.Unscoped().Delete(machine)
+	return res.Error
 }

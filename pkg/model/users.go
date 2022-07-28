@@ -5,7 +5,7 @@
 package model
 
 import (
-	"gorm.io/gorm"
+	"github.com/baas-project/baas/pkg/images"
 )
 
 // UserRole is an enum which stores the roles a user can have.
@@ -22,11 +22,11 @@ const (
 
 // UserModel (noun) one who uses, not necessarily a single person
 type UserModel struct {
-	gorm.Model `json:"-"`
-
 	// Name is a human-readable identifier for a user (or entity) of the system
-	Username string `gorm:"unique;not null;primaryKey"`
-	Name     string `gorm:"not null"`
-	Email    string `gorm:"unique;not null"`
-	Role     UserRole
+	Username string              `gorm:"unique;not null;primaryKey"`
+	Name     string              `gorm:"not null"`
+	Email    string              `gorm:"unique;not null"`
+	Role     UserRole            `gorm:"not null;"`
+	Images   []images.ImageModel `gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Setups   []images.ImageSetup `gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }

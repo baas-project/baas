@@ -21,7 +21,7 @@ const (
 // MachineImageModel is the model defining the image which holds data about the specific machine
 type MachineImageModel struct {
 	ImageModel
-	MachineMAC util.MacAddress
+	MachineMAC util.MacAddress `gorm:"foreignKey:Adress;constraint:onUpdate:CASCADE,OnDelete:CASCADE"`
 	Filesystem FilesystemType
 	Size       uint // filesize in MiB
 }

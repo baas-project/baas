@@ -63,7 +63,7 @@ func PrettyPrintStruct(a interface{}) {
 
 // MacAddress is a structure containing the unique Mac Address
 type MacAddress struct {
-	Address string
+	Address string `gorm:"not null;unique;primaryKey;"`
 }
 
 // GormDataType defines the datatype that a mac address is stored as

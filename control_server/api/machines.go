@@ -66,6 +66,35 @@ func (api_ *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
 	_ = e.Encode(machines)
 }
 
+// Delete a machine from the database
+// Example request: DELETE machine/[mac]
+// Example response: Successfully deleted
+func (api_ *API) DeleteMachine(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	mac, ok := vars["mac"]
+	if !ok || mac == "" {
+		http.Error(w, "Invalid mac", http.StatusBadRequest)
+		log.Error("Invalid mac given")
+		return
+	}
+
+	machine, err := api_.store.GetMachineByMac(util.MacAddress{Address: mac})
+	if err != nil {
+		http.Error(w, "Failed to delete machine", http.StatusInternalServerError)
+		log.Errorf("Cannot find machine with mac address: %s (%v)", mac, err)
+		return
+	}
+
+	err = api_.store.DeleteMachine(machine)
+	if err != nil {
+		http.Error(w, "Failed to delete machine", http.StatusInternalServerError)
+		log.Errorf("Machine %s deletion failed with error code: %v", mac, err)
+		return
+	}
+
+	http.Error(w, "Successfully deleted the machine", http.StatusOK)
+}
+
 // UpdateMachine updates (or adds) the machine to the database.
 //
 // Example of a JSON message:
@@ -285,7 +314,7 @@ func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Received BootInform request, serving Reprovisioning information")
 
 	// Get the next boot configuration based on a FIFO queue.
-	bootInfo, err := api_.store.GetNextBootSetup(machine.ID)
+	bootInfo, err := api_.store.GetNextBootSetup(machine.MacAddress.Address)
 
 	if err == gorm.ErrRecordNotFound {
 		http.Error(w, "No boot setup found", http.StatusNotFound)
@@ -376,7 +405,7 @@ func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 
 	util.PrettyPrintStruct(bootSetup)
 
-	bootSetup.MachineModelID = machine.ID
+	bootSetup.MachineMAC = machine.MacAddress.Address
 	err = api_.store.AddBootSetupToMachine(&bootSetup)
 
 	if err != nil {
@@ -425,6 +454,15 @@ func (api_ *API) RegisterMachineHandlers() {
 		Handler:     api_.CreateMachine,
 		Method:      http.MethodPost,
 		Description: "Creates a new machine",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/machine/{mac}",
+		Permissions: []model.UserRole{model.Admin},
+		UserAllowed: false,
+		Handler:     api_.DeleteMachine,
+		Method:      http.MethodDelete,
+		Description: "Deletes a machine from the database",
 	})
 
 	api_.Routes = append(api_.Routes, Route{
