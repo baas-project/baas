@@ -79,10 +79,9 @@ type ImageUUID string
 
 // Version stores the version of an ImageModel using an UNIX timestamp
 type Version struct {
-	gorm.Model `json:"-"`
-
-	Version        uint64    `gorm:"not null;primaryKey;autoIncrement;default:0"`
-	ImageModelUUID ImageUUID `gorm:"primaryKey"`
+	gorm.Model     `json:"-"`
+	Version        uint64    `gorm:"not null;default:0"`
+	ImageModelUUID ImageUUID `gorm:"not null;"`
 }
 
 /* Disk Layout on control_server
@@ -101,30 +100,29 @@ type Version struct {
 type ImageModel struct {
 	// You will see quite a few of these around. They suppress the default values that the ORM creates when it gets
 	// cast into JSON.
-	gorm.Model `json:"-"`
 
 	// Human identifiable name of this image
-	Name string
+	Name string `gorm:"not null"`
 
 	// Versions are all possible versions of this image, represented as unix
 	// timestamps of their creation. A new version is created whenever a reprovisioning
 	// takes place, and this image is replaced.
-	Versions []Version `gorm:"foreignKey:ImageModelUUID;not null;references:UUID"`
+	Versions []Version `gorm:"foreignKey:ImageModelUUID;not null;references:UUID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
 
 	// ImageUUID is a universally unique identifier for images
 	UUID ImageUUID `gorm:"uniqueIndex;primaryKey;unique"`
 
 	// Foreign key for gorm
-	Username string `gorm:"foreignKey:Username"`
+	Username string `gorm:"foreignKey:Username;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 
 	// Compression algorithm used for this image
-	DiskCompressionStrategy DiskCompressionStrategy
+	DiskCompressionStrategy DiskCompressionStrategy `gorm:"not null;"`
 
 	// The Image Filetype
-	ImageFileType DiskType
+	ImageFileType DiskType `gorm:"not null;"`
 
 	// The image type
-	Type string
+	Type string `gorm:"not null;"`
 
 	// Checksum for this image as alternative for versioning
 	Checksum string

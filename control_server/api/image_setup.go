@@ -28,7 +28,7 @@ func (api_ *API) createImageSetup(w http.ResponseWriter, r *http.Request) {
 	// Create an ImageSetup and associate it with an user
 	imageSetup := images.ImageSetup{}
 	err = json.NewDecoder(r.Body).Decode(&imageSetup)
-	imageSetup.User = username
+	imageSetup.Username = username
 	imageSetup.UUID = images.ImageUUID(uuid.New().String())
 
 	if imageSetup.Name == "" {
@@ -108,7 +108,7 @@ func (api_ *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Cannot find image setup: %v", err)
 		return
 	}
-	if setup.User != username {
+	if setup.Username != username {
 		http.Error(w, "Image not owned by this user", http.StatusUnauthorized)
 		log.Errorf("Image not owned by requesting user: %v", err)
 		return
@@ -177,7 +177,7 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	imageSetup, err := api_.store.GetImageSetup(tagUUID)
-	if imageSetup.User != username {
+	if imageSetup.Username != username {
 		http.Error(w, "This UUID is not owned by you", http.StatusUnauthorized)
 		log.Errorf("Image not owned by user: %v", err)
 		return

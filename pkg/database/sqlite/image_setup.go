@@ -54,7 +54,7 @@ func (s Store) GetImageSetups(username string) (*[]images.ImageSetup, error) {
 	res := s.Table("image_setups").
 		Preload("Images").
 		Preload("Images.Image").
-		Preload("image_setups.username = ?", username).
+		Where("image_setups.Username = ?", username).
 		Find(&imageSetups)
 
 	return &imageSetups, res.Error

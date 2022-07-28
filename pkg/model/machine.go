@@ -8,7 +8,6 @@ package model
 import (
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/util"
-	"gorm.io/gorm"
 )
 
 // SystemArchitecture defines constants describing the architecture of machines.
@@ -32,22 +31,20 @@ func (id *SystemArchitecture) Name() string {
 // BootSetup stores what the next boot for the machine should look like.
 // It functions somewhat like a queue where it removes the first value from the database.
 type BootSetup struct {
-	gorm.Model `json:"-"`
-
 	// Store the machine id
-	MachineModelID uint `gorm:"foreignKey:ID"`
+	Machine    MachineModel `gorm:"foreignKey:MachineMAC;references:Address;not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
+	MachineMAC string       `gorm:"not null;primaryKey"`
 
 	// Store the setup that should be loaded onto the machine
-	SetupUUID images.ImageUUID
+	Setup     images.ImageSetup `gorm:"foreignKey:SetupUUID;references:UUID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	SetupUUID images.ImageUUID  `gorm:"not null;primaryKey"`
 
 	// Should the image changes be uploaded to the server?
-	Update bool
+	Update bool `gorm:"not null;"`
 }
 
 // MachineModel stores information intrinsic to a machine. Used together with the MachineStore.
 type MachineModel struct {
-	gorm.Model `json:"-"`
-
 	// General Info
 	Name         string `gorm:"unique"`
 	Architecture SystemArchitecture
@@ -56,5 +53,6 @@ type MachineModel struct {
 	Managed bool
 
 	// MacAddress is the mac address associated with this machine
-	MacAddress util.MacAddress `gorm:"unique"`
+	MacAddress   util.MacAddress          `gorm:"embedded;unique;"`
+	MachineImage images.MachineImageModel `gorm:"foreignKey:MachineMAC;references:Address;not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
 }

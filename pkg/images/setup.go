@@ -10,22 +10,22 @@ import (
 
 // ImageFrozen defines a collection of Images where are pegged to a specific version.
 type ImageFrozen struct {
-	gorm.Model     `json:"-"`
-	Image          ImageModel `gorm:"foreignKey:UUIDImage;references:UUID"`
-	UUIDImage      ImageUUID
-	Version        Version `json:"-" gorm:"foreignKey:VersionNumber;references:Version"`
-	VersionNumber  uint64
+	gorm.Model `json:"-"`
+	Image      ImageModel `gorm:"foreignKey:UUIDImage;references:UUID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
+	UUIDImage  ImageUUID  `gorm:"not null;"`
+	Version    Version    `json:"-" gorm:"foreignKey:VersionID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
+	VersionID  uint64     `gorm:"not null;"`
+	// ImageSetup     ImageSetup `json:"-" gorm:"foreignKey:UUID;referencesImageSetupUUID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	ImageSetupUUID ImageUUID `json:"-"`
-	Update         bool
+	Update         bool      `gorm:"not null;default:false"`
 }
 
 // ImageSetup defines a collection of Images
 type ImageSetup struct {
-	gorm.Model `json:"-"`
-	Name       string        `gorm:"not null"`
-	Images     []ImageFrozen `gorm:"foreignKey:ImageSetupUUID;references:UUID"`
-	User       string        `gorm:"foreignKey:Username"`
-	UUID       ImageUUID     `gorm:"uniqueIndex;primaryKey;unique"`
+	Name     string        `gorm:"not null"`
+	Images   []ImageFrozen `gorm:"foreignKey:ImageSetupUUID;references:UUID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
+	Username string        `gorm:"foreignKey:Username;not null;"`
+	UUID     ImageUUID     `gorm:"uniqueIndex;primaryKey;unique;not null;"`
 }
 
 // CreateImageSetup creates an ImageSetup of a specified name.
