@@ -22,17 +22,31 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (api_ *API) checkUserImage(w http.ResponseWriter, r *http.Request, image *images.ImageModel) error {
+func (api_ *API) checkUserImage(w http.ResponseWriter, r *http.Request) (*images.ImageModel, error) {
+	uniqueID, err := GetTag("uuid", w, r)
+	if err != nil {
+		http.Error(w, "uri does not include UUID", http.StatusInternalServerError)
+		log.Errorf("image error: %v", err)
+		return nil, errors.New("failed to get image")
+	}
+
+	image, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
+	if err != nil {
+		http.Error(w, "cannot get image", http.StatusInternalServerError)
+		log.Errorf("could not get image: %v", err)
+		return nil, errors.New("failed to get image")
+	}
+
 	session, _ := api_.session.Get(r, "session-name")
 	username, ok := session.Values["Username"].(string)
 
 	if !ok || username != image.Username {
 		http.Error(w, "user does not own this image", http.StatusForbidden)
 		log.Errorf("access denied: %v", ok)
-		return errors.New("failed to get image")
+		return nil, errors.New("failed to get image")
 	}
 
-	return nil
+	return image, nil
 }
 
 // CreateImage creates an image based on a name
@@ -106,7 +120,7 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(&image)
 }
 
-// GetImage gets any image based on it's unique id.
+// GetImage gets any image based on its unique id.
 // Example request: image/57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf
 // Example response: {
 //  "Name": "Gentoo",
@@ -116,23 +130,61 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 //  "UserModelID": 1
 //}
 func (api_ *API) GetImage(w http.ResponseWriter, r *http.Request) {
-	uniqueID, err := GetTag("uuid", w, r)
+	image, err := api_.checkUserImage(w, r)
 	if err != nil {
 		return
 	}
 
-	res, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
+	_ = json.NewEncoder(w).Encode(image)
+}
+
+// UpdateImage changes some of the parameters of the image
+// Example request: PUT image/57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf
+// Example response: the updated image
+func (api_ *API) UpdateImage(w http.ResponseWriter, r *http.Request) {
+	oldImage, err := api_.checkUserImage(w, r)
 	if err != nil {
-		http.Error(w, "couldn't get image", http.StatusInternalServerError)
-		log.Errorf("get image: %v", err)
 		return
 	}
 
-	if api_.checkUserImage(w, r, res) != nil {
+	var newImage images.ImageModel
+	err = json.NewDecoder(r.Body).Decode(&newImage)
+	if err != nil || oldImage.UUID != newImage.UUID {
+		http.Error(w, "invalid machine given", http.StatusBadRequest)
+		log.Errorf("Invalid machine given: %v", err)
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(res)
+	api_.store.UpdateImage(&newImage)
+
+	_ = json.NewEncoder(w).Encode(newImage)
+}
+
+// DeleteImage removes an image based on its UUID
+// Example request: DELETE image/57bf0cd3-c2bf-4257-acdd-b7f1c8633fcf
+// Example response: Successfully deleted image
+func (api_ *API) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	image, err := api_.checkUserImage(w, r)
+	if err != nil {
+		return
+	}
+
+	// Delete the images and versions from the database
+	if api_.store.DeleteImage(image) != nil {
+		http.Error(w, "couldn't delete image", http.StatusInternalServerError)
+		log.Errorf("delete image: %v", err)
+		return
+	}
+
+	// Remove the directory which includes all the image files
+	err = os.RemoveAll(fmt.Sprintf(api_.diskpath+"/%s", image.UUID))
+	if err != nil {
+		http.Error(w, "couldn't delete image", http.StatusInternalServerError)
+		log.Errorf("failed to delete image: %v", err)
+		return
+	}
+
+	http.Error(w, "Successfully deleted image", http.StatusOK)
 }
 
 // DownloadImageFile gets the specified version of the image off the disk and offers it to the client
@@ -175,52 +227,30 @@ func (api_ *API) DownloadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uniqueID, err := GetTag("uuid", w, r)
+	image, err := api_.checkUserImage(w, r)
 	if err != nil {
-		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
-		log.Errorf("Download image: %v", err)
 		return
 	}
+	fmt.Println(image.UUID)
 
-	res, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
-	if err != nil {
-		http.Error(w, "couldn't get image", http.StatusInternalServerError)
-		log.Errorf("get image: %v", err)
-		return
-	}
+	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%d.img", image.UUID, version))
 
-	if api_.checkUserImage(w, r, res) != nil {
-		return
-	}
-
-	w.Header().Add("Content-Disposition", "filename="+uniqueID+"-"+version+".img")
-
-	DownloadImageFile(uniqueID, version, api_, w)
+	DownloadImageFile(string(image.UUID), version, api_, w)
 }
 
 // DownloadLatestImage offers the latest version
 // Example request: image/87f58936-9540-4dad-aba6-253f06142166/latest
 func (api_ *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
-	uniqueID, err := GetTag("uuid", w, r)
+	image, err := api_.checkUserImage(w, r)
 	if err != nil {
-		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
-		log.Errorf("Download image: %v", err)
-		return
-	}
-
-	image, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
-	if err != nil {
-		http.Error(w, "Invalid uuid in the URI", http.StatusInternalServerError)
-		log.Errorf("Download latest image: %v", err)
 		return
 	}
 
 	versionTxt := image.Versions[len(image.Versions)-1]
 	version := strconv.FormatUint(versionTxt.Version, 10)
 
-	w.Header().Add("Content-Disposition", "filename="+uniqueID+"-"+version+".img")
-
-	DownloadImageFile(uniqueID, version, api_, w)
+	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%d.img", image.UUID, version))
+	DownloadImageFile(string(image.UUID), version, api_, w)
 }
 
 func createNewVersion(api *API, uniqueID string) (*images.Version, error) {
@@ -262,18 +292,8 @@ func manageVersion(api *API, versionPart io.Reader, uniqueID string) (*images.Ve
 // Example return: Successfully uploaded image: 134251234
 func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 	log.Info("Started with upload")
-	uniqueID, err := GetTag("uuid", w, r)
+	image, err := api_.checkUserImage(w, r)
 	if err != nil {
-		return
-	}
-
-	image, err := api_.store.GetImageByUUID(images.ImageUUID(uniqueID))
-
-	if ErrorWrite(w, err, "Cannot get image") != nil {
-		return
-	}
-
-	if api_.checkUserImage(w, r, image) != nil {
 		return
 	}
 
@@ -297,7 +317,7 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	version, err := manageVersion(api_, versionPart, uniqueID)
+	version, err := manageVersion(api_, versionPart, string(image.UUID))
 	if err != nil {
 		http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
 		log.Errorf("cannot fetch image from database: %v", err)
@@ -318,7 +338,7 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Write the file onto the disk
-	dest, err := os.OpenFile(fmt.Sprintf(api_.diskpath+images.FilePathFmt, uniqueID, version.Version),
+	dest, err := os.OpenFile(fmt.Sprintf(api_.diskpath+images.FilePathFmt, image.UUID, version.Version),
 		os.O_WRONLY|os.O_CREATE, 0644)
 	if ErrorWrite(w, err, "Cannot open destination file") != nil {
 		return
@@ -356,6 +376,24 @@ func (api_ *API) RegisterImageHandlers() {
 		Handler:     api_.GetImage,
 		Method:      http.MethodGet,
 		Description: "Gets information about an image",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/image/{uuid}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.DeleteImage,
+		Method:      http.MethodDelete,
+		Description: "Removes an image",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/image/{uuid}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.UpdateImage,
+		Method:      http.MethodPut,
+		Description: "Updates an image",
 	})
 
 	api_.Routes = append(api_.Routes, Route{

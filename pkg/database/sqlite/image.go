@@ -56,3 +56,13 @@ func (s Store) GetImagesByNameAndUsername(name string, username string) ([]image
 		Find(&userImages)
 	return userImages, res.Error
 }
+
+// DeleteImages removes an image from the database
+func (s Store) DeleteImage(image *images.ImageModel) error {
+	return s.Unscoped().Delete(image).Error
+}
+
+// UpdateImage updates an image in the database
+func (s Store) UpdateImage(image *images.ImageModel) error {
+	return s.Updates(image).Error
+}

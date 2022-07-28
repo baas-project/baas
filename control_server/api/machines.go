@@ -112,6 +112,7 @@ func (api_ *API) DeleteMachine(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 	var machine model.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
+	util.PrettyPrintStruct(machine)
 
 	if err != nil {
 		http.Error(w, "invalid machine given", http.StatusBadRequest)
