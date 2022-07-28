@@ -331,6 +331,42 @@ Creates a new image entity and file.
 }
 ```
 
+#### Delete an image
+Deletes an image and the associated files from the BAAS server. Please
+note that it is also possible to do a soft-delete of an image by
+setting the managed flag to off.
+
+**Request:** `DELETE /image/{UUID}**`
+**Body:** None
+**Response:** An error message or *Successfully deleted image*
+**Permissions:** The user in question or any administrator
+**Example curl request:** `curl -X DELETE "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a"`
+**Example Response:** `Successfully deleted image`
+
+#### Update image
+Changes the image stored in the database. Please note that it does
+not, yet, handle reformatting or recompressioning the images. These
+features could be added in the future.
+
+**Request:** `PUT /image/{UUID}**`
+**Body:** None
+**Response:** An error message or the changed image
+**Permissions:** The user in question or any administrator
+**Example curl request:** `curl -X PUT "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a" -H 'Content-Type: application/json' -d {"Name": "RealVLC Research", "Type": "System" }`
+**Example Response:**
+```json
+{
+  "Name": "RealVLC Research",
+  "Versions": [],
+  "UUID": "01018664-56c1-4d46-b6fe-fb5c5034a446",
+  "Username": "ValentijnvdBeek",
+  "DiskCompressionStrategy": "GZip",
+  "ImageFileType": "raw",
+  "Type": "System",
+  "Checksum": ""
+}
+```
+
 #### Generate a docker image
 Takes a Dockerfile, generates an associated image and adds it as
 another version to the database.

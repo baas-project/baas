@@ -26,7 +26,7 @@ type Store struct {
 // NewSqliteStore creates the database storage using the given string as the database file.
 func NewSqliteStore(dbpath string) (database.Store, error) {
 	db, err := gorm.Open(sqlite.Open(dbpath), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Warn),
 	})
 
 	if res := db.Exec("PRAGMA foreign_keys=ON", nil); res.Error != nil {

@@ -38,6 +38,8 @@ type Store interface {
 	GetImagesByUsername(username string) ([]images.ImageModel, error)
 	GetImagesByNameAndUsername(name string, username string) ([]images.ImageModel, error)
 	CreateImage(image *images.ImageModel)
+	DeleteImage(image *images.ImageModel) error
+	UpdateImage(image *images.ImageModel) error
 	CreateNewImageVersion(version images.Version)
 
 	// You could use weird Go polymorphisms here, but I guess I will just copy and paste code
