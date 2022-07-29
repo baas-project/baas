@@ -14,6 +14,37 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func _getImageSetup(w http.ResponseWriter, r *http.Request, api_ *API) (*images.ImageSetup, error) {
+	username, err := GetName(w, r)
+	if err != nil {
+		http.Error(w, "Failed to create image setup", http.StatusBadRequest)
+		log.Errorf("Username not found in URI: %v", err)
+		return nil, err
+	}
+
+	tagUUID, err := GetTag("setup_uuid", w, r)
+	if err != nil {
+		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
+		log.Errorf("UUID not found in URI: %v", err)
+		return nil, err
+	}
+
+	setup, err := api_.store.GetImageSetup(tagUUID)
+	if err != nil {
+		http.Error(w, "Failed to find image setup", http.StatusBadRequest)
+		log.Errorf("Cannot find image setup: %v", err)
+		return nil, err
+	}
+
+	if setup.Username != username {
+		http.Error(w, "Image not owned by this user", http.StatusUnauthorized)
+		log.Errorf("Image not owned by requesting user: %v", err)
+		return nil, err
+	}
+
+	return &setup, nil
+}
+
 // createImageSetup defines an endpoint which creates an ImageSetup in the database
 // Example request: POST /user/[name]/image_setup
 // Example response: Successfully created image setup.
@@ -88,33 +119,64 @@ func (api_ *API) findImageSetupsByUsername(w http.ResponseWriter, r *http.Reques
 //   "User": "ValentijnvdBeek",
 //   "UUID": "2b59ff94-7fb6-4239-b2e6-82f1e30f4355" }
 func (api_ *API) getImageSetup(w http.ResponseWriter, r *http.Request) {
-	username, err := GetName(w, r)
+	setup, err := _getImageSetup(w, r, api_)
 	if err != nil {
-		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
-		log.Errorf("Username not found in URI: %v", err)
-		return
-	}
-
-	tagUUID, err := GetTag("uuid", w, r)
-	if err != nil {
-		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
-		log.Errorf("UUID not found in URI: %v", err)
-		return
-	}
-
-	setup, err := api_.store.GetImageSetup(tagUUID)
-	if err != nil {
-		http.Error(w, "Failed to find image setup", http.StatusBadRequest)
-		log.Errorf("Cannot find image setup: %v", err)
-		return
-	}
-	if setup.Username != username {
-		http.Error(w, "Image not owned by this user", http.StatusUnauthorized)
-		log.Errorf("Image not owned by requesting user: %v", err)
 		return
 	}
 
 	_ = json.NewEncoder(w).Encode(setup)
+}
+
+// addImageSetup deletes an image from a setup
+// Request: DELETE /user/{name}/image_setup/{setup_uuid}/image/{image_uuid}
+// Response: Successfully deleted image from setup
+func (api_ *API) removeImageFromImageSetup(w http.ResponseWriter, r *http.Request) {
+	setup, err := _getImageSetup(w, r, api_)
+	if err != nil {
+		return
+	}
+
+	imageMsg := model.ImageSetupMessage{}
+	err = json.NewDecoder(r.Body).Decode(&imageMsg)
+	if err != nil {
+		http.Error(w, "Cannot find image UUID in JSON message.", http.StatusBadRequest)
+		log.Errorf("Cannot find image UUID: %v", err)
+		return
+	}
+
+	image, err := api_.store.GetImageByUUID(images.ImageUUID(imageMsg.UUID))
+
+	if err != nil {
+		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
+		log.Errorf("Cannot find images: %v", err)
+		return
+	}
+
+	version := images.Version{
+		Version:        imageMsg.Version,
+		ImageModelUUID: image.UUID,
+	}
+
+	err = api_.store.RemoveImageFromImageSetup(setup, image, version, imageMsg.Update)
+	if err != nil {
+		http.Error(w, "Cannot remove image from setup", http.StatusBadRequest)
+		log.Errorf("Cannot delete image from setup: %s, %v", err)
+		return
+	}
+
+	http.Error(w, "Successfully deleted image from setup", http.StatusOK)
+}
+
+// getImagesFromImageSetup gets all the images from an image setup
+// Example request: GET /user/{name}/image_setup/{setup_uuid}/images
+// Example response: A list of all the images
+func (api_ *API) getImagesFromImageSetup(w http.ResponseWriter, r *http.Request) {
+	setup, err := _getImageSetup(w, r, api_)
+	if err != nil {
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(setup.Images)
 }
 
 // getImageSetups fetches all the image setups related to the user
@@ -146,17 +208,8 @@ func (api_ *API) getImageSetups(w http.ResponseWriter, r *http.Request) {
 //   "User":"ValentijnvdBeek",
 //   "UUID":"2b59ff94-7fb6-4239-b2e6-82f1e30f4355"}
 func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
-	username, err := GetName(w, r)
+	imageSetup, err := _getImageSetup(w, r, api_)
 	if err != nil {
-		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
-		log.Errorf("Username not found in URI: %v", err)
-		return
-	}
-
-	tagUUID, err := GetTag("uuid", w, r)
-	if err != nil {
-		http.Error(w, "Failed to find image setups", http.StatusBadRequest)
-		log.Errorf("UUID not found in URI: %v", err)
 		return
 	}
 
@@ -176,27 +229,63 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageSetup, err := api_.store.GetImageSetup(tagUUID)
-	if imageSetup.Username != username {
-		http.Error(w, "This UUID is not owned by you", http.StatusUnauthorized)
-		log.Errorf("Image not owned by user: %v", err)
-		return
-	}
-
-	if err != nil {
-		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
-		log.Errorf("Cannot find image setup: %v", err)
-		return
-	}
-
 	version := images.Version{
 		Version:        imageMsg.Version,
 		ImageModelUUID: image.UUID,
 	}
 
-	api_.store.AddImageToImageSetup(&imageSetup, image, version, imageMsg.Update)
+	api_.store.AddImageToImageSetup(imageSetup, image, version, imageMsg.Update)
 
 	_ = json.NewEncoder(w).Encode(imageSetup)
+}
+
+// deleteImageSetup deletes the image setup from the database
+// Request: DELETE /user/{name}/image_setup/{setup_uuid}
+// Response: Successfully deleted image setup
+func (api_ *API) deleteImageSetup(w http.ResponseWriter, r *http.Request) {
+	setup, err := _getImageSetup(w, r, api_)
+	if err != nil {
+		return
+	}
+
+	err = api_.store.DeleteImageSetup(setup)
+	if err != nil {
+		http.Error(w, "Failed to delete the image setup.", http.StatusBadRequest)
+		log.Errorf("Delete image setup: %v", err)
+		return
+
+	}
+	http.Error(w, "Successfully deleted image setup", http.StatusOK)
+}
+
+// modifyImageSetup modifies the metadata of the image setup, but
+// cannot be used to change the images in the setup.
+// Request: PUT /user/{name}/image_setup/{setup_uuid}
+// Response: the modified image setup
+func (api_ *API) modifyImageSetup(w http.ResponseWriter, r *http.Request) {
+	oldSetup, err := _getImageSetup(w, r, api_)
+	if err != nil {
+		return
+	}
+
+	newSetup := images.ImageSetup{}
+	err = json.NewDecoder(r.Body).Decode(&newSetup)
+	if err != nil {
+		http.Error(w, "Cannot decode the request body.", http.StatusBadRequest)
+		log.Errorf("Modify image setup: %v", err)
+		return
+	}
+
+	// Allows for easier objects to be sent over and ensures you
+	// cannot secretly modify a different setup.
+	newSetup.UUID = oldSetup.UUID
+	err = api_.store.ModifyImageSetup(&newSetup)
+	if err != nil {
+		http.Error(w, "Failed to modify the image setup.", http.StatusBadRequest)
+		log.Errorf("Modify image setup: %v", err)
+		return
+	}
+	_ = json.NewEncoder(w).Encode(newSetup)
 }
 
 // RegisterImageSetupHandlers sets the metadata for each of the routes and registers them to the global handler
@@ -229,7 +318,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/user/{name}/image_setup/{uuid}",
+		URI:         "/user/{name}/image_setup/{setup_uuid}",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.getImageSetup,
@@ -238,11 +327,48 @@ func (api_ *API) RegisterImageSetupHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/user/{name}/image_setup/{uuid}",
+		URI:         "/user/{name}/image_setup/{setup_uuid}/images",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.getImagesFromImageSetup,
+		Method:      http.MethodGet,
+		Description: "Gets the images associated with an image setup",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/user/{name}/image_setup/{setup_uuid}/images",
 		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
 		UserAllowed: true,
 		Handler:     api_.addImageToImageSetup,
 		Method:      http.MethodPost,
 		Description: "Add image to the setup system",
 	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/user/{name}/image_setup/{setup_uuid}/images",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.removeImageFromImageSetup,
+		Method:      http.MethodDelete,
+		Description: "Deletes an image from the setup",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/user/{name}/image_setup/{setup_uuid}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.deleteImageSetup,
+		Method:      http.MethodDelete,
+		Description: "Deletes the image setup",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/user/{name}/image_setup/{setup_uuid}",
+		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.modifyImageSetup,
+		Method:      http.MethodPut,
+		Description: "Modifies the image setup",
+	})
+
 }
