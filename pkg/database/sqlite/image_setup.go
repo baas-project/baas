@@ -59,3 +59,27 @@ func (s Store) GetImageSetups(username string) (*[]images.ImageSetup, error) {
 
 	return &imageSetups, res.Error
 }
+
+// DeleteImageSetup deletes an image setup
+func (s Store) DeleteImageSetup(imageSetup *images.ImageSetup) error {
+	return s.Delete(imageSetup).Unscoped().Error
+}
+
+// ModifyImageSetup changes the metadata of an image setup
+func (s Store) ModifyImageSetup(imageSetup *images.ImageSetup) error {
+	return s.Updates(imageSetup).Error
+}
+
+// RemoveImageFromImageSetup removes a particular iamge from the image setup
+func (s Store) RemoveImageFromImageSetup(setup *images.ImageSetup,
+	targetImage *images.ImageModel, version images.Version, update bool) error {
+
+	var found images.ImageFrozen
+	for _, image := range setup.Images {
+		if image.UUIDImage == targetImage.UUID {
+			found = image
+		}
+	}
+
+	return s.Delete(&found).Error
+}

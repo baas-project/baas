@@ -590,7 +590,35 @@ Adds a new image setup with no associated images to the database.
 **Body:** None
 **Response:** `Successfully created image setup`
 **Permissions:** All
-**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup"**
+**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup"`
+
+##### Deletes a image setup
+Removes an image setup from the database.
+
+**Request:** `DELETE /user/[name]/image_setup/[setup_uuid]`
+**Body:** None
+**Response:** `Successfully deleted image setup`
+**Permissions:** All
+**Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek/image_setup/ae8567e6-f5b4-46b0-8afc-42f425d00194"`
+
+##### Modify image setup
+Modifies metadata related to the image setup. Cannot be used to change
+the images.
+
+**Request:** `PUT /user/[name]/image_setup/[setup_uuid]`
+**Body:** Modified image setup object
+**Response:** The modified image object
+**Permissions:** All
+**Example curl request:** `curl -X PUT "localhost:4848/user/ValentijnvdBeek/image_setup/ae8567e6-f5b4-46b0-8afc-42f425d00194" -d '{"Name": "GNU/Linux Research"}'**
+**Example response:**
+```json
+{
+  "Name": "GNU/Linux Research",
+  "Images": null,
+  "Username": "ValentijnvdBeek",
+  "UUID": "ae8567e6-f5b4-46b0-8afc-42f425d00194"
+}
+```
 
 ##### Get image setups by user
 Gets all the image setups associated by user
@@ -600,8 +628,7 @@ Gets all the image setups associated by user
 **Response:** List of user images objects similar to [get image
 setup](#get-image-setup**
 **Permission:** User in question, system, moderator and administrator
-**Example curl request:** `curl -X GET
-"localhost:4848/user/ValentijnvdBeek/image_setups"**
+**Example curl request:** `curl -X GET "localhost:4848/user/ValentijnvdBeek/image_setups"`
 **Example Response:**
 ```json
 [{
@@ -673,18 +700,66 @@ those images that are linked to it together with which version.
 }
 ```
 
+##### Get images from the image setup
+Finds all the images associated with a given image setup.
+
+**Request:** `GET /user/[name]/image_setup/[uuid]/images`
+**Body:** None
+**Response:** A list of images
+**Permissions:** User in question, moderator and administrator.
+**Example curl request:** `curl "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`
+**Example response:**
+```json
+{
+  "Name": "GNU/Linux Research",
+  "Images": [
+    {
+      "Image": {
+        "Name": "EEMCS 2",
+        "Versions": null,
+        "UUID": "01018664-56c1-4d46-b6fe-fb5c5034a446",
+        "Username": "ValentijnvdBeek",
+        "DiskCompressionStrategy": "GZip",
+        "ImageFileType": "raw",
+        "Type": "Temporal",
+        "Checksum": ""
+      },
+      "UUIDImage": "01018664-56c1-4d46-b6fe-fb5c5034a446",
+      "VersionID": 3,
+      "Update": false
+    }
+  ],
+  "Username": "ValentijnvdBeek",
+  "UUID": "ae8567e6-f5b4-46b0-8afc-42f425d00194"
+}
+```
+
 ##### Add image to image setup
 Links an image to the given image setup.
 
-**Request:** `POST /user/[name]/image_setup/[uuid]`
+**Request:** `POST /user/[name]/image_setup/[uuid]/images`
 **Body:**
 - *Uuid:* UUID of the image you want to link.
 - *Version:* Version that you would like to link.
 **Response:** The same response as getting the image setup.
 **Permissions:** User in question, moderator and administrator.
-**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`
+**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`
 **Example body:** `{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}`
 **Example response:** See get image setup
+
+##### Remove image from image setup
+Removes an image from the given image setup.
+
+**Request:** `DELETE /user/[name]/image_setup/[uuid]/images`
+**Body:**
+- *Uuid:* UUID of the image you want to remove.
+- *Version:* Version that you would like to remove.
+**Response:** *Successfully deleted image from setup*
+**Permissions:** User in question, moderator and administrator.
+**Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`
+**Example body:** `{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}`
+**Example response:** *Successfully deleted image from setup*
+
 
 ##### Find an image setups based on name
 Finds an image setup based on a name

@@ -49,4 +49,8 @@ type Store interface {
 	FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error)
 	GetImageSetup(imageSetup string) (images.ImageSetup, error)
 	GetImageSetups(username string) (*[]images.ImageSetup, error)
+
+	ModifyImageSetup(imageSetup *images.ImageSetup) error
+	DeleteImageSetup(imageSetup *images.ImageSetup) error
+	RemoveImageFromImageSetup(setup *images.ImageSetup, image *images.ImageModel, version images.Version, update bool) error
 }
