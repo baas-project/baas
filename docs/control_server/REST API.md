@@ -265,6 +265,34 @@ Finds the user information for the user that is currently logged into the sessio
 **Response:** Same as [fetch a particular user](#fetch-a-particular-user)
 **Example request:** `curl "localhost:4848/user/me" --cookie "session-name=[value]"`
 
+##### Deletes a user
+Removes an image setup from the database.
+
+**Request:** `DELETE /user/[name]`
+**Body:** None
+**Response:** `Successfully deleted user`
+**Permissions:** All
+**Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek"`
+
+##### Modify image setup
+Modifies metadata related to the image setup. Cannot be used to change
+the images.
+
+**Request:** `PUT /user/[name]`
+**Body:** the wished modifications for the user
+**Response:** The modified user object
+**Permissions:** All
+**Example curl request:** `curl -X PUT "localhost:4848/user/ValentijnvdBeek" -d '{"Name": "Valentijn"}'`
+**Example response:**
+```json
+{
+  "Username": "ValentijnvdBeek",
+  "Name": "ValentijnvdBeek",
+  "Email": "",
+  "Role": "admin",
+}
+```
+
 #### Get all registered users
 Gives a list of every user which is currently registered with the system.
 

@@ -33,6 +33,8 @@ type Store interface {
 	GetUserByID(id uint) (*model.UserModel, error)
 	GetUsers() ([]model.UserModel, error)
 	CreateUser(user *model.UserModel) error
+	RemoveUser(user *model.UserModel) error
+	ModifyUser(user *model.UserModel) error
 
 	GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, error)
 	GetImagesByUsername(username string) ([]images.ImageModel, error)

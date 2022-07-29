@@ -27,6 +27,6 @@ type UserModel struct {
 	Name     string              `gorm:"not null"`
 	Email    string              `gorm:"unique;not null"`
 	Role     UserRole            `gorm:"not null;"`
-	Images   []images.ImageModel `gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Setups   []images.ImageSetup `gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Images   []images.ImageModel `json:"-" gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Setups   []images.ImageSetup `json:"-" gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
