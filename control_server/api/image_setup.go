@@ -229,12 +229,20 @@ func (api_ *API) addImageToImageSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	version := images.Version{
-		Version:        imageMsg.Version,
-		ImageModelUUID: image.UUID,
+	var targetVersion images.Version
+	for _, version := range image.Versions {
+		if version.Version == imageMsg.Version {
+			targetVersion = version
+		}
 	}
 
-	api_.store.AddImageToImageSetup(imageSetup, image, version, imageMsg.Update)
+	if targetVersion.ImageModelUUID == "" {
+		http.Error(w, "Failed to add image to image setups", http.StatusBadRequest)
+		log.Errorf("Cannot find images: version %d not found", imageMsg.Version)
+		return
+	}
+
+	api_.store.AddImageToImageSetup(imageSetup, image, targetVersion, imageMsg.Update)
 
 	_ = json.NewEncoder(w).Encode(imageSetup)
 }
