@@ -6,6 +6,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -13,6 +14,39 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
+
+func _getUserInternal(w http.ResponseWriter, r *http.Request, api_ *API) (*model.UserModel, error) {
+	session, _ := api_.session.Get(r, "session-name")
+	username, ok := session.Values["Username"].(string)
+	if !ok {
+		http.Error(w, "Username not found", http.StatusBadRequest)
+		return nil, errors.New("username not found")
+	}
+
+	vars := mux.Vars(r)
+	name, ok := vars["name"]
+	if !ok || name == "" {
+		http.Error(w, "name not found", http.StatusBadRequest)
+		log.Errorf("name not provided in get user")
+		return nil, errors.New("Name not found")
+	}
+
+	user, err := api_.store.GetUserByUsername(name)
+
+	// Annoyingly enough we can't be more specific due to error wrapping... I swear, this language.
+	if err != nil {
+		http.Error(w, "couldn't get users", http.StatusInternalServerError)
+		log.Errorf("get users: %v", err)
+		return nil, err
+	}
+
+	// Check if the user is allowed to access the profile.
+	if user.Role != model.Admin && user.Username != username {
+		http.Error(w, "Cannot access this user", http.StatusUnauthorized)
+		return nil, err
+	}
+	return user, nil
+}
 
 // GetUsers fetches all the users from the database
 // Example request: users
@@ -171,43 +205,65 @@ func (api_ *API) GetImagesByUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUser fetches a user based on their name and returns it
-// Example request: user/Jan
+// Example request: GET /user/[name]
 // Response: {"Name": "Jan",
 //            "Email": "v.d.vandebeek@student.tudelft.nl",
 //            "role": "admin"}
 func (api_ *API) GetUser(w http.ResponseWriter, r *http.Request) {
-	session, _ := api_.session.Get(r, "session-name")
-
-	username, ok := session.Values["Username"].(string)
-	if !ok {
-		http.Error(w, "Username not found", http.StatusBadRequest)
-		return
-	}
-
-	vars := mux.Vars(r)
-	name, ok := vars["name"]
-	if !ok || name == "" {
-		http.Error(w, "name not found", http.StatusBadRequest)
-		log.Errorf("name not provided in get user")
-		return
-	}
-
-	user, err := api_.store.GetUserByUsername(name)
-
-	// Annoyingly enough we can't be more specific due to error wrapping... I swear, this language.
+	user, err := _getUserInternal(w, r, api_)
 	if err != nil {
-		http.Error(w, "couldn't get users", http.StatusInternalServerError)
-		log.Errorf("get users: %v", err)
 		return
 	}
-
-	// Check if the user is allowed to access the profile.
-	if user.Role != model.Admin && user.Username != username {
-		http.Error(w, "Cannot access this user", http.StatusUnauthorized)
-		return
-	}
-
 	_ = json.NewEncoder(w).Encode(user)
+}
+
+// DeleteUser removes a user from the database
+// Request: DELETE /user/[name]
+// Response: Successfully deleted user
+func (api_ *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	user, err := _getUserInternal(w, r, api_)
+	if err != nil {
+		return
+	}
+
+	err = api_.store.RemoveUser(user)
+	if err != nil {
+		http.Error(w, "Cannot remove the user.", http.StatusBadRequest)
+		log.Errorf("Remove user: %v", err)
+		return
+		return
+	}
+
+	http.Error(w, "Successfully deleted user", http.StatusOK)
+}
+
+// ModifyUser modifies the metadata related to the user
+// Request: PUT /user/[name]
+// Response: the modified user
+func (api_ *API) ModifyUser(w http.ResponseWriter, r *http.Request) {
+	oldUser, err := _getUserInternal(w, r, api_)
+	if err != nil {
+
+		return
+	}
+
+	newUser := model.UserModel{}
+	err = json.NewDecoder(r.Body).Decode(&newUser)
+	if err != nil {
+		http.Error(w, "Cannot decode the request body.", http.StatusBadRequest)
+		log.Errorf("Modify user: %v", err)
+		return
+	}
+	newUser.Username = oldUser.Username
+
+	err = api_.store.ModifyUser(&newUser)
+	if err != nil {
+		http.Error(w, "Cannot decode the request body.", http.StatusBadRequest)
+		log.Errorf("Modify user: %v", err)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(newUser)
 }
 
 // RegisterUserHandlers sets the metadata for each of the routes and registers them to the global handler
@@ -245,6 +301,24 @@ func (api_ *API) RegisterUserHandlers() {
 		UserAllowed: true,
 		Handler:     api_.GetUser,
 		Method:      http.MethodGet,
+		Description: "Gets information about a particular user",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/user/{name}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.DeleteUser,
+		Method:      http.MethodDelete,
+		Description: "Deletes a user from the database",
+	})
+
+	api_.Routes = append(api_.Routes, Route{
+		URI:         "/user/{name}",
+		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		UserAllowed: true,
+		Handler:     api_.ModifyUser,
+		Method:      http.MethodPut,
 		Description: "Gets information about a particular user",
 	})
 

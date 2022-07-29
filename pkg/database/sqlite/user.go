@@ -33,3 +33,13 @@ func (s Store) GetUsers() (users []model.UserModel, _ error) {
 func (s Store) CreateUser(user *model.UserModel) error {
 	return s.Save(user).Error
 }
+
+// DeleteUser remove a user
+func (s Store) RemoveUser(user *model.UserModel) error {
+	return s.Delete(user).Error
+}
+
+// ModifyUser modifies a user
+func (s Store) ModifyUser(user *model.UserModel) error {
+	return s.Updates(user).Error
+}
