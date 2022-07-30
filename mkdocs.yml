@@ -48,7 +48,6 @@ markdown_extensions:
   - smarty
   - sane_lists
   - admonition
-  - nl2br
   - wikilinks
   - plantuml_markdown:
       server: http://www.plantuml.com/plantuml  # PlantUML server, for remote rendering
