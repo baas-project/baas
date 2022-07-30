@@ -45,5 +45,7 @@ func TestNewSqliteStore(t *testing.T) {
 	imr := images.ImageModel{}
 	db.Preload(clause.Associations).First(&imr)
 
-	assert.Equal(t, len(imr.Versions), 3)
+	assert.Equal(t, imr.Name, "aaa")
+	assert.Equal(t, string(imr.UUID), "yeet")
+	assert.Equal(t, len(imr.Versions), 0)
 }

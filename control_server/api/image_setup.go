@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func _getImageSetup(w http.ResponseWriter, r *http.Request, api_ *API) (*images.ImageSetup, error) {
+func _getImageSetup(w http.ResponseWriter, r *http.Request, api *API) (*images.ImageSetup, error) {
 	username, err := GetName(w, r)
 	if err != nil {
 		http.Error(w, "Failed to create image setup", http.StatusBadRequest)
@@ -29,7 +29,7 @@ func _getImageSetup(w http.ResponseWriter, r *http.Request, api_ *API) (*images.
 		return nil, err
 	}
 
-	setup, err := api_.store.GetImageSetup(tagUUID)
+	setup, err := api.store.GetImageSetup(tagUUID)
 	if err != nil {
 		http.Error(w, "Failed to find image setup", http.StatusBadRequest)
 		log.Errorf("Cannot find image setup: %v", err)
@@ -160,7 +160,7 @@ func (api_ *API) removeImageFromImageSetup(w http.ResponseWriter, r *http.Reques
 	err = api_.store.RemoveImageFromImageSetup(setup, image, version, imageMsg.Update)
 	if err != nil {
 		http.Error(w, "Cannot remove image from setup", http.StatusBadRequest)
-		log.Errorf("Cannot delete image from setup: %s, %v", err)
+		log.Errorf("Cannot delete image from setup: %s, %v", imageMsg.UUID, err)
 		return
 	}
 
@@ -261,8 +261,8 @@ func (api_ *API) deleteImageSetup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to delete the image setup.", http.StatusBadRequest)
 		log.Errorf("Delete image setup: %v", err)
 		return
-
 	}
+
 	http.Error(w, "Successfully deleted image setup", http.StatusOK)
 }
 
@@ -378,5 +378,4 @@ func (api_ *API) RegisterImageSetupHandlers() {
 		Method:      http.MethodPut,
 		Description: "Modifies the image setup",
 	})
-
 }

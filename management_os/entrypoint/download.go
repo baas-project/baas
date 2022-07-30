@@ -76,7 +76,7 @@ func WriteOutDisks(api *APIClient, mac string, setup *images.ImageSetup) error {
 		// Yes, you could inline this function but this screws with the defers mechanism that Go has.
 		// By using a separate method call we ensure that the file are closed whenever they are no longer
 		// needed rather than waiting for the entire cycle.
-		err := setupDisk(api, mac, &image.Image, image.VersionNumber)
+		err := setupDisk(api, mac, &image.Image, image.Version.Version)
 
 		if err != nil {
 			return errors.Wrap(err, "couldn't close download body")

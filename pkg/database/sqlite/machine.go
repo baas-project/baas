@@ -54,6 +54,7 @@ func (s Store) CreateMachine(machine *model.MachineModel) error {
 	return s.Create(machine).Error
 }
 
+// DeleteMachine removes a machine from the database
 func (s Store) DeleteMachine(machine *model.MachineModel) error {
 	res := s.Unscoped().Delete(machine)
 	return res.Error

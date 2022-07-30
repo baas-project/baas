@@ -16,7 +16,6 @@ import (
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/baas-project/baas/pkg/util"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 func TestApi_UpdateMachine(t *testing.T) {
@@ -36,7 +35,10 @@ func TestApi_UpdateMachine(t *testing.T) {
 
 	resp := httptest.NewRecorder()
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodPut, "/machine", &mj))
+	req := httptest.NewRequest(http.MethodPut, "/machine", &mj)
+	req.Header.Add("type", "system")
+	req.Header.Add("origin", "http://localhost:9090")
+	handler.ServeHTTP(resp, req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
@@ -66,12 +68,14 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 
 	resp := httptest.NewRecorder()
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodPut, "/machine", &mj))
+	req := httptest.NewRequest(http.MethodPut, "/machine", &mj)
+	req.Header.Add("type", "system")
+	req.Header.Add("origin", "http://localhost:9090")
+	handler.ServeHTTP(resp, req)
 
 	assert.Equal(t, resp.Code, http.StatusOK)
 
 	m, err := store.GetMachineByMac(machine.MacAddress)
-	m.Model = gorm.Model{}
 
 	assert.NoError(t, err)
 	assert.Equal(t, m.Name, machine.Name)
@@ -85,7 +89,10 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp = httptest.NewRecorder()
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodPut, "/machine", &mj))
+	req = httptest.NewRequest(http.MethodPut, "/machine", &mj)
+	req.Header.Add("type", "system")
+	req.Header.Add("origin", "http://localhost:9090")
+	handler.ServeHTTP(resp, req)
 
 	assert.Equal(t, resp.Code, http.StatusOK)
 
@@ -112,10 +119,12 @@ func TestApi_GetMachine(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/machine/"+machine.MacAddress.Address, nil)
+	req.Header.Add("type", "system")
+	req.Header.Add("origin", "http://localhost:9090")
 
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet,
-		"/machine/"+machine.MacAddress.Address, nil))
+	handler.ServeHTTP(resp, req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
@@ -155,9 +164,12 @@ func TestApi_GetMachines(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/machines", nil)
+	req.Header.Add("type", "system")
+	req.Header.Add("origin", "http://localhost:9090")
 
 	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/machines", nil))
+	handler.ServeHTTP(resp, req)
 
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)

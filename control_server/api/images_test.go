@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/baas-project/baas/pkg/database/sqlite"
-
 	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/stretchr/testify/assert"
@@ -23,14 +23,16 @@ func TestApi_CreateImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	user := model.UserModel{
-		Name: "test",
+		Username: "test",
+		Role:     "user",
 	}
 
 	err = store.CreateUser(&user)
 	assert.NoError(t, err)
 
 	image := images.ImageModel{
-		Name: "yeet",
+		Name:     "yeet",
+		Username: "test",
 	}
 
 	var mi bytes.Buffer
@@ -38,9 +40,12 @@ func TestApi_CreateImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := httptest.NewRecorder()
-	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodPost, "/user/"+user.Name+"/image", &mi))
+	handler := getHandler(store, "", "/tmp")
+	request := httptest.NewRequest(http.MethodPost, "/user/test/image", &mi)
+	request.Header.Add("type", "system")
+	request.Header.Add("origin", "http://localhost:9090")
 
+	handler.ServeHTTP(resp, request)
 	assert.Equal(t, http.StatusCreated, resp.Code)
 
 	decoded := images.ImageModel{}
@@ -55,6 +60,7 @@ func TestApi_CreateImage(t *testing.T) {
 
 	assert.Equal(t, decoded.UUID, res.UUID)
 	assert.Equal(t, image.Name, res.Name)
+	os.RemoveAll("/tmp/" + string(decoded.UUID))
 }
 
 func TestApi_GetImage(t *testing.T) {
@@ -62,23 +68,29 @@ func TestApi_GetImage(t *testing.T) {
 	assert.NoError(t, err)
 
 	user := model.UserModel{
-		Name: "test",
+		Username: "test",
+		Name:     "Test System",
+		Role:     "User",
 	}
 
 	err = store.CreateUser(&user)
 	assert.NoError(t, err)
 
 	image := images.ImageModel{
-		Name: "abc",
-		UUID: "def",
+		Name:     "abc",
+		UUID:     "def",
+		Username: "test",
 	}
 
 	store.CreateImage(&image)
 
 	resp := httptest.NewRecorder()
-	handler := getHandler(store, "", "")
-	handler.ServeHTTP(resp, httptest.NewRequest(http.MethodGet, "/image/"+string(image.UUID), nil))
+	handler := getHandler(store, "", "/tmp")
+	request := httptest.NewRequest(http.MethodGet, "/image/def", nil)
+	request.Header.Add("type", "system")
+	request.Header.Add("origin", "http://localhost:9090")
 
+	handler.ServeHTTP(resp, request)
 	assert.Equal(t, resp.Code, http.StatusOK)
 
 	decoded := images.ImageModel{}

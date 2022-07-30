@@ -40,6 +40,11 @@ func (api_ *API) checkUserImage(w http.ResponseWriter, r *http.Request) (*images
 	session, _ := api_.session.Get(r, "session-name")
 	username, ok := session.Values["Username"].(string)
 
+	// TODO: Hardcoded nonesense
+	if r.Header.Get("type") == "system" {
+		return image, nil
+	}
+
 	if !ok || username != image.Username {
 		http.Error(w, "user does not own this image", http.StatusForbidden)
 		log.Errorf("access denied: %v", ok)
@@ -104,12 +109,11 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 	err = os.Mkdir(fmt.Sprintf(api_.diskpath+"/%s", image.UUID), os.ModePerm)
 	if err != nil {
 		http.Error(w, "could not create image", http.StatusInternalServerError)
-		log.Errorf("cannot create image directory: %v", err)
+		log.Errorf("cann ot create image directory: %v", err)
 		return
 	}
 
 	err = image.CreateImageFile(imageFileSize, api_.diskpath, images.SizeMegabyte)
-
 	if err != nil {
 		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
 		log.Errorf("image creation failed: %v", err)
@@ -231,9 +235,8 @@ func (api_ *API) DownloadImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	fmt.Println(image.UUID)
 
-	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%d.img", image.UUID, version))
+	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%s.img", image.UUID, version))
 
 	DownloadImageFile(string(image.UUID), version, api_, w)
 }
@@ -249,7 +252,7 @@ func (api_ *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
 	versionTxt := image.Versions[len(image.Versions)-1]
 	version := strconv.FormatUint(versionTxt.Version, 10)
 
-	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%d.img", image.UUID, version))
+	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%s.img", image.UUID, version))
 	DownloadImageFile(string(image.UUID), version, api_, w)
 }
 
