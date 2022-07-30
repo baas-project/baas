@@ -34,7 +34,7 @@ func (s Store) CreateUser(user *model.UserModel) error {
 	return s.Save(user).Error
 }
 
-// DeleteUser remove a user
+// RemoveUser deletes a user from the database
 func (s Store) RemoveUser(user *model.UserModel) error {
 	return s.Delete(user).Error
 }

@@ -71,9 +71,7 @@ func (s Store) ModifyImageSetup(imageSetup *images.ImageSetup) error {
 }
 
 // RemoveImageFromImageSetup removes a particular iamge from the image setup
-func (s Store) RemoveImageFromImageSetup(setup *images.ImageSetup,
-	targetImage *images.ImageModel, version images.Version, update bool) error {
-
+func (s Store) RemoveImageFromImageSetup(setup *images.ImageSetup, targetImage *images.ImageModel, version images.Version, update bool) error {
 	var found images.ImageFrozen
 	for _, image := range setup.Images {
 		if image.UUIDImage == targetImage.UUID {

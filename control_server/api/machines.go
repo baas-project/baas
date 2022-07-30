@@ -66,7 +66,7 @@ func (api_ *API) GetMachines(w http.ResponseWriter, _ *http.Request) {
 	_ = e.Encode(machines)
 }
 
-// Delete a machine from the database
+// DeleteMachine Deletes a machine from the database
 // Example request: DELETE machine/[mac]
 // Example response: Successfully deleted
 func (api_ *API) DeleteMachine(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +85,22 @@ func (api_ *API) DeleteMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	image, err := api_.store.GetMachineImageByMac(util.MacAddress{Address: mac})
+
+	if err != nil {
+		http.Error(w, "Failed to get the next boot setup", http.StatusBadRequest)
+		log.Errorf("Failed to get the machine image: %v", err)
+		return
+	}
+
 	err = api_.store.DeleteMachine(machine)
+	if err != nil {
+		http.Error(w, "Failed to delete machine", http.StatusInternalServerError)
+		log.Errorf("Machine %s deletion failed with error code: %v", mac, err)
+		return
+	}
+
+	err = os.RemoveAll(fmt.Sprintf(api_.diskpath+"/%s", image.UUID))
 	if err != nil {
 		http.Error(w, "Failed to delete machine", http.StatusInternalServerError)
 		log.Errorf("Machine %s deletion failed with error code: %v", mac, err)
@@ -403,8 +418,6 @@ func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("Invalid machine given: %v", err)
 		return
 	}
-
-	util.PrettyPrintStruct(bootSetup)
 
 	bootSetup.MachineMAC = machine.MacAddress.Address
 	err = api_.store.AddBootSetupToMachine(&bootSetup)

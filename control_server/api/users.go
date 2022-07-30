@@ -15,8 +15,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func _getUserInternal(w http.ResponseWriter, r *http.Request, api_ *API) (*model.UserModel, error) {
-	session, _ := api_.session.Get(r, "session-name")
+func _getUserInternal(w http.ResponseWriter, r *http.Request, api *API) (*model.UserModel, error) {
+	session, _ := api.session.Get(r, "session-name")
 	username, ok := session.Values["Username"].(string)
 	if !ok {
 		http.Error(w, "Username not found", http.StatusBadRequest)
@@ -28,10 +28,10 @@ func _getUserInternal(w http.ResponseWriter, r *http.Request, api_ *API) (*model
 	if !ok || name == "" {
 		http.Error(w, "name not found", http.StatusBadRequest)
 		log.Errorf("name not provided in get user")
-		return nil, errors.New("Name not found")
+		return nil, errors.New("name not found")
 	}
 
-	user, err := api_.store.GetUserByUsername(name)
+	user, err := api.store.GetUserByUsername(name)
 
 	// Annoyingly enough we can't be more specific due to error wrapping... I swear, this language.
 	if err != nil {
@@ -231,7 +231,6 @@ func (api_ *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cannot remove the user.", http.StatusBadRequest)
 		log.Errorf("Remove user: %v", err)
 		return
-		return
 	}
 
 	http.Error(w, "Successfully deleted user", http.StatusOK)
@@ -243,18 +242,17 @@ func (api_ *API) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) ModifyUser(w http.ResponseWriter, r *http.Request) {
 	oldUser, err := _getUserInternal(w, r, api_)
 	if err != nil {
-
 		return
 	}
 
 	newUser := model.UserModel{}
 	err = json.NewDecoder(r.Body).Decode(&newUser)
+	newUser.Username = oldUser.Username
 	if err != nil {
 		http.Error(w, "Cannot decode the request body.", http.StatusBadRequest)
 		log.Errorf("Modify user: %v", err)
 		return
 	}
-	newUser.Username = oldUser.Username
 
 	err = api_.store.ModifyUser(&newUser)
 	if err != nil {
