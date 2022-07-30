@@ -38,16 +38,16 @@ Here the management of the machines is done, where machine is any computer which
 #### Get information about a machine
 Allows a user to get information about a specific machine which is identified by it's MAC address. Please note that different MAC addresses may refer to the exact same machine.
 
-**Request:** `GET /machine/[mac]`
-**Body:** None
-**Response:**
-- *Name:* Human-readable name.
-- *Architecture:* Architecture of the machine
-- *Managed:* A boolean indicating that BAAS manages the machine
-- *MacAddress*: MAC Address which is associated with this machine.
-**Permission**: All
-**Example curl command**: `curl localhost:8080/machine/00:11:22:33:44:55:66`
-**Example response:**
+**Request:** `GET /machine/[mac]`<br>
+**Body:** None<br>
+**Response:**<br>
+- *Name:* Human-readable name.<br>
+- *Architecture:* Architecture of the machine<br>
+- *Managed:* A boolean indicating that BAAS manages the machine<br>
+- *MacAddress*: MAC Address which is associated with this machine.<br>
+**Permission**: All<br>
+**Example curl command**: `curl localhost:8080/machine/00:11:22:33:44:55:66`<br>
+**Example response:**<br>
 ```json
 {
     "Name": "Machine 1",
@@ -62,12 +62,12 @@ Allows a user to get information about a specific machine which is identified by
 #### Getting all machines
 Receives information about every currently registered machine.
 
-**Request:** `GET /machines`
-**Body**: None
-**Response:** A list of machine objects described above.
-**Permission**: All
-**Example curl command:** `curl localhost:8080/machines`
-**Example response:**
+**Request:** `GET /machines`<br>
+**Body**: None<br>
+**Response:** A list of machine objects described above.<br>
+**Permission**: All<br>
+**Example curl command:** `curl localhost:8080/machines`<br>
+**Example response:**<br>
 ```json
 [{
 	"Name": "Machine 1",
@@ -91,15 +91,15 @@ Receives information about every currently registered machine.
 Creates a new machine in the database and creates the base image for
 the machine.
 
-**Request:** `POST /machine`
-**Body:**
-- *Name:* Human-readable for the machine.
-- *Architecture:* Architecture of the machine, typically x86\_64
-- *Managed:* Boolean indicating that BAAS is managing the machine.
-- *MacAddresses:* A list of MAC addresses associated with the system in the form of `{"Address": "value"}"`.
-**Response:** None
-**Permissions:** Administrators
-**Example body:**
+**Request:** `POST /machine`<br>
+**Body:**<br>
+- *Name:* Human-readable for the machine.<br>
+- *Architecture:* Architecture of the machine, typically x86\_64<br>
+- *Managed:* Boolean indicating that BAAS is managing the machine.<br>
+- *MacAddresses:* A list of MAC addresses associated with the system in the form of `{"Address": "value"}"`.<br>
+**Response:** None<br>
+**Permissions:** Administrators<br>
+**Example body:**<br>
 ```json
 {
 	"Name": "Hello World",
@@ -116,15 +116,15 @@ the machine.
 #### Update machine
 Change the information of a machine, this also used to create a machine.
 
-**Request:** `PUT /machine`
-**Body:**
-- *Name:* Human-readable for the machine.
-- *Architecture:* Architecture of the machine, typically x86\_64
-- *Managed:* Unknown
-- *MacAddress:* The MAC address associated with the system in the form of `{"mac": "value"}"`.
-**Response:** The same as the given body
-**Permissions:** Administrators
-**Example body:**
+**Request:** `PUT /machine`<br>
+**Body:**<br>
+- *Name:* Human-readable for the machine.<br>
+- *Architecture:* Architecture of the machine, typically x86\_64<br>
+- *Managed:* Unknown<br>
+- *MacAddress:* The MAC address associated with the system in the form of `{"mac": "value"}"`.<br>
+**Response:** The same as the given body<br>
+**Permissions:** Administrators<br>
+**Example body:**<br>
 ```json
 {
 	"Name": "Hello World",
@@ -140,18 +140,17 @@ Change the information of a machine, this also used to create a machine.
 #### Get the boot information
 Fetches configuration for the next boot for this particular machine using a SQL based FIFO queue.
 
-**Request:** `GET /machine/mac/boot`
-**Body:** None
-**Response:**
-- *Name:* The name of the image setup.
+**Request:** `GET /machine/mac/boot`<br>
+**Body:** None<br>
+**Response:**<br>
+- *Name:* The name of the image setup.<br>
 - *Images:* A list of the images associated with the setup and the
-  machine image
-- *User:* Username of the image setup
-- *UUID:* UUID for the image setup
-
-**Permissions:** Management OS
-**Example curl request**:` curl localhost:4848/machine/42:DE:AD:BE:EF:42/boot`
-**Example response:**
+  machine image<br>
+- *User:* Username of the image setup<br>
+- *UUID:* UUID for the image setup<br>
+**Permissions:** Management OS<br>
+**Example curl request**:` curl localhost:4848/machine/42:DE:AD:BE:EF:42/boot`<br>
+**Example response:**<br>
 ```json
 {
   "Name": "Linux Kernel 2",
@@ -186,18 +185,17 @@ Fetches configuration for the next boot for this particular machine using a SQL 
 Push a boot configuration to the queue in a machine's FIFO boot
 queue. In this future this should probably be machine agnostic.
 
-**Request:** `POST /machine/[mac]/boot`
-**Body:**
+**Request:** `POST /machine/[mac]/boot`<br>
+**Body:**<br>
 - *MachineModelID:* Machine that the image should be flashed to.
 - *SetupUUID:* UUID associated with the image setup
-- *Update:* A boolean indicating whether the changes to images should be synced
-**Response:**
-- *MachineModelID:* Machine that the image should be flashed to.
-- *ImageUUID:* UUID for the image.
-- *Update:* Should the changes be synced to the disk.
-**Permissions:** System
-**Example curl request:** `curl "localhost:4848/machine/52:54:00:d9:71:93/boot" -H 'application/json' -d '{"Update": false, "SetupUUID": "2b59ff94-7fb6-4239-b2e6-82f1e30f4355", "MachineModelId": 1}' -H "type: system"`
-
+- *Update:* A boolean indicating whether the changes to images should be synced<br>
+**Response:**<br>
+- *MachineModelID:* Machine that the image should be flashed to.<br>
+- *ImageUUID:* UUID for the image.<br>
+- *Update:* Should the changes be synced to the disk.<br>
+**Permissions:** System<br>
+**Example curl request:** `curl "localhost:4848/machine/52:54:00:d9:71:93/boot" -H 'application/json' -d '{"Update": false, "SetupUUID": "2b59ff94-7fb6-4239-b2e6-82f1e30f4355", "MachineModelId": 1}' -H "type: system"`<br>
 **Example response:**
 ```json
 {
@@ -217,36 +215,36 @@ images. Administrators can modify any part of the program.
 #### Create a new user
 Add user to the system.
 
-**Request:** `POST /user`
-**Body:**
-- *Username:* User name of the new user.
-- *Name:* Name of the user.
-- *Email:* Email of the user
-- *Role:* One of user, moderator or administrator
-**Response:** Successfully created user
-**Permissions:** Administrators/System
-**Example curl request:** `curl -X POST "localhost:4848/user" -H 'Content-Type: application/json' -d '{"Username": "wnarchi", "Name": "William Narchi", "Email": "w.narchi1.obscured@student.tudelft.net", "Role": "user"}'`
+**Request:** `POST /user`<br>
+**Body:**<br>
+- *Username:* User name of the new user.<br>
+- *Name:* Name of the user.<br>
+- *Email:* Email of the user<br>
+- *Role:* One of user, moderator or administrator<br>
+**Response:** Successfully created user<br>
+**Permissions:** Administrators/System<br>
+**Example curl request:** `curl -X POST "localhost:4848/user" -H 'Content-Type: application/json' -d '{"Username": "wnarchi", "Name": "William Narchi", "Email": "w.narchi1.obscured@student.tudelft.net", "Role": "user"}'`<br>
 
 #### Login using GitHub
 Starts the OAuth2 process as described in [logging in](logging_in.md)
 
-**Request:** `GET /user/login/github`
-**Body:** None
-**Response:** A link to Github's Authentication page
-**Example request:** `curl "localhost:4848/user/login/github"`
+**Request:** `GET /user/login/github`<br>
+**Body:** None<br>
+**Response:** A link to Github's Authentication page<br>
+**Example request:** `curl "localhost:4848/user/login/github"`<br>
 
 #### Fetch a particular user
 Returns information about a particular user.
 
-**Request:** `GET /user/[name]`
-**Body:** None
-**Response:**
-- *Username:* Username of the user.
-- *Name:* UTF-8 string for the user's name.
-- *Email:* Associated email adres of the university.
-- *Role:* Assigned permissions
-**Permissions:** All
-**Example curl request:** `curl "localhost:4848/user/jrellermeyer"`
+**Request:** `GET /user/[name]`<br>
+**Body:** None<br>
+**Response:**<br>
+- *Username:* Username of the user.<br>
+- *Name:* UTF-8 string for the user's name.<br>
+- *Email:* Associated email adres of the university.<br>
+- *Role:* Assigned permissions<br>
+**Permissions:** All<br>
+**Example curl request:** `curl "localhost:4848/user/jrellermeyer"`<br>
 **Response:**
 ```json
 {
@@ -260,29 +258,29 @@ Returns information about a particular user.
 #### Fetch the currently logged in user
 Finds the user information for the user that is currently logged into the session.
 
-**Request:** `GET /user/me`
-**Body:** None
-**Response:** Same as [fetch a particular user](#fetch-a-particular-user)
-**Example request:** `curl "localhost:4848/user/me" --cookie "session-name=[value]"`
+**Request:** `GET /user/me`<br>
+**Body:** None<br>
+**Response:** Same as [fetch a particular user](#fetch-a-particular-user)<br>
+**Example request:** `curl "localhost:4848/user/me" --cookie "session-name=[value]"`<br>
 
 ##### Deletes a user
 Removes an image setup from the database.
 
-**Request:** `DELETE /user/[name]`
-**Body:** None
-**Response:** `Successfully deleted user`
-**Permissions:** All
-**Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek"`
+**Request:** `DELETE /user/[name]`<br>
+**Body:** None<br>
+**Response:** `Successfully deleted user`<br>
+**Permissions:** All<br>
+**Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek"`<br>
 
 ##### Modify image setup
 Modifies metadata related to the image setup. Cannot be used to change
 the images.
 
-**Request:** `PUT /user/[name]`
-**Body:** the wished modifications for the user
-**Response:** The modified user object
-**Permissions:** All
-**Example curl request:** `curl -X PUT "localhost:4848/user/ValentijnvdBeek" -d '{"Name": "Valentijn"}'`
+**Request:** `PUT /user/[name]`<br>
+**Body:** the wished modifications for the user<br>
+**Response:** The modified user object<br>
+**Permissions:** All<br>
+**Example curl request:** `curl -X PUT "localhost:4848/user/ValentijnvdBeek" -d '{"Name": "Valentijn"}'`<br>
 **Example response:**
 ```json
 {
@@ -296,11 +294,11 @@ the images.
 #### Get all registered users
 Gives a list of every user which is currently registered with the system.
 
-**Request:** `GET /users`
-**Body:**  None
-**Response:** A list of user objects described above.
-**Permissions:** All
-**Example curl request:** `curl "localhost:4848/users" `
+**Request:** `GET /users`<br>
+**Body:**  None<br>
+**Response:** A list of user objects described above.<br>
+**Permissions:** All<br>
+**Example curl request:** `curl "localhost:4848/users" `<br>
 **Example response:**
 ```json
 [
@@ -322,24 +320,24 @@ Gives a list of every user which is currently registered with the system.
 #### Create a new image
 Creates a new image entity and file.
 
-**Request:** `POST /user/[name]/image`
-**Body:**
-- *Name:* A human-readable name for the user.
-- *DiskCompressionStrategy:* How the image is compressed, can be one of: none, gzip or zstd.
-- *ImageFileType:* Filesystem type of the image, typically FAT32 or EXT4
-- *Type:* BAAS image type, one of: base, system, temporal and temporary
-- *Versioned:* Boolean value indicating that it is a versioned or a checksum-based image
+**Request:** `POST /user/[name]/image`<br>
+**Body:**<br>
+- *Name:* A human-readable name for the user.<br>
+- *DiskCompressionStrategy:* How the image is compressed, can be one of: none, gzip or zstd.<br>
+- *ImageFileType:* Filesystem type of the image, typically FAT32 or EXT4<br>
+- *Type:* BAAS image type, one of: base, system, temporal and temporary<br>
+- *Versioned:* Boolean value indicating that it is a versioned or a checksum-based image<br>
 **Response:**
-- *Name:* Human-readable name of the image.
-- *Versions:* A list of objects with a Version attribute containing the version number.
-- *UUID:* Identifiying unique ID for the image.
-- *Username:* Username of the user who owns the image.
-- *DiskCompressionStrategy:* Compression used on the disk
-- *ImageFileType:* Filesystem installed on the image.
-- *Type:* BAAS system type.
-- *Checksum:* Checksum in case of a non-versioned image.
-**Permissions:** User in question or administrator
-**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image" -H 'Content-Type: application/json' --cookie "session-name=$SECRET" -d '{"Name": "Fedora Research", "DiskCompressionStrategy": "none", "ImageFileType": "raw", "Type": "system"}'`
+- *Name:* Human-readable name of the image.<br>
+- *Versions:* A list of objects with a Version attribute containing the version number.<br>
+- *UUID:* Identifiying unique ID for the image.<br>
+- *Username:* Username of the user who owns the image.<br>
+- *DiskCompressionStrategy:* Compression used on the disk<br>
+- *ImageFileType:* Filesystem installed on the image.<br>
+- *Type:* BAAS system type.<br>
+- *Checksum:* Checksum in case of a non-versioned image.<br>
+**Permissions:** User in question or administrator<br>
+**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image" -H 'Content-Type: application/json' --cookie "session-name=$SECRET" -d '{"Name": "Fedora Research", "DiskCompressionStrategy": "none", "ImageFileType": "raw", "Type": "system"}'`<br>
 **Example Response:**
 ```json
 {
@@ -364,23 +362,23 @@ Deletes an image and the associated files from the BAAS server. Please
 note that it is also possible to do a soft-delete of an image by
 setting the managed flag to off.
 
-**Request:** `DELETE /image/{UUID}**`
-**Body:** None
-**Response:** An error message or *Successfully deleted image*
-**Permissions:** The user in question or any administrator
-**Example curl request:** `curl -X DELETE "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a"`
-**Example Response:** `Successfully deleted image`
+**Request:** `DELETE /image/{UUID}**`<br>
+**Body:** None<br>
+**Response:** An error message or *Successfully deleted image*<br>
+**Permissions:** The user in question or any administrator<br>
+**Example curl request:** `curl -X DELETE "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a"`<br>
+**Example Response:** `Successfully deleted image`<br>
 
 #### Update image
 Changes the image stored in the database. Please note that it does
 not, yet, handle reformatting or recompressioning the images. These
 features could be added in the future.
 
-**Request:** `PUT /image/{UUID}**`
-**Body:** None
-**Response:** An error message or the changed image
-**Permissions:** The user in question or any administrator
-**Example curl request:** `curl -X PUT "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a" -H 'Content-Type: application/json' -d {"Name": "RealVLC Research", "Type": "System" }`
+**Request:** `PUT /image/{UUID}**`<br>
+**Body:** None<br>
+**Response:** An error message or the changed image<br>
+**Permissions:** The user in question or any administrator<br>
+**Example curl request:** `curl -X PUT "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a" -H 'Content-Type: application/json' -d {"Name": "RealVLC Research", "Type": "System" }`<br>
 **Example Response:**
 ```json
 {
@@ -399,21 +397,21 @@ features could be added in the future.
 Takes a Dockerfile, generates an associated image and adds it as
 another version to the database.
 
-**Request:** `POST /image/[uuid]/docker`
-**Body:** Multipart file with the Dockerfile
-**Response:** `Successfully uploaded image: [version]`
-**Permissions:** Moderator, Admin and same user
-**Example curl request:** `curl -X POST "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a/docker" -F "file=@Dockerfile"`
-**Example response:** `Successfully uploaded image: 12`
+**Request:** `POST /image/[uuid]/docker`<br>
+**Body:** Multipart file with the Dockerfile<br>
+**Response:** `Successfully uploaded image: [version]`<br>
+**Permissions:** Moderator, Admin and same user<br>
+**Example curl request:** `curl -X POST "localhost:4848/image/06995218-54f2-4a5d-9022-8324bae1971a/docker" -F "file=@Dockerfile"`<br>
+**Example response:** `Successfully uploaded image: 12`<br>
 
 #### Find all the images made by a user
 Returns every image created by the human without versions.
 
-**Request:** GET /user/[name]/images
-**Body:** None
-**Response:** A list of image objcts described above
-**Permissions:** User in question or administrator
-**Example curl request:** `curl "localhost:4848/user/Jan/images"`
+**Request:** `GET /user/[name]/images`<br>
+**Body:** None<br>
+**Response:** A list of image objcts described above<br>
+**Permissions:** User in question or administrator<br>
+**Example curl request:** `curl "localhost:4848/user/Jan/images"`<br>
 **Example response:**
 ```json
 [
@@ -503,11 +501,11 @@ Returns every image created by the human without versions.
 #### Get all the images from a user with a particular name
 Find all the images which are associated with user which share the same human-readable name. This is a convenience function which can be used for searching through the images since, at the moment, image names are not unique.
 
-**Request:** GET /user/[username]/images/[name]
-**Body:** None
-**Response:** A list of image objects described above filtered on name.
-**Permissions:** User in question or administrator
-**Example curl request:** `curl "localhost:4848/user/Jan/images/Gentoo"`
+**Request:** `GET /user/[username]/images/[name]`<br>
+**Body:** None<br>
+**Response:** A list of image objects described above filtered on name.<br>
+**Permissions:** User in question or administrator<br>
+**Example curl request:** `curl "localhost:4848/user/Jan/images/Gentoo"`<br>
 **Example response:**
 
 ```json
@@ -543,19 +541,19 @@ typically in the latter rather than the former.
 #### Get image info
 Offers the underlying image file to the user.
 
-**Request:** `GET /image/[UUID]`
-**Body:** None
-**Permissions:** User in question or administrator
-**Example curl request:** `curl "localhost:4848/image/b2aa291b-1ca1-4ca8-a59b-4cc57cb8ade9`
-**Response:**
-- *Name:* Human-readable name associated with the image.
-- *Versions:* A list of versions available for this image. Versions are JSON objects with a Version attribute.
-- *UUID:* Image unique ID.
-- *Username:* User who owns the image
-- *DiskCompressionStrategy:* How the image is compressed.
-- *ImageFileType:* Image filesystem.
-- *Type:* Indicates the type of BAAS image.
-- *Checksum:* Checksum in case of non-versioned images.
+**Request:** `GET /image/[UUID]`<br>
+**Body:** None<br>
+**Permissions:** User in question or administrator<br>
+**Example curl request:** `curl "localhost:4848/image/b2aa291b-1ca1-4ca8-a59b-4cc57cb8ade9`<br>
+**Response:**<br>
+- *Name:* Human-readable name associated with the image.<br>
+- *Versions:* A list of versions available for this image. Versions are JSON objects with a Version attribute.<br>
+- *UUID:* Image unique ID.<br>
+- *Username:* User who owns the image<br>
+- *DiskCompressionStrategy:* How the image is compressed.<br>
+- *ImageFileType:* Image filesystem.<br>
+- *Type:* Indicates the type of BAAS image.<br>
+- *Checksum:* Checksum in case of non-versioned images.<br>
 **Example response:**
 ```json
 {
@@ -578,29 +576,29 @@ Offers the underlying image file to the user.
 #### Get the latest version of an image
 Convenience function which offers the latest version of the specified image.
 
-**Request:** `GET /image/[name]/latest`
-**Body:** None.
-**Response:** None
-**Permissions:** User in question or the system.
+**Request:** `GET /image/[name]/latest`<br>
+**Body:** None.<br>
+**Response:** None<br>
+**Permissions:** User in question or the system.<br>
 **Example curl request:** `curl "localhost:4848/image/42:DE:AD:BE:EF:42/latest" --output /tmp/image.img`
 
 #### Download a particular version of an image.
 Offers the file associated with a particular version of the image to the user.
 
-**Request:** `GET /image/[UUID]/[version]`
-**Body:** None
-**Response:** None
-**Permissions:** User in question or system
+**Request:** `GET /image/[UUID]/[version]`<br>
+**Body:** None<br>
+**Response:** None<br>
+**Permissions:** User in question or system<br>
 **Example curl request:** `curl "localhost:4848/image/42:DE:AD:BE:EF:42/5" --output /tmp/dead_12.img`
 
 #### Upload a new version of an image
 Updates the image with either an entirely new file or a modified version of the original image.
 
-**Request:** `POST /image/[UUID]`
-**Body:** Multi-Part image file with the image.
-**Response:** Successfuly uploaded image: 5
-**Permissions:** User in question or the system.
-**Example curl request:** `curl  -X POST localhost:4848/image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data" -F "newVersion=[false,true];file=@/tmp/test3.img"**
+**Request:** `POST /image/[UUID]`<br>
+**Body:** Multi-Part image file with the image.<br>
+**Response:** Successfuly uploaded image: 5<br>
+**Permissions:** User in question or the system.<br>
+**Example curl request:** `curl  -X POST localhost:4848/image/87f58936-9540-4dad-aba6-253f06142166 -H "Content-Type: multipart/form-data" -F "newVersion=[false,true];file=@/tmp/test3.img"`
 
 ### Image setups
 Although useful, simply being able to flash a singular image onto a
@@ -614,30 +612,30 @@ should rarely be updated.
 ##### Create a new image setup
 Adds a new image setup with no associated images to the database.
 
-**Request:** `POST /user/[name]/image_setup`
-**Body:** None
-**Response:** `Successfully created image setup`
-**Permissions:** All
+**Request:** `POST /user/[name]/image_setup`<br>
+**Body:** None<br>
+**Response:** `Successfully created image setup`<br>
+**Permissions:** All<br>
 **Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup"`
 
 ##### Deletes a image setup
 Removes an image setup from the database.
 
-**Request:** `DELETE /user/[name]/image_setup/[setup_uuid]`
-**Body:** None
-**Response:** `Successfully deleted image setup`
-**Permissions:** All
+**Request:** `DELETE /user/[name]/image_setup/[setup_uuid]`<br>
+**Body:** None<br>
+**Response:** `Successfully deleted image setup`<br>
+**Permissions:** All<br>
 **Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek/image_setup/ae8567e6-f5b4-46b0-8afc-42f425d00194"`
 
 ##### Modify image setup
 Modifies metadata related to the image setup. Cannot be used to change
 the images.
 
-**Request:** `PUT /user/[name]/image_setup/[setup_uuid]`
-**Body:** Modified image setup object
-**Response:** The modified image object
-**Permissions:** All
-**Example curl request:** `curl -X PUT "localhost:4848/user/ValentijnvdBeek/image_setup/ae8567e6-f5b4-46b0-8afc-42f425d00194" -d '{"Name": "GNU/Linux Research"}'**
+**Request:** `PUT /user/[name]/image_setup/[setup_uuid]`<br>
+**Body:** Modified image setup object<br>
+**Response:** The modified image object<br>
+**Permissions:** All<br>
+**Example curl request:** `curl -X PUT "localhost:4848/user/ValentijnvdBeek/image_setup/ae8567e6-f5b4-46b0-8afc-42f425d00194" -d '{"Name": "GNU/Linux Research"}'`<br>
 **Example response:**
 ```json
 {
@@ -651,12 +649,11 @@ the images.
 ##### Get image setups by user
 Gets all the image setups associated by user
 
-**Request:** `GET /user/[name]/image_setups`
-**Body:** None
-**Response:** List of user images objects similar to [get image
-setup](#get-image-setup**
-**Permission:** User in question, system, moderator and administrator
-**Example curl request:** `curl -X GET "localhost:4848/user/ValentijnvdBeek/image_setups"`
+**Request:** `GET /user/[name]/image_setups`<br>
+**Body:** None<br>
+**Response:** List of user images objects similar to [get image setup](#get-image-setup)<br>
+**Permission:** User in question, system, moderator and administrator<br>
+**Example curl request:** `curl -X GET "localhost:4848/user/ValentijnvdBeek/image_setups"`<br>
 **Example Response:**
 ```json
 [{
@@ -687,18 +684,18 @@ setup](#get-image-setup**
 Gets the data associated particular image setup, in particular
 those images that are linked to it together with which version.
 
-**Request:** `GET /user/[name]/image_setup/[UUID]`
-**Body:** None
-**Response:**
-- *User:* Username of the user who owns the setup.
-- *UUID:* UUID of the setup.
-- *Name:* The name of the image setup.
-- *Images:* A list of images and version numbers.
-- *Images.Image:* An object containing the image.
-- *Images.UUIDImage:* UUID of the image.
-- *Images.VersionNumber:* Version linked to the setup.
-- *Images.Update:* Should the image be updated after running
-**Permissions:** User in question, system, moderator and administrator
+**Request:** `GET /user/[name]/image_setup/[UUID]`<br>
+**Body:** None<br>
+**Response:**<br>
+- *User:* Username of the user who owns the setup.<br>
+- *UUID:* UUID of the setup.<br>
+- *Name:* The name of the image setup.<br>
+- *Images:* A list of images and version numbers.<br>
+- *Images.Image:* An object containing the image.<br>
+- *Images.UUIDImage:* UUID of the image.<br>
+- *Images.VersionNumber:* Version linked to the setup.<br>
+- *Images.Update:* Should the image be updated after running<br>
+**Permissions:** User in question, system, moderator and administrator<br>
 **Example curl request:** `curl -X GET
 "localhost:4848/user/ValentijnvdBeek/image_setup/f02dc9d1-833e-45e9-9d28-87a5390cbee3"`
 
@@ -731,11 +728,11 @@ those images that are linked to it together with which version.
 ##### Get images from the image setup
 Finds all the images associated with a given image setup.
 
-**Request:** `GET /user/[name]/image_setup/[uuid]/images`
-**Body:** None
-**Response:** A list of images
-**Permissions:** User in question, moderator and administrator.
-**Example curl request:** `curl "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`
+**Request:** `GET /user/[name]/image_setup/[uuid]/images`<br>
+**Body:** None<br>
+**Response:** A list of images<br>
+**Permissions:** User in question, moderator and administrator.<br>
+**Example curl request:** `curl "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`<br>
 **Example response:**
 ```json
 {
@@ -765,43 +762,44 @@ Finds all the images associated with a given image setup.
 ##### Add image to image setup
 Links an image to the given image setup.
 
-**Request:** `POST /user/[name]/image_setup/[uuid]/images`
-**Body:**
-- *Uuid:* UUID of the image you want to link.
-- *Version:* Version that you would like to link.
-**Response:** The same response as getting the image setup.
-**Permissions:** User in question, moderator and administrator.
-**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`
-**Example body:** `{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}`
+**Request:** `POST /user/[name]/image_setup/[uuid]/images`<br>
+**Body:**<br>
+- *Uuid:* UUID of the image you want to link.<br>
+- *Version:* Version that you would like to link.<br>
+**Response:** The same response as getting the image setup.<br>
+**Permissions:** User in question, moderator and administrator.<br>
+**Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`<br>
+**Example body:** `{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}`<br>
 **Example response:** See get image setup
 
 ##### Remove image from image setup
 Removes an image from the given image setup.
 
-**Request:** `DELETE /user/[name]/image_setup/[uuid]/images`
-**Body:**
-- *Uuid:* UUID of the image you want to remove.
-- *Version:* Version that you would like to remove.
-**Response:** *Successfully deleted image from setup*
-**Permissions:** User in question, moderator and administrator.
-**Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`
-**Example body:** `{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}`
+**Request:** `DELETE /user/[name]/image_setup/[uuid]/images`<br>
+**Body:**<br>
+- *Uuid:* UUID of the image you want to remove.<br>
+- *Version:* Version that you would like to remove.<br>
+**Response:** *Successfully deleted image from setup*<br>
+**Permissions:** User in question, moderator and administrator.<br>
+**Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`<br>
+**Example body:** `{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}`<br>
 **Example response:** *Successfully deleted image from setup*
 
 
 ##### Find an image setups based on name
 Finds an image setup based on a name
 
-**Request:** `GET /user/[name]/image_setup`
-**Body:** None.
-**Response:** A list containing the following:
-- *Name:* Name of the image setup.
+**Request:** `GET /user/[name]/image_setup`<br>
+**Body:** None.<br>
+**Response:** <br>
+A list containing the following:<br>
+- *Name:* Name of the image setup.<br>
 - *Images:* Possibly optional empty list of images associated with the
-  setup.
-- *User:* Username of the user owning the setup.
-- *UUID:* UUID of the image setup
-**Permissions:** User in question, moderator and administrator
-**Example curl request:** `curl "localhost:4848/user/ValentijnvdBeek/image_setup"`
+  setup.<br>
+- *User:* Username of the user owning the setup.<br>
+- *UUID:* UUID of the image setup<br><br>
+**Permissions:** User in question, moderator and administrator<br>
+**Example curl request:** `curl "localhost:4848/user/ValentijnvdBeek/image_setup"`<br>
 **Example response:**
 ```json
 [
