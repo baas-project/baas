@@ -6,9 +6,8 @@
 package compression
 
 import (
+	"github.com/baas-project/baas/pkg/model/images"
 	"io"
-
-	"github.com/baas-project/baas/pkg/images"
 
 	gzip "github.com/klauspost/pgzip"
 	"github.com/pkg/errors"

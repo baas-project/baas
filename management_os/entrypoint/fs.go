@@ -5,13 +5,13 @@
 package main
 
 import (
+	"github.com/baas-project/baas/pkg/model/images"
 	"io"
 	"os"
 	"syscall"
 
 	"github.com/codingsince1985/checksum"
 
-	"github.com/baas-project/baas/pkg/images"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -36,12 +36,12 @@ func WriteDisk(reader io.Reader, image *images.ImageModel) error {
 	if partition != nil {
 		printPartition(*partition)
 	}
-	checksum, err := checksum.CRC32(partition.DeviceFile)
+	chk, err := checksum.CRC32(partition.DeviceFile)
 	if err != nil {
 		logrus.Errorf("Cannot get checksum: %v", err)
 	}
 
-	if image.Checksum != "" && image.Checksum == checksum {
+	if image.Checksum != "" && image.Checksum == chk {
 		return nil
 	}
 

@@ -5,7 +5,7 @@
 package sqlite
 
 import (
-	"github.com/baas-project/baas/pkg/images"
+	"github.com/baas-project/baas/pkg/model/images"
 	"github.com/baas-project/baas/pkg/util"
 )
 

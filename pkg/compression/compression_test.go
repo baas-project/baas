@@ -6,10 +6,9 @@ package compression
 
 import (
 	"bytes"
+	"github.com/baas-project/baas/pkg/model/images"
 	"io/ioutil"
 	"testing"
-
-	"github.com/baas-project/baas/pkg/images"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/valyala/gozstd"

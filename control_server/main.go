@@ -44,6 +44,7 @@ func init() {
 
 func main() {
 	flag.Parse()
+	os.Setenv("BAAS_DISK_PATH", *diskpath)
 
 	log.Info("Starting BAAS control server")
 

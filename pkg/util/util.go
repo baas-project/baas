@@ -9,15 +9,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"strconv"
-	"strings"
-
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ProgressReporter is a struct which contains a reader which records the progress made
@@ -66,38 +62,56 @@ type MacAddress struct {
 	Address string `gorm:"not null;unique;primaryKey;"`
 }
 
-// GormDataType defines the datatype that a mac address is stored as
+// // GormDataType defines the datatype that a mac address is stored as
 func (mac MacAddress) GormDataType() string {
-	return "INTEGER"
+	return "STRING"
 }
 
+////////////////////////////////////////////////////////////////////////////
+// This is incredibly dumb, but gorm does not translate a value in a	  //
+// struct with serialization rules if that struct is embedded into		  //
+// another struct, but will still do it when that embedded key is used as //
+// a foreign key. In other words, using serialization causes the program  //
+// to interpret the mac address as either a string or an integer		  //
+// depending on where you are. This is rather dumb and should be fixed in //
+// a proper way, but this functions for now.							  //
+////////////////////////////////////////////////////////////////////////////
 // GormValue converts the mac address to an integer
 func (mac MacAddress) GormValue(_ context.Context, _ *gorm.DB) clause.Expr {
-	hex, err := strconv.ParseUint(strings.ReplaceAll(mac.Address, ":", ""), 16, 64)
-	if err != nil {
-		log.Warnf("Failed to converted hex: %v", err)
-	}
-	return clause.Expr{
-		SQL:  "?",
-		Vars: []interface{}{fmt.Sprintf("%d", hex)},
-	}
+	return clause.Expr{SQL: "?", Vars: []interface{}{mac.Address}}
+
+	// hex, err := strconv.ParseUint(strings.ReplaceAll(mac.Address, ":", ""), 16, 64)
+	// if err != nil {
+	// 	log.Warnf("Failed to converted hex: %v", err)
+	// }
+	// return clause.Expr{
+	// 	SQL:  "?",
+	// 	Vars: []interface{}{fmt.Sprintf("%d", hex)},
+	// }
 }
 
 // Scan defines how the stored data is converted into a string
 func (mac *MacAddress) Scan(v interface{}) error {
-	bs, ok := v.(int64)
+	bs, ok := v.(string)
 	if !ok {
 		return errors.New("cannot parse mac address")
 	}
+	mac.Address = bs
+	return nil
 
-	builder := strings.Builder{}
-	num := fmt.Sprintf("%x", bs)
-	for i, v := range []byte(num) {
-		if i != 0 && i%2 == 0 {
-			builder.WriteByte(':')
-		}
-		builder.WriteByte(v)
-	}
-	mac.Address = builder.String()
+	// bs, ok := v.(int64)
+	// if !ok {
+	// 	return errors.New("cannot parse mac address")
+	// }
+
+	// builder := strings.Builder{}
+	// num := fmt.Sprintf("%x", bs)
+	// for i, v := range []byte(num) {
+	// 	if i != 0 && i%2 == 0 {
+	// 		builder.WriteByte(':')
+	// 	}
+	// 	builder.WriteByte(v)
+	// }
+	// mac.Address = builder.String()
 	return nil
 }

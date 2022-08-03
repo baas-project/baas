@@ -6,11 +6,11 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/baas-project/baas/pkg/model/machine"
 	"net"
 	"net/http"
 	"strings"
 
-	"github.com/baas-project/baas/pkg/model"
 	"github.com/baas-project/baas/pkg/util"
 
 	log "github.com/sirupsen/logrus"
@@ -32,11 +32,11 @@ type bootConfigResponse struct {
 	Cmdline string `json:"cmdline"`
 }
 
-func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
+func getBootConfig(arch machine.SystemArchitecture) *bootConfigResponse {
 	var bootConfig bootConfigResponse
-	arch = model.SystemArchitecture(strings.ToLower(string(arch)))
+	arch = machine.SystemArchitecture(strings.ToLower(string(arch)))
 
-	if arch == model.X86_64 {
+	if arch == machine.X86_64 {
 		bootConfig = bootConfigResponse{
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
@@ -45,8 +45,10 @@ func getBootConfig(arch model.SystemArchitecture) *bootConfigResponse {
 			Message: "Booting into X86 management kernel.",
 			Cmdline: "root=sr0",
 		}
-	} else if arch == model.Arm64 {
+	} else if arch == machine.Arm64 {
 		log.Warn("Received request to boot an ARM64 machine, which has not been implemented yet.")
+	} else {
+		log.Warn("Architecture is not supported")
 	}
 
 	return &bootConfig
@@ -69,21 +71,21 @@ func (api_ *API) ServeBootConfigurations(w http.ResponseWriter, r *http.Request)
 	m, err := api_.store.GetMachineByMac(util.MacAddress{Address: mac})
 	if err != nil {
 		log.Errorf("Couldn't find machine in store: %v", err)
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, "Cannot serve the boot configuration", http.StatusNotFound)
 		return
 	}
 
 	resp := getBootConfig(m.Architecture)
 	if resp == nil {
-		log.Errorf("Couldn't find appropriate bootconfig for this machine")
-		w.WriteHeader(http.StatusNotFound)
+		log.Error("Couldn't find appropriate bootconfig for this machine")
+		http.Error(w, "Cannot serve the boot configuration", http.StatusNotFound)
 		return
 	}
 
 	log.Debugf("Sending boot config %v", resp)
 
 	if err := json.NewEncoder(w).Encode(&resp); err != nil {
-		log.Errorf("Couldn't write bootconfig to network")
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Errorf("Couldn't write bootconfig to network: %v", err)
+		http.Error(w, "Cannot serve the boot configuration", http.StatusInternalServerError)
 	}
 }

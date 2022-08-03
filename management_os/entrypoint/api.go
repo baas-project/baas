@@ -7,11 +7,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/model/images"
 	"io"
 	"io/ioutil"
 	"strconv"
-
-	"github.com/baas-project/baas/pkg/images"
 
 	"net/http"
 	"strings"

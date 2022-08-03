@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package model
+package user
 
 import (
-	"github.com/baas-project/baas/pkg/images"
+	images2 "github.com/baas-project/baas/pkg/model/images"
 )
 
 // UserRole is an enum which stores the roles a user can have.
@@ -23,10 +23,10 @@ const (
 // UserModel (noun) one who uses, not necessarily a single person
 type UserModel struct {
 	// Name is a human-readable identifier for a user (or entity) of the system
-	Username string              `gorm:"unique;not null;primaryKey"`
-	Name     string              `gorm:"not null"`
-	Email    string              `gorm:"unique;not null"`
-	Role     UserRole            `gorm:"not null;"`
-	Images   []images.ImageModel `json:"-" gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Setups   []images.ImageSetup `json:"-" gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Username string               `gorm:"unique;not null;primaryKey"`
+	Name     string               `gorm:"not null"`
+	Email    string               `gorm:"unique;not null"`
+	Role     UserRole             `gorm:"not null;"`
+	Images   []images2.ImageModel `json:"-" gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Setups   []images2.ImageSetup `json:"-" gorm:"foreignKey:Username;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }

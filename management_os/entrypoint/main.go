@@ -7,10 +7,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/model/images"
 	"os"
 	"os/exec"
-
-	"github.com/baas-project/baas/pkg/images"
 
 	"net"
 

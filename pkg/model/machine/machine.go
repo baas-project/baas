@@ -3,10 +3,9 @@
 // license that can be found in the LICENSE file.
 
 // Package model defines the entities which are used inside the database.
-package model
+package machine
 
 import (
-	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/util"
 )
 
@@ -28,21 +27,6 @@ func (id *SystemArchitecture) Name() string {
 	return string(*id)
 }
 
-// BootSetup stores what the next boot for the machine should look like.
-// It functions somewhat like a queue where it removes the first value from the database.
-type BootSetup struct {
-	// Store the machine id
-	Machine    MachineModel `gorm:"foreignKey:MachineMAC;references:Address;not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
-	MachineMAC string       `gorm:"not null;primaryKey"`
-
-	// Store the setup that should be loaded onto the machine
-	Setup     images.ImageSetup `gorm:"foreignKey:SetupUUID;references:UUID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	SetupUUID images.ImageUUID  `gorm:"not null;primaryKey"`
-
-	// Should the image changes be uploaded to the server?
-	Update bool `gorm:"not null;"`
-}
-
 // MachineModel stores information intrinsic to a machine. Used together with the MachineStore.
 type MachineModel struct {
 	// General Info
@@ -53,6 +37,6 @@ type MachineModel struct {
 	Managed bool
 
 	// MacAddress is the mac address associated with this machine
-	MacAddress   util.MacAddress          `gorm:"embedded;unique;"`
-	MachineImage images.MachineImageModel `gorm:"foreignKey:MachineMAC;references:Address;not null;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
+	MacAddress util.MacAddress `gorm:"embedded;unique;primaryKey"`
+	ImageUUID  string
 }

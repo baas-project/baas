@@ -8,12 +8,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	machinemodel "github.com/baas-project/baas/pkg/model/machine"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/baas-project/baas/pkg/database/sqlite"
-	"github.com/baas-project/baas/pkg/model"
 	"github.com/baas-project/baas/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,10 +22,10 @@ func TestApi_UpdateMachine(t *testing.T) {
 	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
-	machine := model.MachineModel{
+	machine := machinemodel.MachineModel{
 		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
-		Architecture: model.X86_64,
+		Architecture: machinemodel.X86_64,
 		Managed:      false,
 	}
 
@@ -55,10 +55,10 @@ func TestApi_UpdateMachineExists(t *testing.T) {
 	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
-	machine := model.MachineModel{
+	machine := machinemodel.MachineModel{
 		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
-		Architecture: model.X86_64,
+		Architecture: machinemodel.X86_64,
 		Managed:      false,
 	}
 
@@ -108,10 +108,10 @@ func TestApi_GetMachine(t *testing.T) {
 	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
-	machine := model.MachineModel{
+	machine := machinemodel.MachineModel{
 		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
-		Architecture: model.X86_64,
+		Architecture: machinemodel.X86_64,
 		Managed:      false,
 	}
 
@@ -129,7 +129,7 @@ func TestApi_GetMachine(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	var dm model.MachineModel
+	var dm machinemodel.MachineModel
 	err = json.NewDecoder(resp.Body).Decode(&dm)
 	assert.NoError(t, err)
 
@@ -144,17 +144,17 @@ func TestApi_GetMachines(t *testing.T) {
 	store, err := sqlite.NewSqliteStore(sqlite.InMemoryPath)
 	assert.NoError(t, err)
 
-	machine1 := model.MachineModel{
+	machine1 := machinemodel.MachineModel{
 		MacAddress:   util.MacAddress{Address: "abc"},
 		Name:         "bca",
-		Architecture: model.X86_64,
+		Architecture: machinemodel.X86_64,
 		Managed:      false,
 	}
 
-	machine2 := model.MachineModel{
+	machine2 := machinemodel.MachineModel{
 		MacAddress:   util.MacAddress{Address: "cba"},
 		Name:         "bcd",
-		Architecture: model.X86_64,
+		Architecture: machinemodel.X86_64,
 		Managed:      false,
 	}
 
@@ -174,7 +174,7 @@ func TestApi_GetMachines(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, resp.Code, http.StatusOK)
 
-	var dm []model.MachineModel
+	var dm []machinemodel.MachineModel
 	err = json.NewDecoder(resp.Body).Decode(&dm)
 	assert.NoError(t, err)
 
