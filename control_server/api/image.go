@@ -8,14 +8,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/baas-project/baas/pkg/model/images"
-	"github.com/baas-project/baas/pkg/model/user"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/user"
 
 	"github.com/baas-project/baas/pkg/fs"
 	"github.com/google/uuid"
@@ -169,8 +170,15 @@ func (api_ *API) DeleteImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // DownloadImageFile gets the specified version of the image off the disk and offers it to the client
-func DownloadImageFile(uniqueID string, version string, api *API, w http.ResponseWriter) {
-	f, err := OpenImageFile(uniqueID, version, api)
+func DownloadImageFile(image *images.ImageModel, version string, w http.ResponseWriter) {
+	val, err := strconv.ParseUint(version, 10, 64)
+	if err != nil {
+		http.Error(w, "Cannot download the image", http.StatusNotFound)
+		log.Errorf("Download image: %v", err)
+		return
+	}
+
+	f, err := image.OpenImageFile(val)
 	if err != nil {
 		http.Error(w, "Cannot download the image", http.StatusNotFound)
 		log.Errorf("Download image: %v", err)
@@ -215,7 +223,7 @@ func (api_ *API) DownloadImage(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%s.img", image.UUID, version))
 
-	DownloadImageFile(string(image.UUID), version, api_, w)
+	DownloadImageFile(image, version, w)
 }
 
 // DownloadLatestImage offers the latest version
@@ -230,7 +238,7 @@ func (api_ *API) DownloadLatestImage(w http.ResponseWriter, r *http.Request) {
 	version := strconv.FormatUint(versionTxt.Version, 10)
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("filename=%s-%s.img", image.UUID, version))
-	DownloadImageFile(string(image.UUID), version, api_, w)
+	DownloadImageFile(image, version, w)
 }
 
 func createNewVersion(api *API, uniqueID string) (*images.Version, error) {

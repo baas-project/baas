@@ -6,10 +6,9 @@ package api
 
 import (
 	"errors"
-	"fmt"
-	"github.com/baas-project/baas/pkg/model/images"
 	"net/http"
-	"os"
+
+	"github.com/baas-project/baas/pkg/model/images"
 
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/gorilla/mux"
@@ -61,16 +60,6 @@ func ErrorWrite(w http.ResponseWriter, err error, msg string) error {
 	}
 
 	return err
-}
-
-// OpenImageFile opens an image file so it can be read by the system
-func OpenImageFile(uniqueID string, version string, api *API) (*os.File, error) {
-	f, err := os.Open(fmt.Sprintf(api.diskpath+images.FilePathFmt, uniqueID, version))
-	if err != nil {
-		return nil, err
-	}
-
-	return f, nil
 }
 
 // RegisterImagePackageHandlers runs the handlers which install the routes for the modules

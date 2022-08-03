@@ -7,12 +7,13 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/baas-project/baas/pkg/model/images"
-	machinemodel "github.com/baas-project/baas/pkg/model/machine"
-	"github.com/baas-project/baas/pkg/model/user"
 	"net/http"
 	"os"
 	"syscall"
+
+	"github.com/baas-project/baas/pkg/model/images"
+	machinemodel "github.com/baas-project/baas/pkg/model/machine"
+	"github.com/baas-project/baas/pkg/model/user"
 
 	"github.com/baas-project/baas/pkg/util"
 	"gorm.io/gorm"
@@ -161,20 +162,15 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 
 	// Generate the UUID and create the entry in the database.
 	// We don't actually make an image file yet.
-	machineImage, err := images.CreateMachineModel(images.ImageModel{}, machine.MacAddress)
+	machineImage, err := images.CreateMachineImageModel(machine.MacAddress)
+	machineImage.Name = machine.MacAddress.Address
+	machineImage.UUID = images.ImageUUID(uuid.New().String())
 
 	if ErrorWrite(w, err, "Cannot create machine") != nil {
 		return
 	}
 
-	// Fill the machine image with default values, in particular ensure that it
-	// is not compressed
-	machineImage.UUID = images.ImageUUID(uuid.New().String())
-	machineImage.Type = "machine"
-	machineImage.DiskCompressionStrategy = images.DiskCompressionStrategyNone
-	machineImage.Name = machine.MacAddress.Address
-
-	api_.store.CreateImage(&machineImage.ImageModel)
+	// api_.store.CreateImage(&machineImage.ImageModel)
 	api_.store.CreateMachineImage(machineImage)
 
 	if err != nil {
@@ -299,12 +295,26 @@ func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: Fix foreign key to version
 	resp, err := api_.store.GetImageSetup(string(bootInfo.SetupUUID))
 
 	if err != nil {
 		http.Error(w, "Failed to get the next boot setup", http.StatusInternalServerError)
 		log.Errorf("Failed to get the image setup: %v", err)
 		return
+	}
+
+	// Circumvents a problem in the foreign key where the version is
+	// not properly loaded into struct. This should be fixed.
+	for i := range resp.Images {
+		version, err := api_.store.GetVersionById(resp.Images[i].VersionID)
+		if err != nil {
+			http.Error(w, "Failed to get the next boot setup", http.StatusBadRequest)
+			log.Errorf("Failed to get the machine image: %v", err)
+			return
+
+		}
+		resp.Images[i].Version = *version
 	}
 
 	image, err := api_.store.GetMachineImageByMac(util.MacAddress{Address: mac})

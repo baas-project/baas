@@ -6,8 +6,9 @@ package api
 
 import (
 	"fmt"
-	"github.com/baas-project/baas/pkg/model/user"
 	"net/http"
+
+	"github.com/baas-project/baas/pkg/model/user"
 
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/httplog"
