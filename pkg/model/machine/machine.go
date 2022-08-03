@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package model defines the entities which are used inside the database.
+// Package machine declares the entities related to the machines stored in the database
 package machine
 
 import (
@@ -28,6 +28,7 @@ func (id *SystemArchitecture) Name() string {
 }
 
 // MachineModel stores information intrinsic to a machine. Used together with the MachineStore.
+// nolint: golint
 type MachineModel struct {
 	// General Info
 	Name         string `gorm:"unique"`

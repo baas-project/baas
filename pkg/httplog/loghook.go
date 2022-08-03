@@ -43,7 +43,17 @@ func (h Hook) Fire(entry *log.Entry) error {
 		return errors.Wrap(err, "marshall log entry")
 	}
 
-	resp, err := http.Post(h.url, "application/json", bytes.NewReader(res))
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", h.url, bytes.NewReader(res))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("type", "log")
+	req.Header.Set("Origin", "http://localhost:9090")
+
+	if err != nil {
+		return errors.Wrap(err, "cannot create request")
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "sending log")
 	}

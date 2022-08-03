@@ -6,9 +6,10 @@ package api
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/baas-project/baas/pkg/model/images"
 	"github.com/baas-project/baas/pkg/model/user"
-	"net/http"
 
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"

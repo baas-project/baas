@@ -5,8 +5,9 @@
 package main
 
 import (
-	images2 "github.com/baas-project/baas/pkg/model/images"
 	"io"
+
+	images2 "github.com/baas-project/baas/pkg/model/images"
 
 	"github.com/baas-project/baas/pkg/compression"
 

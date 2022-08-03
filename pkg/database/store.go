@@ -44,6 +44,7 @@ type Store interface {
 	DeleteImage(image *images.ImageModel) error
 	UpdateImage(image *images.ImageModel) error
 	CreateNewImageVersion(version images.Version)
+	GetVersionByID(versionID uint64) (*images.Version, error)
 
 	// You could use weird Go polymorphisms here, but I guess I will just copy and paste code
 	CreateMachineImage(image *images.MachineImageModel)
@@ -52,6 +53,7 @@ type Store interface {
 	FindImageSetupsByUsername(username string) (*[]images.ImageSetup, error)
 	GetImageSetup(imageSetup string) (images.ImageSetup, error)
 	GetImageSetups(username string) (*[]images.ImageSetup, error)
+	GetMachineImageByUUID(uuid images.ImageUUID) (*images.MachineImageModel, error)
 
 	ModifyImageSetup(imageSetup *images.ImageSetup) error
 	DeleteImageSetup(imageSetup *images.ImageSetup) error

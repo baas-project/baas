@@ -7,9 +7,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/baas-project/baas/pkg/model/images"
 	"os"
 	"time"
+
+	"github.com/baas-project/baas/pkg/model/images"
 
 	"github.com/diskfs/go-diskfs"
 	"github.com/diskfs/go-diskfs/partition/part"

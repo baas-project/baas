@@ -7,11 +7,13 @@ package api
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/baas-project/baas/pkg/model"
 
-	usermodel "github.com/baas-project/baas/pkg/model/user"
 	"net/http"
 	"os"
+
+	usermodel "github.com/baas-project/baas/pkg/model/user"
 
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"

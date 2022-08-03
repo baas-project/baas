@@ -21,8 +21,12 @@ func (s Store) GetNextBootSetup(machineMAC string) (*images.BootSetup, error) {
 		Where("machine_mac = ?", machineMAC).
 		First(&bootSetup)
 
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
 	// ORMs are so dumb
-	// s.Exec("DELETE FROM `boot_setups` WHERE `id` = ?", bootSetup.ID)
+	s.Exec("DELETE FROM `boot_setups` WHERE `id` = ?", bootSetup.ID)
 
 	return &bootSetup, res.Error
 }

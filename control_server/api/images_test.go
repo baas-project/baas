@@ -7,12 +7,13 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/baas-project/baas/pkg/model/images"
-	"github.com/baas-project/baas/pkg/model/user"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/user"
 
 	"github.com/baas-project/baas/pkg/database/sqlite"
 	"github.com/stretchr/testify/assert"

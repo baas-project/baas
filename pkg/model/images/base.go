@@ -19,7 +19,7 @@ import (
 )
 
 // FilePathFmt is the format string to create the path the image should be written to
-const FilePathFmt = "/%v.img"
+const FilePathFmt = "/%s/%d.img"
 
 // imageFileSize is the size of the standard image that is created in MiB.
 const imageFileSize = 512 // size in MiB
@@ -53,12 +53,12 @@ var toID = map[string]DiskType{
 type DiskCompressionStrategy string
 
 const (
-	// DiskCompressionStrategyNone doesn't compress
+	// DiskCompressionStrategyNone does not compress
 	DiskCompressionStrategyNone DiskCompressionStrategy = "none"
 	// DiskCompressionStrategyZSTD compresses disk images with zstd.
 	DiskCompressionStrategyZSTD = "zstd"
 	// DiskCompressionStrategyGZip uses the standard GZip compression algorithm for disks.
-	DiskCompressionStrategyGZip = "GZip"
+	DiskCompressionStrategyGZip = "gzip"
 )
 
 const (
@@ -66,7 +66,8 @@ const (
 	FileSystemTypeFAT32 FilesystemType = "fat32"
 	// FileSystemTypeEXT4 defines a disk using the Linux EXT4 filesystem
 	FileSystemTypeEXT4 = "ext4"
-	FileSystemTypeRaw  = "raw"
+	// FileSystemTypeRaw is fully filesystem agnostic
+	FileSystemTypeRaw = "raw"
 )
 
 // MarshalJSON marshals the enum as a quoted json string
@@ -84,7 +85,8 @@ func (s *DiskType) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
+
+	// Note that if the string cannot be found then it will be set to the zero value.
 	*s = toID[j]
 	return nil
 }
@@ -155,28 +157,9 @@ const (
 	SizeGigabyte = 1024 * 1024 * 1024
 )
 
-func (image *ImageModel) BeforeCreate(tx *gorm.DB) (ret error) {
-	path := os.Getenv("BAAS_DISK_PATH")
-	image.ImagePath = fmt.Sprintf(path+"/%s", image.UUID)
-	// Create the actual image together with the first empty version which a user may or may not use.
-	err := os.Mkdir(image.ImagePath, os.ModePerm)
-
-	if err != nil {
-		log.Errorf("cannot create image directory: %s", err)
-		return
-	}
-
-	err = image.CreateImageFile(imageFileSize, path, SizeMegabyte)
-	if err != nil {
-		log.Errorf("image creation failed: %v", err)
-		return
-	}
-	return
-}
-
 // CreateImageFile creates the actual image on disk with a given size.
-func (image *ImageModel) CreateImageFile(imageSize uint, diskpath string, baseSize uint) error {
-	f, err := os.OpenFile(fmt.Sprintf(image.ImagePath+FilePathFmt, "0"),
+func (image *ImageModel) CreateImageFile(imageSize uint, baseSize uint) error {
+	f, err := os.OpenFile(fmt.Sprintf(image.ImagePath+FilePathFmt, image.UUID, 0),
 		os.O_WRONLY|os.O_CREATE, 0644)
 
 	if err != nil {
@@ -205,7 +188,9 @@ func (image *ImageModel) CreateImageFile(imageSize uint, diskpath string, baseSi
 }
 
 // OpenImageFile opens an image file so it can be read by the system
-func (image *ImageModel) OpenImageFile(version string) (*os.File, error) {
+func (image *ImageModel) OpenImageFile(version uint64) (*os.File, error) {
+	fmt.Println(fmt.Sprintf(image.ImagePath+FilePathFmt, image.UUID, version))
+	fmt.Println(os.Getenv("PWD"))
 	f, err := os.Open(fmt.Sprintf(image.ImagePath+FilePathFmt, image.UUID, version))
 	if err != nil {
 		return nil, err
@@ -214,9 +199,10 @@ func (image *ImageModel) OpenImageFile(version string) (*os.File, error) {
 	return f, nil
 }
 
+// GenerateChecksum generates the checksum of the image
 func (image *ImageModel) GenerateChecksum() error {
 	// Create the actual image together with the first empty version which a user may or may not use.
-	f, err := image.OpenImageFile("0")
+	f, err := image.OpenImageFile(0)
 
 	if err != nil {
 		log.Errorf("failed to open the image file: %v", err)
@@ -233,22 +219,27 @@ func (image *ImageModel) GenerateChecksum() error {
 	return nil
 }
 
+// FormatImage formats the image to the filesystem defined in the metadata.
+// Warning: this will delete all the currently existing data of the image.
 func (image *ImageModel) FormatImage() {
-	version := image.Versions[len(image.Versions)-1].Version
+	var version uint64
+
 	fmt.Println(version)
 
 	if image.Checksum == "" {
-		version++
+		version = image.Versions[len(image.Versions)-1].Version
+	} else if image.Checksum == "DEADBEEF" {
+		version = 0
 	}
 
-	path := fmt.Sprintf("%s/%d.img", image.ImagePath, version)
+	path := fmt.Sprintf("%s/%s/%d.img", image.ImagePath, image.UUID, version)
 	var cmd *exec.Cmd
-	if image.Filesystem == FileSystemTypeEXT4 {
+	switch image.Filesystem {
+	case FileSystemTypeEXT4:
 		cmd = exec.Command("mkfs.ext4", path)
-	} else if image.Filesystem == FileSystemTypeFAT32 {
-		cmd = exec.Command("mkfs.fat -F 32", path)
-	} else if image.Filesystem == FileSystemTypeRaw {
-		// We can't format raw image
+	case FileSystemTypeFAT32:
+		cmd = exec.Command("mkfs.fat", "-F", "32", path)
+	default:
 		return
 	}
 
@@ -259,16 +250,38 @@ func (image *ImageModel) FormatImage() {
 	}
 }
 
+// UpdateImage updates the image
 func (image *ImageModel) UpdateImage(r *io.Reader) {
 
 }
 
-// Delete Hooks
+// AfterDelete removes the image directory
 func (image *ImageModel) AfterDelete(tx *gorm.DB) (ret error) {
 	// Remove the directory which includes all the image files
 	err := os.RemoveAll(image.ImagePath)
 	if err != nil {
 		log.Errorf("failed to delete image: %v", err)
+		return
+	}
+
+	return
+}
+
+// BeforeCreate adds the image path and creates the first version of the image.
+func (image *ImageModel) BeforeCreate(tx *gorm.DB) (ret error) {
+	path := os.Getenv("BAAS_DISK_PATH")
+	image.ImagePath = path
+	// Create the actual image together with the first empty version which a user may or may not use.
+	err := os.Mkdir(image.ImagePath+"/"+string(image.UUID), os.ModePerm)
+
+	if err != nil {
+		log.Errorf("cannot create image directory: %s", err)
+		return
+	}
+
+	err = image.CreateImageFile(imageFileSize, SizeMegabyte)
+	if err != nil {
+		log.Errorf("image creation failed: %v", err)
 		return
 	}
 

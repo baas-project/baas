@@ -8,10 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	usermodel "github.com/baas-project/baas/pkg/model/user"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func _getUserInternal(w http.ResponseWriter, r *http.Request, api *API) (*usermodel.UserModel, error) {

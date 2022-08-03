@@ -22,3 +22,13 @@ func (s Store) GetMachineImageByMac(mac util.MacAddress) (*images.MachineImageMo
 		First(&image)
 	return &image, res.Error
 }
+
+// GetMachineImageByUUID gets the machine image associated with a UUID
+func (s Store) GetMachineImageByUUID(uuid images.ImageUUID) (*images.MachineImageModel, error) {
+	image := images.MachineImageModel{}
+	res := s.Where("UUID = ?", uuid).
+		Preload("Versions").
+		First(&image)
+
+	return &image, res.Error
+}

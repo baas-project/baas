@@ -6,6 +6,7 @@ package sqlite
 
 import (
 	errors2 "errors"
+
 	"github.com/baas-project/baas/pkg/model/machine"
 
 	"github.com/baas-project/baas/pkg/util"

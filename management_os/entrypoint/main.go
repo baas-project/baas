@@ -7,13 +7,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/baas-project/baas/pkg/model/images"
+	syslog "log/syslog"
 	"os"
 	"os/exec"
+
+	"github.com/baas-project/baas/pkg/model/images"
 
 	"net"
 
 	log "github.com/sirupsen/logrus"
+	sysruslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/sirupsen/logrus/hooks/writer"
 
 	"github.com/baas-project/baas/pkg/httplog"
@@ -74,6 +77,12 @@ func init() {
 	}
 
 	log.AddHook(httplog.NewLogHook(fmt.Sprintf("%s/log", baseurl), "MMOS"))
+	hook, err := sysruslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+	if err != nil {
+		log.Warn("Cannot open syslog")
+	} else {
+		log.AddHook(hook)
+	}
 }
 
 func getLastSetup(machine *MachineImage) images.ImageSetup {

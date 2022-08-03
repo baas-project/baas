@@ -6,8 +6,10 @@
 package compression
 
 import (
-	"github.com/baas-project/baas/pkg/model/images"
 	"io"
+	"strings"
+
+	"github.com/baas-project/baas/pkg/model/images"
 
 	gzip "github.com/klauspost/pgzip"
 	"github.com/pkg/errors"
@@ -15,10 +17,18 @@ import (
 	"github.com/valyala/gozstd"
 )
 
+// browbeat forces the strategy to always conform to a lower case
+// version of the name. This is done since the JSON library can
+// flip to title case which breaks the program. Do not ask me
+// why a library can convert to an invalid enum value.
+func browbeat(strategy images.DiskCompressionStrategy) images.DiskCompressionStrategy {
+	return images.DiskCompressionStrategy(strings.ToLower(string(strategy)))
+}
+
 // Decompress is a decorator to decompress a disk image stream
 func Decompress(reader io.Reader, strategy images.DiskCompressionStrategy) (io.Reader, error) {
-	log.Debugf("DiskUUID compression strategy: %v", strategy)
-	switch strategy {
+	log.Infof("DiskUUID compression strategy: %v", strategy)
+	switch browbeat(strategy) {
 	case images.DiskCompressionStrategyNone:
 		return reader, nil
 	case images.DiskCompressionStrategyZSTD:
@@ -30,9 +40,9 @@ func Decompress(reader io.Reader, strategy images.DiskCompressionStrategy) (io.R
 
 // Compress is a decorator to compress a disk image stream
 func Compress(reader io.Reader, strategy images.DiskCompressionStrategy) (io.Reader, error) {
-	log.Debugf("DiskUUID compression strategy: %v", strategy)
+	log.Infof("DiskUUID compression strategy: %v", strategy)
 
-	switch strategy {
+	switch browbeat(strategy) {
 	case images.DiskCompressionStrategyNone:
 		return reader, nil
 	case images.DiskCompressionStrategyGZip:

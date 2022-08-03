@@ -5,8 +5,8 @@
 package sqlite
 
 import (
-	"fmt"
 	"github.com/baas-project/baas/pkg/model/images"
+	"gorm.io/gorm"
 )
 
 // CreateImage creates the image entity in the database and adds the first version to it.
@@ -17,13 +17,18 @@ func (s Store) CreateImage(image *images.ImageModel) {
 
 // GetImageByUUID fetches the image with the versions using their UUID as a key
 func (s Store) GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, error) {
-	fmt.Println(uuid)
 	image := images.ImageModel{UUID: uuid}
-	res := s.Where("UUID = ?", uuid).
+	err := s.Where("UUID = ?", uuid).
 		Preload("Versions").
-		First(&image)
+		First(&image).Error
 
-	return &image, res.Error
+	if err == gorm.ErrRecordNotFound {
+		var machine *images.MachineImageModel
+		machine, err = s.GetMachineImageByUUID(uuid)
+		image = machine.ImageModel
+	}
+
+	return &image, err
 }
 
 // GetImagesByUsername fetches all the images associated to a user.
@@ -42,6 +47,13 @@ func (s Store) GetImagesByUsername(username string) ([]images.ImageModel, error)
 // CreateNewImageVersion creates a new version in the database
 func (s Store) CreateNewImageVersion(version images.Version) {
 	s.Create(&version)
+}
+
+// GetVersionByID gets the version associated with a specific ID
+func (s Store) GetVersionByID(versionID uint64) (*images.Version, error) {
+	var version images.Version
+	err := s.Table("versions").Where("id = ?", versionID).First(&version).Error
+	return &version, err
 }
 
 // GetImagesByNameAndUsername gets all the images associated with a user which have the same human-readable name.

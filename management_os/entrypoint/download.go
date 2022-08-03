@@ -5,18 +5,17 @@
 package main
 
 import (
-	images2 "github.com/baas-project/baas/pkg/model/images"
 	"io"
 
 	"github.com/baas-project/baas/pkg/compression"
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/util"
 	gzip "github.com/klauspost/pgzip"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
-func setupDisk(api *APIClient, mac string, image *images2.ImageModel, version uint64) error {
+func setupDisk(api *APIClient, mac string, image *images.ImageModel, version uint64) error {
 	log.Debugf("writing disk: %v", mac)
 
 	reader, err := DownloadDisk(api, image, version)
@@ -29,7 +28,7 @@ func setupDisk(api *APIClient, mac string, image *images2.ImageModel, version ui
 	// somehow. Casting it upwards is not allowed, hence this is the only solution I could find. Maybe there
 	// is a neater way out there. Feel free to change this.
 	var dec io.Reader
-	if image.DiskCompressionStrategy == images2.DiskCompressionStrategyGZip {
+	if image.DiskCompressionStrategy == images.DiskCompressionStrategyGZip {
 		r, err2 := gzip.NewReader(reader)
 
 		if err2 != nil {
@@ -67,7 +66,7 @@ func setupDisk(api *APIClient, mac string, image *images2.ImageModel, version ui
 }
 
 // WriteOutDisks Downloads, Decompresses and finally Writes a disk image to disk
-func WriteOutDisks(api *APIClient, mac string, setup *images2.ImageSetup) error {
+func WriteOutDisks(api *APIClient, mac string, setup *images.ImageSetup) error {
 	log.Info("Downloading and writing disks")
 
 	for _, image := range setup.Images {
@@ -75,6 +74,7 @@ func WriteOutDisks(api *APIClient, mac string, setup *images2.ImageSetup) error 
 		// Yes, you could inline this function but this screws with the defers mechanism that Go has.
 		// By using a separate method call we ensure that the file are closed whenever they are no longer
 		// needed rather than waiting for the entire cycle.
+		util.PrettyPrintStruct(image)
 		err := setupDisk(api, mac, &image.Image, image.Version.Version)
 
 		if err != nil {
@@ -86,7 +86,7 @@ func WriteOutDisks(api *APIClient, mac string, setup *images2.ImageSetup) error 
 }
 
 // DownloadDisk downloads a disk from the network using the image's DiskTransferStrategy
-func DownloadDisk(api *APIClient, image *images2.ImageModel, version uint64) (reader io.ReadCloser, _ error) {
+func DownloadDisk(api *APIClient, image *images.ImageModel, version uint64) (reader io.ReadCloser, _ error) {
 	log.Debugf("Downloading image: %s", image.UUID)
 	return api.DownloadDiskHTTP(image.UUID, version)
 }
