@@ -7,10 +7,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/baas-project/baas/pkg/model/images"
 	"io"
 	"io/ioutil"
 	"strconv"
+
+	"github.com/baas-project/baas/pkg/model/images"
 
 	"net/http"
 	"strings"
@@ -44,6 +45,7 @@ func (a *APIClient) BootInform(mac string) (*images.ImageSetup, error) {
 	}
 
 	req.Header.Set("type", "system")
+	req.Header.Set("Origin", "http://localhost:9090")
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -81,6 +83,8 @@ func (a *APIClient) DownloadDiskHTTP(uuid images.ImageUUID, version uint64) (io.
 	}
 
 	req.Header.Set("type", "system")
+	req.Header.Set("Origin", "http://localhost:9090")
+	log.Warn(req.Header)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -103,7 +107,8 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid string) error {
 	url := fmt.Sprintf("%s/image/%s", a.baseURL, uuid)
 	log.Debugf("uploading disk %v over http to %s", uuid, url)
 
-	// Create a pipe, so we only pass around the streams, if we try to write the actual file or program will be reaped
+	// Create a pipe, so we only pass around the streams, if we try to
+	// write the actual file or program will be reaped.
 	// Dammit Calli, leave my processes alone.
 	boundary := "ProfessorDrIngJanRellermeyer"
 	fileName := "image.img"
@@ -118,8 +123,16 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid string) error {
 
 	body := io.MultiReader(strings.NewReader(newVersionPart), strings.NewReader(filePart), r, strings.NewReader(end))
 
-	resp, err := http.Post(url, fmt.Sprintf("multipart/form-data; boundary=%s", boundary),
-		body)
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return errors.Wrap(err, "error dl disk")
+	}
+
+	req.Header.Set("Content-Type", fmt.Sprintf("multipart/form-data; boundary=%s", boundary))
+	req.Header.Set("Origin", "http://localhost:9090")
+	req.Header.Set("type", "system")
+	resp, err := client.Do(req)
 
 	if err != nil {
 		return errors.Wrap(err, "upload disk")

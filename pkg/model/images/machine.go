@@ -9,7 +9,9 @@ import (
 	"os"
 
 	model "github.com/baas-project/baas/pkg/model/machine"
+
 	"github.com/baas-project/baas/pkg/util"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -27,17 +29,28 @@ type MachineImageModel struct {
 	Size uint // filesize in MiB
 }
 
-// CreateMachineModel creates a simple machine image for the designated machine
-func CreateMachineModel(image ImageModel, mac util.MacAddress) (*MachineImageModel, error) {
-	image.Filesystem = FileSystemTypeEXT4
+// CreateMachineImageModel creates a simple machine image for the designated machine
+func CreateMachineImageModel(mac util.MacAddress) (*MachineImageModel, error) {
+	baseImage := ImageModel{
+		Name:                    mac.Address,
+		DiskCompressionStrategy: DiskCompressionStrategyNone,
+		Type:                    "machine",
+		UUID:                    ImageUUID(uuid.New().String()),
+		Username:                "System",
+		Checksum:                "DEADBEEF",
+		ImagePath:               os.Getenv("BAAS_DISK_PATH"),
+		Filesystem:              FileSystemTypeEXT4,
+	}
 
-	machineImage := MachineImageModel{ImageModel: image,
-		Size: 128,
+	machineImage := MachineImageModel{ImageModel: baseImage,
+		Size:       128,
+		MachineMAC: mac.Address,
 	}
 
 	return &machineImage, nil
 }
 
+// BeforeCreate creates the machine image model directory and image file.
 func (machineImage *MachineImageModel) BeforeCreate(tx *gorm.DB) (ret error) {
 	path := os.Getenv("BAAS_DISK_PATH")
 	machineImage.ImageModel.ImagePath = path
@@ -49,7 +62,14 @@ func (machineImage *MachineImageModel) BeforeCreate(tx *gorm.DB) (ret error) {
 		return
 	}
 
+	machineImage.ImageModel.CreateImageFile(machineImage.Size, SizeMegabyte)
 	machineImage.ImageModel.GenerateChecksum()
 	machineImage.ImageModel.FormatImage()
+	return
+}
+
+// AfterDelete removes all the data associated with the machine.
+func (machineImage *MachineImageModel) AfterDelete(tx *gorm.DB) (ret error) {
+	machineImage.ImageModel.AfterDelete(tx)
 	return
 }

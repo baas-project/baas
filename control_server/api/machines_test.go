@@ -8,10 +8,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	machinemodel "github.com/baas-project/baas/pkg/model/machine"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	machinemodel "github.com/baas-project/baas/pkg/model/machine"
 
 	"github.com/baas-project/baas/pkg/database/sqlite"
 	"github.com/baas-project/baas/pkg/util"

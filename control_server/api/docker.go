@@ -6,14 +6,15 @@ package api
 
 import (
 	"fmt"
-	"github.com/baas-project/baas/pkg/model/images"
-	"github.com/baas-project/baas/pkg/model/user"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
+
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/user"
 
 	"github.com/baas-project/baas/pkg/fs"
 	log "github.com/sirupsen/logrus"

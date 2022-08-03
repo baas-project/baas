@@ -13,9 +13,10 @@ import (
 type ImageFrozen struct {
 	gorm.Model `json:"-"`
 	Image      ImageModel `gorm:"foreignKey:UUIDImage;references:UUID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
-	UUIDImage  ImageUUID  `gorm:"not null;"`
-	Version    Version    `json:"-" gorm:"foreignKey:VersionID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
-	VersionID  uint64     `gorm:"not null;"`
+	UUIDImage  ImageUUID  `gorm:"not null;" json:"-"`
+	Version    Version    `gorm:"foreignKey:VersionID;references:ID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE;"`
+	VersionID  uint64     `gorm:"not null" json:"-"`
+
 	// ImageSetup     ImageSetup `json:"-" gorm:"foreignKey:UUID;referencesImageSetupUUID;constraint:OnDelete:CASCADE,OnUpdate:CASCADE"`
 	ImageSetupUUID ImageUUID `json:"-"`
 	Update         bool      `gorm:"not null;default:false"`
@@ -30,6 +31,8 @@ type ImageSetup struct {
 	UUID       ImageUUID     `gorm:"uniqueIndex;primaryKey;unique;not null;"`
 }
 
+// BootSetup stores what the next boot for the machine should look like.
+// It functions somewhat like a queue where it removes the first value from the database.
 type BootSetup struct {
 	gorm.Model `json:"-"`
 

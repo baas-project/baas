@@ -6,10 +6,11 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/baas-project/baas/pkg/model/machine"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/baas-project/baas/pkg/model/machine"
 
 	"github.com/baas-project/baas/pkg/util"
 
@@ -36,7 +37,8 @@ func getBootConfig(arch machine.SystemArchitecture) *bootConfigResponse {
 	var bootConfig bootConfigResponse
 	arch = machine.SystemArchitecture(strings.ToLower(string(arch)))
 
-	if arch == machine.X86_64 {
+	switch arch {
+	case machine.X86_64:
 		bootConfig = bootConfigResponse{
 			Kernel: "http://localhost:4848/static/vmlinuz",
 			Initramfs: []string{
@@ -45,9 +47,9 @@ func getBootConfig(arch machine.SystemArchitecture) *bootConfigResponse {
 			Message: "Booting into X86 management kernel.",
 			Cmdline: "root=sr0",
 		}
-	} else if arch == machine.Arm64 {
+	case machine.Arm64:
 		log.Warn("Received request to boot an ARM64 machine, which has not been implemented yet.")
-	} else {
+	default:
 		log.Warn("Architecture is not supported")
 	}
 

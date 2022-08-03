@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package user defines the database entities for usersb
 package user
 
 import (
@@ -9,6 +10,7 @@ import (
 )
 
 // UserRole is an enum which stores the roles a user can have.
+// nolint: golint
 type UserRole string
 
 const (
@@ -21,6 +23,7 @@ const (
 )
 
 // UserModel (noun) one who uses, not necessarily a single person
+// nolint: golint
 type UserModel struct {
 	// Name is a human-readable identifier for a user (or entity) of the system
 	Username string               `gorm:"unique;not null;primaryKey"`

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"syscall"
 
 	"github.com/baas-project/baas/pkg/model/images"
 	machinemodel "github.com/baas-project/baas/pkg/model/machine"
@@ -228,12 +227,6 @@ func (api_ *API) UploadDiskImage(w http.ResponseWriter, r *http.Request) {
 // DownloadDiskImage provides disk images for the management os to download
 func (api_ *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, ok := vars["uuid"]
-	if !ok || id == "" {
-		http.Error(w, "Invalid uuid", http.StatusBadRequest)
-		log.Error("Invalid uuid given")
-		return
-	}
 
 	mac, ok := vars["mac"]
 	if !ok || mac == "" {
@@ -242,7 +235,15 @@ func (api_ *API) DownloadDiskImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := os.OpenFile(fmt.Sprintf("%s/%s", api_.diskpath, id), syscall.O_RDONLY, os.ModePerm)
+	image, err := api_.store.GetMachineImageByMac(util.MacAddress{Address: mac})
+
+	if err != nil {
+		http.NotFound(w, r)
+		log.Errorf("failed to read disk image (%v)", err)
+		return
+	}
+
+	f, err := image.OpenImageFile(0)
 	if err != nil {
 		http.NotFound(w, r)
 		log.Errorf("failed to read disk image (%v)", err)
@@ -307,13 +308,14 @@ func (api_ *API) BootInform(w http.ResponseWriter, r *http.Request) {
 	// Circumvents a problem in the foreign key where the version is
 	// not properly loaded into struct. This should be fixed.
 	for i := range resp.Images {
-		version, err := api_.store.GetVersionById(resp.Images[i].VersionID)
-		if err != nil {
-			http.Error(w, "Failed to get the next boot setup", http.StatusBadRequest)
-			log.Errorf("Failed to get the machine image: %v", err)
-			return
+		version, verr := api_.store.GetVersionByID(resp.Images[i].VersionID)
 
+		if verr != nil {
+			http.Error(w, "Failed to get the next boot setup", http.StatusBadRequest)
+			log.Errorf("Failed to get the machine image: %v", verr)
+			return
 		}
+
 		resp.Images[i].Version = *version
 	}
 
@@ -455,7 +457,7 @@ func (api_ *API) RegisterMachineHandlers() {
 	})
 
 	api_.Routes = append(api_.Routes, Route{
-		URI:         "/machine/{mac}/disk/{uuid}",
+		URI:         "/machine/{mac}/image",
 		Permissions: []user.UserRole{user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadDiskImage,

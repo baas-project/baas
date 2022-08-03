@@ -62,20 +62,21 @@ type MacAddress struct {
 	Address string `gorm:"not null;unique;primaryKey;"`
 }
 
-// // GormDataType defines the datatype that a mac address is stored as
+// GormDataType defines the datatype that a mac address is stored as
 func (mac MacAddress) GormDataType() string {
 	return "STRING"
 }
 
 ////////////////////////////////////////////////////////////////////////////
 // This is incredibly dumb, but gorm does not translate a value in a	  //
-// struct with serialization rules if that struct is embedded into		  //
+// struct with serialisation rules if that struct is embedded into		  //
 // another struct, but will still do it when that embedded key is used as //
-// a foreign key. In other words, using serialization causes the program  //
+// a foreign key. In other words, using serialisation causes the program  //
 // to interpret the mac address as either a string or an integer		  //
 // depending on where you are. This is rather dumb and should be fixed in //
 // a proper way, but this functions for now.							  //
 ////////////////////////////////////////////////////////////////////////////
+
 // GormValue converts the mac address to an integer
 func (mac MacAddress) GormValue(_ context.Context, _ *gorm.DB) clause.Expr {
 	return clause.Expr{SQL: "?", Vars: []interface{}{mac.Address}}
@@ -113,5 +114,5 @@ func (mac *MacAddress) Scan(v interface{}) error {
 	// 	builder.WriteByte(v)
 	// }
 	// mac.Address = builder.String()
-	return nil
+	// return nil
 }
