@@ -6,33 +6,32 @@ package sqlite
 
 import (
 	errors2 "errors"
+	"github.com/baas-project/baas/pkg/model/machine"
 
 	"github.com/baas-project/baas/pkg/util"
-
-	"github.com/baas-project/baas/pkg/model"
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
 
 // GetMachineByMac gets any machine with the associated MAC addresses from the database
-func (s Store) GetMachineByMac(mac util.MacAddress) (*model.MachineModel, error) {
-	machine := model.MachineModel{}
+func (s Store) GetMachineByMac(mac util.MacAddress) (*machine.MachineModel, error) {
+	machineModel := machine.MachineModel{}
 	res := s.Table("machine_models").
 		Where("address = ?", mac.Address).
-		First(&machine)
+		First(&machineModel)
 
-	return &machine, res.Error
+	return &machineModel, res.Error
 }
 
 // GetMachines returns the values in the machine_models database.
 // TODO: Fetch foreign relations.
-func (s Store) GetMachines() (machines []model.MachineModel, _ error) {
+func (s Store) GetMachines() (machines []machine.MachineModel, _ error) {
 	res := s.Find(&machines)
 	return machines, res.Error
 }
 
 // UpdateMachine updates the information about the machine or creates a machine where one does not yet exist.
-func (s Store) UpdateMachine(machine *model.MachineModel) error {
+func (s Store) UpdateMachine(machine *machine.MachineModel) error {
 	m, err := s.GetMachineByMac(machine.MacAddress)
 
 	if errors2.Is(err, gorm.ErrRecordNotFound) {
@@ -50,12 +49,12 @@ func (s Store) UpdateMachine(machine *model.MachineModel) error {
 }
 
 // CreateMachine creates the machine in the database
-func (s Store) CreateMachine(machine *model.MachineModel) error {
+func (s Store) CreateMachine(machine *machine.MachineModel) error {
 	return s.Create(machine).Error
 }
 
 // DeleteMachine removes a machine from the database
-func (s Store) DeleteMachine(machine *model.MachineModel) error {
+func (s Store) DeleteMachine(machine *machine.MachineModel) error {
 	res := s.Unscoped().Delete(machine)
 	return res.Error
 }

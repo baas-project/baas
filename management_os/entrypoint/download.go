@@ -5,9 +5,8 @@
 package main
 
 import (
+	images2 "github.com/baas-project/baas/pkg/model/images"
 	"io"
-
-	"github.com/baas-project/baas/pkg/images"
 
 	"github.com/baas-project/baas/pkg/compression"
 	gzip "github.com/klauspost/pgzip"
@@ -17,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func setupDisk(api *APIClient, mac string, image *images.ImageModel, version uint64) error {
+func setupDisk(api *APIClient, mac string, image *images2.ImageModel, version uint64) error {
 	log.Debugf("writing disk: %v", mac)
 
 	reader, err := DownloadDisk(api, image, version)
@@ -30,7 +29,7 @@ func setupDisk(api *APIClient, mac string, image *images.ImageModel, version uin
 	// somehow. Casting it upwards is not allowed, hence this is the only solution I could find. Maybe there
 	// is a neater way out there. Feel free to change this.
 	var dec io.Reader
-	if image.DiskCompressionStrategy == images.DiskCompressionStrategyGZip {
+	if image.DiskCompressionStrategy == images2.DiskCompressionStrategyGZip {
 		r, err2 := gzip.NewReader(reader)
 
 		if err2 != nil {
@@ -68,7 +67,7 @@ func setupDisk(api *APIClient, mac string, image *images.ImageModel, version uin
 }
 
 // WriteOutDisks Downloads, Decompresses and finally Writes a disk image to disk
-func WriteOutDisks(api *APIClient, mac string, setup *images.ImageSetup) error {
+func WriteOutDisks(api *APIClient, mac string, setup *images2.ImageSetup) error {
 	log.Info("Downloading and writing disks")
 
 	for _, image := range setup.Images {
@@ -87,7 +86,7 @@ func WriteOutDisks(api *APIClient, mac string, setup *images.ImageSetup) error {
 }
 
 // DownloadDisk downloads a disk from the network using the image's DiskTransferStrategy
-func DownloadDisk(api *APIClient, image *images.ImageModel, version uint64) (reader io.ReadCloser, _ error) {
+func DownloadDisk(api *APIClient, image *images2.ImageModel, version uint64) (reader io.ReadCloser, _ error) {
 	log.Debugf("Downloading image: %s", image.UUID)
 	return api.DownloadDiskHTTP(image.UUID, version)
 }

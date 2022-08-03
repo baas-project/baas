@@ -7,17 +7,14 @@ package api
 import (
 	"errors"
 	"fmt"
+	"github.com/baas-project/baas/pkg/model/images"
 	"net/http"
 	"os"
 
 	"github.com/baas-project/baas/pkg/database"
-	"github.com/baas-project/baas/pkg/images"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
-
-// imageFileSize is the size of the standard image that is created in MiB.
-const imageFileSize = 512 // size in MiB
 
 // GetTag helper function which gets the name out of the request
 // Returns the name in the URI

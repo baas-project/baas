@@ -6,8 +6,7 @@ package sqlite
 
 import (
 	"fmt"
-
-	"github.com/baas-project/baas/pkg/images"
+	"github.com/baas-project/baas/pkg/model/images"
 )
 
 // CreateImage creates the image entity in the database and adds the first version to it.

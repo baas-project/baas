@@ -9,13 +9,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 
+	"github.com/codingsince1985/checksum"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // FilePathFmt is the format string to create the path the image should be written to
-const FilePathFmt = "/%s/%v.img"
+const FilePathFmt = "/%v.img"
+
+// imageFileSize is the size of the standard image that is created in MiB.
+const imageFileSize = 512 // size in MiB
 
 // DiskType describes the type of disk image, this can also describe the filesystem contained within
 type DiskType int
@@ -52,6 +59,14 @@ const (
 	DiskCompressionStrategyZSTD = "zstd"
 	// DiskCompressionStrategyGZip uses the standard GZip compression algorithm for disks.
 	DiskCompressionStrategyGZip = "GZip"
+)
+
+const (
+	// FileSystemTypeFAT32 defines a disk using the universal FAT32 filesystem
+	FileSystemTypeFAT32 FilesystemType = "fat32"
+	// FileSystemTypeEXT4 defines a disk using the Linux EXT4 filesystem
+	FileSystemTypeEXT4 = "ext4"
+	FileSystemTypeRaw  = "raw"
 )
 
 // MarshalJSON marshals the enum as a quoted json string
@@ -126,6 +141,11 @@ type ImageModel struct {
 
 	// Checksum for this image as alternative for versioning
 	Checksum string
+
+	// ImagePath is where the system has stored this image
+	ImagePath string `json:"-" gorm:"not null"`
+
+	Filesystem FilesystemType
 }
 
 const (
@@ -135,9 +155,28 @@ const (
 	SizeGigabyte = 1024 * 1024 * 1024
 )
 
+func (image *ImageModel) BeforeCreate(tx *gorm.DB) (ret error) {
+	path := os.Getenv("BAAS_DISK_PATH")
+	image.ImagePath = fmt.Sprintf(path+"/%s", image.UUID)
+	// Create the actual image together with the first empty version which a user may or may not use.
+	err := os.Mkdir(image.ImagePath, os.ModePerm)
+
+	if err != nil {
+		log.Errorf("cannot create image directory: %s", err)
+		return
+	}
+
+	err = image.CreateImageFile(imageFileSize, path, SizeMegabyte)
+	if err != nil {
+		log.Errorf("image creation failed: %v", err)
+		return
+	}
+	return
+}
+
 // CreateImageFile creates the actual image on disk with a given size.
-func (image ImageModel) CreateImageFile(imageSize uint, diskpath string, baseSize uint) error {
-	f, err := os.OpenFile(fmt.Sprintf(diskpath+FilePathFmt, image.UUID, "0"),
+func (image *ImageModel) CreateImageFile(imageSize uint, diskpath string, baseSize uint) error {
+	f, err := os.OpenFile(fmt.Sprintf(image.ImagePath+FilePathFmt, "0"),
 		os.O_WRONLY|os.O_CREATE, 0644)
 
 	if err != nil {
@@ -163,4 +202,75 @@ func (image ImageModel) CreateImageFile(imageSize uint, diskpath string, baseSiz
 	}
 
 	return nil
+}
+
+// OpenImageFile opens an image file so it can be read by the system
+func (image *ImageModel) OpenImageFile(version string) (*os.File, error) {
+	f, err := os.Open(fmt.Sprintf(image.ImagePath+FilePathFmt, image.UUID, version))
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
+}
+
+func (image *ImageModel) GenerateChecksum() error {
+	// Create the actual image together with the first empty version which a user may or may not use.
+	f, err := image.OpenImageFile("0")
+
+	if err != nil {
+		log.Errorf("failed to open the image file: %v", err)
+		return err
+	}
+
+	chk, err := checksum.CRCReader(f)
+	if err != nil {
+		log.Errorf("Can't generate the checksum: %v", err)
+		return err
+	}
+
+	image.Checksum = chk
+	return nil
+}
+
+func (image *ImageModel) FormatImage() {
+	version := image.Versions[len(image.Versions)-1].Version
+	fmt.Println(version)
+
+	if image.Checksum == "" {
+		version++
+	}
+
+	path := fmt.Sprintf("%s/%d.img", image.ImagePath, version)
+	var cmd *exec.Cmd
+	if image.Filesystem == FileSystemTypeEXT4 {
+		cmd = exec.Command("mkfs.ext4", path)
+	} else if image.Filesystem == FileSystemTypeFAT32 {
+		cmd = exec.Command("mkfs.fat -F 32", path)
+	} else if image.Filesystem == FileSystemTypeRaw {
+		// We can't format raw image
+		return
+	}
+
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("Creating ext4 partition failed: %v", err)
+		return
+	}
+}
+
+func (image *ImageModel) UpdateImage(r *io.Reader) {
+
+}
+
+// Delete Hooks
+func (image *ImageModel) AfterDelete(tx *gorm.DB) (ret error) {
+	// Remove the directory which includes all the image files
+	err := os.RemoveAll(image.ImagePath)
+	if err != nil {
+		log.Errorf("failed to delete image: %v", err)
+		return
+	}
+
+	return
 }

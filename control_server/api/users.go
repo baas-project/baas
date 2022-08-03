@@ -8,14 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-
-	"github.com/baas-project/baas/pkg/model"
+	usermodel "github.com/baas-project/baas/pkg/model/user"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	"net/http"
 )
 
-func _getUserInternal(w http.ResponseWriter, r *http.Request, api *API) (*model.UserModel, error) {
+func _getUserInternal(w http.ResponseWriter, r *http.Request, api *API) (*usermodel.UserModel, error) {
 	session, _ := api.session.Get(r, "session-name")
 	username, ok := session.Values["Username"].(string)
 	if !ok {
@@ -41,7 +40,7 @@ func _getUserInternal(w http.ResponseWriter, r *http.Request, api *API) (*model.
 	}
 
 	// Check if the user is allowed to access the profile.
-	if user.Role != model.Admin && user.Username != username {
+	if user.Role != usermodel.Admin && user.Username != username {
 		http.Error(w, "Cannot access this user", http.StatusUnauthorized)
 		return nil, err
 	}
@@ -70,7 +69,7 @@ func (api_ *API) GetUsers(w http.ResponseWriter, _ *http.Request) {
 //                         "role": "user"}
 // Response: Either an error message or success.
 func (api_ *API) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user model.UserModel
+	var user usermodel.UserModel
 	err := json.NewDecoder(r.Body).Decode(&user)
 
 	if err != nil {
@@ -245,7 +244,7 @@ func (api_ *API) ModifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newUser := model.UserModel{}
+	newUser := usermodel.UserModel{}
 	err = json.NewDecoder(r.Body).Decode(&newUser)
 	newUser.Username = oldUser.Username
 	if err != nil {
@@ -268,7 +267,7 @@ func (api_ *API) ModifyUser(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) RegisterUserHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/users",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Moderator, usermodel.Admin},
 		UserAllowed: false,
 		Handler:     api_.GetUsers,
 		Method:      http.MethodGet,
@@ -277,7 +276,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user",
-		Permissions: []model.UserRole{model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Admin},
 		UserAllowed: false,
 		Handler:     api_.CreateUser,
 		Method:      http.MethodPost,
@@ -286,7 +285,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/me",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.User, usermodel.Moderator, usermodel.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetLoggedInUser,
 		Method:      http.MethodGet,
@@ -295,7 +294,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Moderator, usermodel.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetUser,
 		Method:      http.MethodGet,
@@ -304,7 +303,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Moderator, usermodel.Admin},
 		UserAllowed: true,
 		Handler:     api_.DeleteUser,
 		Method:      http.MethodDelete,
@@ -313,7 +312,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Moderator, usermodel.Admin},
 		UserAllowed: true,
 		Handler:     api_.ModifyUser,
 		Method:      http.MethodPut,
@@ -322,7 +321,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Moderator, usermodel.Admin},
 		UserAllowed: true,
 		Handler:     api_.CreateImage,
 		Method:      http.MethodPost,
@@ -331,7 +330,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/images",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Moderator, usermodel.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetImagesByUser,
 		Method:      http.MethodGet,
@@ -340,7 +339,7 @@ func (api_ *API) RegisterUserHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/images/{image_name}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []usermodel.UserRole{usermodel.Moderator, usermodel.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetImagesByName,
 		Method:      http.MethodGet,

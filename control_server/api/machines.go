@@ -7,18 +7,17 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/baas-project/baas/pkg/model/images"
+	machinemodel "github.com/baas-project/baas/pkg/model/machine"
+	"github.com/baas-project/baas/pkg/model/user"
 	"net/http"
 	"os"
-	"os/exec"
 	"syscall"
 
-	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/util"
-	"github.com/codingsince1985/checksum"
 	"gorm.io/gorm"
 
 	"github.com/baas-project/baas/pkg/fs"
-	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -125,7 +124,7 @@ func (api_ *API) DeleteMachine(w http.ResponseWriter, r *http.Request) {
 //     }
 //
 func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
-	var machine model.MachineModel
+	var machine machinemodel.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
 	util.PrettyPrintStruct(machine)
 
@@ -147,7 +146,7 @@ func (api_ *API) UpdateMachine(w http.ResponseWriter, r *http.Request) {
 
 // CreateMachine creates the machine in the database and returns a JSON object representing it
 func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
-	var machine model.MachineModel
+	var machine machinemodel.MachineModel
 	err := json.NewDecoder(r.Body).Decode(&machine)
 	if err != nil {
 		http.Error(w, "invalid machine given", http.StatusBadRequest)
@@ -175,55 +174,12 @@ func (api_ *API) CreateMachine(w http.ResponseWriter, r *http.Request) {
 	machineImage.DiskCompressionStrategy = images.DiskCompressionStrategyNone
 	machineImage.Name = machine.MacAddress.Address
 
-	// Create the actual image together with the first empty version which a user may or may not use.
-	err = os.Mkdir(fmt.Sprintf(api_.diskpath+"/%s", machineImage.UUID), os.ModePerm)
-	if err != nil {
-		http.Error(w, "could not create image", http.StatusInternalServerError)
-		log.Errorf("cannot create image directory: %v", err)
-		return
-	}
-
-	err = machineImage.CreateImageFile(machineImage.Size, api_.diskpath, images.SizeMegabyte)
-
-	if err != nil {
-		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
-		log.Errorf("image creation failed: %v", err)
-		return
-	}
-
-	f, err := OpenImageFile(string(machineImage.UUID), "0", api_)
-
-	if err != nil {
-		http.Error(w, "couldn't decode image model", http.StatusBadRequest)
-		log.Errorf("failed to open the image file: %v", err)
-		return
-	}
-
-	chk, err := checksum.CRCReader(f)
-	if err != nil {
-		http.Error(w, "couldn't decode image model", http.StatusBadRequest)
-		log.Errorf("Can't generate the checksum: %v", err)
-		return
-	}
-
-	machineImage.Checksum = chk
-
 	api_.store.CreateImage(&machineImage.ImageModel)
 	api_.store.CreateMachineImage(machineImage)
 
 	if err != nil {
 		http.Error(w, "couldn't create image model", http.StatusInternalServerError)
 		log.Errorf("decode create model: %v", err)
-		return
-	}
-
-	// Create an EXT4 partition scheme on disk
-	path := fmt.Sprintf(api_.diskpath+"/%s/0.img", machineImage.UUID)
-	cmd := exec.Command("mkfs.ext4", path)
-	err = cmd.Run()
-	if err != nil {
-		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
-		log.Fatalf("Creating ext4 partition failed: %v", err)
 		return
 	}
 
@@ -410,7 +366,7 @@ func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch the data from the body
-	var bootSetup model.BootSetup
+	var bootSetup images.BootSetup
 	err = json.NewDecoder(r.Body).Decode(&bootSetup)
 
 	if err != nil {
@@ -436,7 +392,7 @@ func (api_ *API) SetBootSetup(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) RegisterMachineHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetMachine,
 		Method:      http.MethodGet,
@@ -445,7 +401,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machines",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetMachines,
 		Method:      http.MethodGet,
@@ -454,7 +410,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine",
-		Permissions: []model.UserRole{model.Admin},
+		Permissions: []user.UserRole{user.Admin},
 		UserAllowed: true,
 		Handler:     api_.UpdateMachine,
 		Method:      http.MethodPut,
@@ -463,7 +419,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine",
-		Permissions: []model.UserRole{model.Admin},
+		Permissions: []user.UserRole{user.Admin},
 		UserAllowed: true,
 		Handler:     api_.CreateMachine,
 		Method:      http.MethodPost,
@@ -472,7 +428,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}",
-		Permissions: []model.UserRole{model.Admin},
+		Permissions: []user.UserRole{user.Admin},
 		UserAllowed: false,
 		Handler:     api_.DeleteMachine,
 		Method:      http.MethodDelete,
@@ -481,7 +437,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/disk/{uuid}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.UploadDiskImage,
 		Method:      http.MethodPost,
@@ -490,7 +446,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/disk/{uuid}",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadDiskImage,
 		Method:      http.MethodGet,
@@ -499,7 +455,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/boot",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.Moderator, user.Admin},
 		UserAllowed: false,
 		Handler:     api_.BootInform,
 		Method:      http.MethodGet,
@@ -508,7 +464,7 @@ func (api_ *API) RegisterMachineHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/machine/{mac}/boot",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.SetBootSetup,
 		Method:      http.MethodPost,

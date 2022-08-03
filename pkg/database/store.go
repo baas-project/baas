@@ -6,8 +6,9 @@
 package database
 
 import (
-	"github.com/baas-project/baas/pkg/images"
-	"github.com/baas-project/baas/pkg/model"
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/machine"
+	"github.com/baas-project/baas/pkg/model/user"
 	"github.com/baas-project/baas/pkg/util"
 )
 
@@ -15,26 +16,26 @@ import (
 type Store interface {
 
 	// GetMachineByMac retrieves a machine based on its mac address.
-	GetMachineByMac(mac util.MacAddress) (*model.MachineModel, error)
+	GetMachineByMac(mac util.MacAddress) (*machine.MachineModel, error)
 	GetMachineImageByMac(mac util.MacAddress) (*images.MachineImageModel, error)
 
 	// GetMachines returns a list of all machines in the database
-	GetMachines() ([]model.MachineModel, error)
-	CreateMachine(machine *model.MachineModel) error
+	GetMachines() ([]machine.MachineModel, error)
+	CreateMachine(machine *machine.MachineModel) error
 
 	// UpdateMachine changes the value of a machine based.
 	// The mac address is used as key.
-	UpdateMachine(machine *model.MachineModel) error
-	AddBootSetupToMachine(bootSetup *model.BootSetup) error
-	GetNextBootSetup(machineMAC string) (model.BootSetup, error)
-	DeleteMachine(machine *model.MachineModel) error
+	UpdateMachine(machine *machine.MachineModel) error
+	AddBootSetupToMachine(bootSetup *images.BootSetup) error
+	GetNextBootSetup(machineMAC string) (*images.BootSetup, error)
+	DeleteMachine(machine *machine.MachineModel) error
 
-	GetUserByUsername(name string) (*model.UserModel, error)
-	GetUserByID(id uint) (*model.UserModel, error)
-	GetUsers() ([]model.UserModel, error)
-	CreateUser(user *model.UserModel) error
-	RemoveUser(user *model.UserModel) error
-	ModifyUser(user *model.UserModel) error
+	GetUserByUsername(name string) (*user.UserModel, error)
+	GetUserByID(id uint) (*user.UserModel, error)
+	GetUsers() ([]user.UserModel, error)
+	CreateUser(user *user.UserModel) error
+	RemoveUser(user *user.UserModel) error
+	ModifyUser(user *user.UserModel) error
 
 	GetImageByUUID(uuid images.ImageUUID) (*images.ImageModel, error)
 	GetImagesByUsername(username string) ([]images.ImageModel, error)

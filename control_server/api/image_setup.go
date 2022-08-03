@@ -6,9 +6,10 @@ package api
 
 import (
 	"encoding/json"
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/user"
 	"net/http"
 
-	"github.com/baas-project/baas/pkg/images"
 	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -300,7 +301,7 @@ func (api_ *API) modifyImageSetup(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) RegisterImageSetupHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.createImageSetup,
 		Method:      http.MethodPost,
@@ -309,7 +310,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setups",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.getImageSetups,
 		Method:      http.MethodGet,
@@ -318,7 +319,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.findImageSetupsByUsername,
 		Method:      http.MethodGet,
@@ -327,7 +328,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup/{setup_uuid}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.getImageSetup,
 		Method:      http.MethodGet,
@@ -336,7 +337,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup/{setup_uuid}/images",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.getImagesFromImageSetup,
 		Method:      http.MethodGet,
@@ -345,7 +346,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup/{setup_uuid}/images",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.addImageToImageSetup,
 		Method:      http.MethodPost,
@@ -354,7 +355,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup/{setup_uuid}/images",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.removeImageFromImageSetup,
 		Method:      http.MethodDelete,
@@ -363,7 +364,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup/{setup_uuid}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.deleteImageSetup,
 		Method:      http.MethodDelete,
@@ -372,7 +373,7 @@ func (api_ *API) RegisterImageSetupHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/user/{name}/image_setup/{setup_uuid}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.modifyImageSetup,
 		Method:      http.MethodPut,

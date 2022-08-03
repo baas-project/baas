@@ -5,9 +5,8 @@
 package sqlite
 
 import (
+	"github.com/baas-project/baas/pkg/model/images"
 	"testing"
-
-	"github.com/baas-project/baas/pkg/images"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"

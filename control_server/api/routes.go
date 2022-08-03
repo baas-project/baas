@@ -6,11 +6,11 @@ package api
 
 import (
 	"fmt"
+	"github.com/baas-project/baas/pkg/model/user"
 	"net/http"
 
 	"github.com/baas-project/baas/pkg/database"
 	"github.com/baas-project/baas/pkg/httplog"
-	"github.com/baas-project/baas/pkg/model"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
@@ -19,7 +19,7 @@ import (
 // Route stores the data about each of the routes and any related metadata.
 type Route struct {
 	URI         string
-	Permissions []model.UserRole
+	Permissions []user.UserRole
 	UserAllowed bool
 	Handler     func(w http.ResponseWriter, r *http.Request)
 	Method      string

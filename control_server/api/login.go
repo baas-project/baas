@@ -7,10 +7,12 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/baas-project/baas/pkg/model"
+
+	usermodel "github.com/baas-project/baas/pkg/model/user"
 	"net/http"
 	"os"
 
-	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -25,16 +27,15 @@ var conf = &oauth2.Config{
 }
 
 // returnUserByOAuth gets or creates the associated user from the database.
-func (api_ *API) returnUserByOAuth(username string, email string, realName string) (*model.UserModel, error) {
+func (api_ *API) returnUserByOAuth(username string, email string, realName string) (*usermodel.UserModel, error) {
 	user, err := api_.store.GetUserByUsername(username)
-
 	// Create the user if we cannot find it in the database.
 	if err == gorm.ErrRecordNotFound {
-		user = &model.UserModel{
+		user = &usermodel.UserModel{
 			Username: username,
 			Name:     realName,
 			Email:    email,
-			Role:     model.User,
+			Role:     usermodel.User,
 		}
 
 		api_.store.CreateUser(user)

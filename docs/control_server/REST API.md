@@ -45,6 +45,7 @@ Allows a user to get information about a specific machine which is identified by
 - *Architecture:* Architecture of the machine<br>
 - *Managed:* A boolean indicating that BAAS manages the machine<br>
 - *MacAddress*: MAC Address which is associated with this machine.<br>
+
 **Permission**: All<br>
 **Example curl command**: `curl localhost:8080/machine/00:11:22:33:44:55:66`<br>
 **Example response:**<br>
@@ -96,7 +97,9 @@ the machine.
 - *Name:* Human-readable for the machine.<br>
 - *Architecture:* Architecture of the machine, typically x86\_64<br>
 - *Managed:* Boolean indicating that BAAS is managing the machine.<br>
-- *MacAddresses:* A list of MAC addresses associated with the system in the form of `{"Address": "value"}"`.<br>
+- *MacAddresses:* A list of MAC addresses associated with the system
+  in the form of `{"Address": "value"}"`.<br>
+
 **Response:** None<br>
 **Permissions:** Administrators<br>
 **Example body:**<br>
@@ -121,7 +124,9 @@ Change the information of a machine, this also used to create a machine.
 - *Name:* Human-readable for the machine.<br>
 - *Architecture:* Architecture of the machine, typically x86\_64<br>
 - *Managed:* Unknown<br>
-- *MacAddress:* The MAC address associated with the system in the form of `{"mac": "value"}"`.<br>
+- *MacAddress:* The MAC address associated with the system in the form
+  of `{"mac": "value"}"`.<br>
+
 **Response:** The same as the given body<br>
 **Permissions:** Administrators<br>
 **Example body:**<br>
@@ -148,6 +153,7 @@ Fetches configuration for the next boot for this particular machine using a SQL 
   machine image<br>
 - *User:* Username of the image setup<br>
 - *UUID:* UUID for the image setup<br>
+
 **Permissions:** Management OS<br>
 **Example curl request**:` curl localhost:4848/machine/42:DE:AD:BE:EF:42/boot`<br>
 **Example response:**<br>
@@ -189,11 +195,14 @@ queue. In this future this should probably be machine agnostic.
 **Body:**<br>
 - *MachineModelID:* Machine that the image should be flashed to.
 - *SetupUUID:* UUID associated with the image setup
-- *Update:* A boolean indicating whether the changes to images should be synced<br>
+- *Update:* A boolean indicating whether the changes to images should
+  be synced<br>
+
 **Response:**<br>
 - *MachineModelID:* Machine that the image should be flashed to.<br>
 - *ImageUUID:* UUID for the image.<br>
 - *Update:* Should the changes be synced to the disk.<br>
+
 **Permissions:** System<br>
 **Example curl request:** `curl "localhost:4848/machine/52:54:00:d9:71:93/boot" -H 'application/json' -d '{"Update": false, "SetupUUID": "2b59ff94-7fb6-4239-b2e6-82f1e30f4355", "MachineModelId": 1}' -H "type: system"`<br>
 **Example response:**
@@ -221,6 +230,7 @@ Add user to the system.
 - *Name:* Name of the user.<br>
 - *Email:* Email of the user<br>
 - *Role:* One of user, moderator or administrator<br>
+
 **Response:** Successfully created user<br>
 **Permissions:** Administrators/System<br>
 **Example curl request:** `curl -X POST "localhost:4848/user" -H 'Content-Type: application/json' -d '{"Username": "wnarchi", "Name": "William Narchi", "Email": "w.narchi1.obscured@student.tudelft.net", "Role": "user"}'`<br>
@@ -243,6 +253,7 @@ Returns information about a particular user.
 - *Name:* UTF-8 string for the user's name.<br>
 - *Email:* Associated email adres of the university.<br>
 - *Role:* Assigned permissions<br>
+
 **Permissions:** All<br>
 **Example curl request:** `curl "localhost:4848/user/jrellermeyer"`<br>
 **Response:**
@@ -326,7 +337,9 @@ Creates a new image entity and file.
 - *DiskCompressionStrategy:* How the image is compressed, can be one of: none, gzip or zstd.<br>
 - *ImageFileType:* Filesystem type of the image, typically FAT32 or EXT4<br>
 - *Type:* BAAS image type, one of: base, system, temporal and temporary<br>
-- *Versioned:* Boolean value indicating that it is a versioned or a checksum-based image<br>
+- *Versioned:* Boolean value indicating that it is a versioned or a
+  checksum-based image<br>
+
 **Response:**
 - *Name:* Human-readable name of the image.<br>
 - *Versions:* A list of objects with a Version attribute containing the version number.<br>
@@ -336,6 +349,7 @@ Creates a new image entity and file.
 - *ImageFileType:* Filesystem installed on the image.<br>
 - *Type:* BAAS system type.<br>
 - *Checksum:* Checksum in case of a non-versioned image.<br>
+
 **Permissions:** User in question or administrator<br>
 **Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image" -H 'Content-Type: application/json' --cookie "session-name=$SECRET" -d '{"Name": "Fedora Research", "DiskCompressionStrategy": "none", "ImageFileType": "raw", "Type": "system"}'`<br>
 **Example Response:**
@@ -554,6 +568,7 @@ Offers the underlying image file to the user.
 - *ImageFileType:* Image filesystem.<br>
 - *Type:* Indicates the type of BAAS image.<br>
 - *Checksum:* Checksum in case of non-versioned images.<br>
+
 **Example response:**
 ```json
 {
@@ -695,6 +710,7 @@ those images that are linked to it together with which version.
 - *Images.UUIDImage:* UUID of the image.<br>
 - *Images.VersionNumber:* Version linked to the setup.<br>
 - *Images.Update:* Should the image be updated after running<br>
+
 **Permissions:** User in question, system, moderator and administrator<br>
 **Example curl request:** `curl -X GET
 "localhost:4848/user/ValentijnvdBeek/image_setup/f02dc9d1-833e-45e9-9d28-87a5390cbee3"`
@@ -766,6 +782,7 @@ Links an image to the given image setup.
 **Body:**<br>
 - *Uuid:* UUID of the image you want to link.<br>
 - *Version:* Version that you would like to link.<br>
+
 **Response:** The same response as getting the image setup.<br>
 **Permissions:** User in question, moderator and administrator.<br>
 **Example curl request:** `curl -X POST "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`<br>
@@ -779,6 +796,7 @@ Removes an image from the given image setup.
 **Body:**<br>
 - *Uuid:* UUID of the image you want to remove.<br>
 - *Version:* Version that you would like to remove.<br>
+
 **Response:** *Successfully deleted image from setup*<br>
 **Permissions:** User in question, moderator and administrator.<br>
 **Example curl request:** `curl -X DELETE "localhost:4848/user/ValentijnvdBeek/image_setup/2b59ff94-7fb6-4239-b2e6-82f1e30f4355/images" -h 'Content-Type: application/json' -d '{"Uuid": "3a760707-c160-40fa-81be-430b75131ddc", "Version": 3}'`<br>
@@ -797,7 +815,8 @@ A list containing the following:<br>
 - *Images:* Possibly optional empty list of images associated with the
   setup.<br>
 - *User:* Username of the user owning the setup.<br>
-- *UUID:* UUID of the image setup<br><br>
+- *UUID:* UUID of the image setup<br>
+
 **Permissions:** User in question, moderator and administrator<br>
 **Example curl request:** `curl "localhost:4848/user/ValentijnvdBeek/image_setup"`<br>
 **Example response:**

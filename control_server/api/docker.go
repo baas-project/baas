@@ -6,6 +6,8 @@ package api
 
 import (
 	"fmt"
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/user"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -14,8 +16,6 @@ import (
 	"strconv"
 
 	"github.com/baas-project/baas/pkg/fs"
-	"github.com/baas-project/baas/pkg/images"
-	"github.com/baas-project/baas/pkg/model"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -143,7 +143,7 @@ func (api_ *API) RunDocker(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) RegisterImageDockerHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}/docker",
-		Permissions: []model.UserRole{model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.RunDocker,
 		Method:      http.MethodPost,

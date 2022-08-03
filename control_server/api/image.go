@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/user"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -16,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/baas-project/baas/pkg/fs"
-	"github.com/baas-project/baas/pkg/images"
-	"github.com/baas-project/baas/pkg/model"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
@@ -105,21 +105,6 @@ func (api_ *API) CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create the actual image together with the first empty version which a user may or may not use.
-	err = os.Mkdir(fmt.Sprintf(api_.diskpath+"/%s", image.UUID), os.ModePerm)
-	if err != nil {
-		http.Error(w, "could not create image", http.StatusInternalServerError)
-		log.Errorf("cann ot create image directory: %v", err)
-		return
-	}
-
-	err = image.CreateImageFile(imageFileSize, api_.diskpath, images.SizeMegabyte)
-	if err != nil {
-		http.Error(w, "Cannot create the image file", http.StatusInternalServerError)
-		log.Errorf("image creation failed: %v", err)
-		return
-	}
-
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(&image)
 }
@@ -177,14 +162,6 @@ func (api_ *API) DeleteImage(w http.ResponseWriter, r *http.Request) {
 	if api_.store.DeleteImage(image) != nil {
 		http.Error(w, "couldn't delete image", http.StatusInternalServerError)
 		log.Errorf("delete image: %v", err)
-		return
-	}
-
-	// Remove the directory which includes all the image files
-	err = os.RemoveAll(fmt.Sprintf(api_.diskpath+"/%s", image.UUID))
-	if err != nil {
-		http.Error(w, "couldn't delete image", http.StatusInternalServerError)
-		log.Errorf("failed to delete image: %v", err)
 		return
 	}
 
@@ -365,7 +342,7 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 func (api_ *API) RegisterImageHandlers() {
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.CreateImage,
 		Method:      http.MethodPost,
@@ -374,7 +351,7 @@ func (api_ *API) RegisterImageHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.GetImage,
 		Method:      http.MethodGet,
@@ -383,7 +360,7 @@ func (api_ *API) RegisterImageHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.DeleteImage,
 		Method:      http.MethodDelete,
@@ -392,7 +369,7 @@ func (api_ *API) RegisterImageHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.UpdateImage,
 		Method:      http.MethodPut,
@@ -401,7 +378,7 @@ func (api_ *API) RegisterImageHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}/latest",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadLatestImage,
 		Method:      http.MethodPost,
@@ -410,7 +387,7 @@ func (api_ *API) RegisterImageHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}/{version}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.DownloadImage,
 		Method:      http.MethodGet,
@@ -419,7 +396,7 @@ func (api_ *API) RegisterImageHandlers() {
 
 	api_.Routes = append(api_.Routes, Route{
 		URI:         "/image/{uuid}",
-		Permissions: []model.UserRole{model.User, model.Moderator, model.Admin},
+		Permissions: []user.UserRole{user.User, user.Moderator, user.Admin},
 		UserAllowed: true,
 		Handler:     api_.UploadImage,
 		Method:      http.MethodPost,

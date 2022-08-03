@@ -7,8 +7,9 @@ package sqlite
 
 import (
 	"github.com/baas-project/baas/pkg/database"
-	"github.com/baas-project/baas/pkg/images"
-	"github.com/baas-project/baas/pkg/model"
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/model/machine"
+	"github.com/baas-project/baas/pkg/model/user"
 	"github.com/pkg/errors"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -38,12 +39,12 @@ func NewSqliteStore(dbpath string) (database.Store, error) {
 	}
 
 	err = db.AutoMigrate(
-		&model.BootSetup{},
+		&images.BootSetup{},
 		&images.ImageSetup{},
 		&images.ImageModel{},
 		&images.MachineImageModel{},
-		&model.MachineModel{},
-		&model.UserModel{},
+		&machine.MachineModel{},
+		&user.UserModel{},
 		&images.Version{},
 		&images.ImageFrozen{},
 	)
