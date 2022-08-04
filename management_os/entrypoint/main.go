@@ -59,6 +59,8 @@ func init() {
 		TimestampFormat: "2006-01-02 15:04:05",
 		FullTimestamp:   true,
 	}})
+	log.SetReportCaller(true)
+	log.SetLevel(log.DebugLevel)
 
 	if err != nil {
 		log.Warn("Cannot log to file")
@@ -77,7 +79,7 @@ func init() {
 	}
 
 	log.AddHook(httplog.NewLogHook(fmt.Sprintf("%s/log", baseurl), "MMOS"))
-	hook, err := sysruslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+	hook, err := sysruslog.NewSyslogHook("", "", syslog.LOG_DEBUG, "")
 	if err != nil {
 		log.Warn("Cannot open syslog")
 	} else {
@@ -99,6 +101,10 @@ func getLastSetup(machine *MachineImage) images.ImageSetup {
 		if err != nil {
 			log.Warnf("Cannot close the image: %v", err)
 		}
+		err = machine.Remove("last_setup.json")
+		if err != nil {
+			log.Warnf("Cannot close the image: %v", err)
+		}
 	} else {
 		f, err := machine.Create("last_setup.json")
 		if err != nil {
@@ -115,30 +121,70 @@ func getLastSetup(machine *MachineImage) images.ImageSetup {
 	return lastSetup
 }
 
-func main() {
-	conf := getConfig()
+func initializeMachine() *images.ImageSetup {
 	var machine MachineImage
 	machine.Initialise("/dev/sda1", "/mnt/machine")
 	machine.Mount()
-	c := NewAPIClient(baseurl)
+	defer machine.Unmount()
 
 	// Get the partition cache
 	getPartitions(&machine)
 	printPartitions()
-	mac, err := getMacAddr()
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	lastSetup := getLastSetup(&machine)
 	// Unmount the machine partition so it can be overwritten if needed, the partition should remain the same.
-	machine.Unmount()
+	return &lastSetup
+}
 
-	imageSetup, err := c.BootInform(mac)
+func teardownMachine(imageSetup *images.ImageSetup) {
+	var machine MachineImage
+	machine.Initialise("/dev/sda1", "/mnt/machine")
+	machine.Mount()
+	defer machine.Unmount()
+
+	// Store the current image setup
+	f, err := machine.Open("last_setup.json")
+
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			log.Errorf("Cannot close last setup file: %v", err)
+		}
+	}()
+
+	if err != nil {
+		log.Errorf("Cannot write setup to disk: %v", err)
+	}
+	err = json.NewEncoder(f).Encode(imageSetup)
+
+	if err != nil {
+		log.Errorf("Cannot encode the image setup: %v", err)
+	}
+
+	// Write the partition list
+	pc, err := machine.Open("partitions_cache.json")
+
+	defer func() {
+		err = pc.Close()
+		if err != nil {
+			log.Errorf("Cannot close partition cache: %v", err)
+		}
+	}()
+
+	printPartitions()
+	writePartitionJSON(pc)
+}
+
+func main() {
+	conf := getConfig()
+	c := NewAPIClient(baseurl)
+	mac, err := getMacAddr()
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	lastSetup := initializeMachine()
 	if conf.UploadDisk && lastSetup.UUID != "" {
 		if err = ReadInDisks(c, lastSetup); err != nil {
 			log.Fatalf("Failed to read the disks: %v", err)
@@ -147,41 +193,17 @@ func main() {
 		log.Info("Uploading disks disabled in configuration file.")
 	}
 
+	imageSetup, err := c.BootInform(mac)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if err = WriteOutDisks(c, mac, imageSetup); err != nil {
 		log.Fatal(err)
 	}
 	log.Info("reprovisioning done")
 
-	// Reopen the machine file target
-	machine.Mount()
-
-	// Store the current image setup
-	f, err := machine.Open("last_setup.json")
-	if err != nil {
-		log.Fatalf("Cannot write setup to disk: %v", err)
-	}
-	err = json.NewEncoder(f).Encode(imageSetup)
-
-	if err != nil {
-		log.Fatalf("Cannot encode the image setup: %v", err)
-	}
-
-	// Write the partition list
-	f, err = machine.Open("partitions_cache.json")
-	if err != nil {
-		log.Fatalf("Cannot open the partition cache: %v", err)
-		return
-	}
-
-	printPartitions()
-	writePartitionJSON(f)
-	err = f.Close()
-
-	if err != nil {
-		log.Warnf("Cannot close the partition cache file: %v", err)
-	}
-
-	machine.Unmount()
+	teardownMachine(imageSetup)
 
 	// This presumes that the second option is the hard disk
 	if conf.SetNextBoot {

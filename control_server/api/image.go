@@ -9,11 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/baas-project/baas/pkg/model/images"
 	"github.com/baas-project/baas/pkg/model/user"
@@ -256,16 +254,14 @@ func updateVersion(api *API, uniqueID string) (*images.Version, error) {
 	return &image.Versions[len(image.Versions)-1], nil
 }
 
-func manageVersion(api *API, versionPart io.Reader, uniqueID string) (*images.Version, error) {
-	data, err := ioutil.ReadAll(versionPart)
-	val := strings.ToLower(string(data))
-
-	if err != nil || (val != "true" && val != "false") {
-		return nil, err
+func manageVersion(api *API, newVersion string, uniqueID string) (*images.Version, error) {
+	if newVersion != "true" && newVersion != "false" {
+		return nil, errors.New("Invalid option for X-BAAS-NewVersion: " + newVersion)
 	}
 
 	var version *images.Version
-	if val == "true" {
+	var err error
+	if newVersion == "true" {
 		version, err = createNewVersion(api, uniqueID)
 	} else {
 		version, err = updateVersion(api, uniqueID)
@@ -293,19 +289,8 @@ func (api_ *API) UploadImage(w http.ResponseWriter, r *http.Request) {
 
 	// Get the parameters for this update
 	// TODO: Bad design. Write a new endpoint or use a header for this.
-	versionPart, err := mr.NextPart()
-	if ErrorWrite(w, err, "File upload failed") != nil {
-		return
-	}
 
-	// One liner which closes the file at the end of the call.
-	defer func() {
-		if err = versionPart.Close(); err != nil {
-			log.Errorf("Cannot close upload file: %v", err)
-		}
-	}()
-
-	version, err := manageVersion(api_, versionPart, string(image.UUID))
+	version, err := manageVersion(api_, r.Header.Get("X-BAAS-NewVersion"), string(image.UUID))
 	if err != nil {
 		http.Error(w, "cannot fetch the image from the database", http.StatusNotFound)
 		log.Errorf("cannot fetch image from database: %v", err)

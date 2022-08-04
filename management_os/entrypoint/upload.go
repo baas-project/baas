@@ -7,24 +7,22 @@ package main
 import (
 	"io"
 
-	images2 "github.com/baas-project/baas/pkg/model/images"
-
 	"github.com/baas-project/baas/pkg/compression"
-
-	log "github.com/sirupsen/logrus"
-
+	"github.com/baas-project/baas/pkg/model/images"
+	"github.com/baas-project/baas/pkg/util"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // ReadInDisks reads in all disks in the machine setup and uploads them to the control server.
-func ReadInDisks(api *APIClient, setup images2.ImageSetup) error {
+func ReadInDisks(api *APIClient, setup *images.ImageSetup) error {
 	log.Info("Reading and uploading disks")
 
 	for _, image := range setup.Images {
 		log.Debugf("reading disk: %v", image.Image.UUID)
-
+		util.PrettyPrintStruct(image)
 		if !image.Update {
-			log.Debugf("Image %s update is set", image.UUIDImage)
+			log.Debugf("Image %s update is not set", image.UUIDImage)
 			continue
 		}
 
@@ -49,6 +47,6 @@ func ReadInDisks(api *APIClient, setup images2.ImageSetup) error {
 }
 
 // UploadDisk uploads a disk to the control server given a transfer strategy.
-func UploadDisk(api *APIClient, reader io.Reader, uuid *images2.ImageModel) error {
+func UploadDisk(api *APIClient, reader io.Reader, uuid *images.ImageModel) error {
 	return api.UploadDiskHTTP(reader, string(uuid.UUID))
 }
