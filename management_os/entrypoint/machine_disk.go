@@ -52,7 +52,7 @@ func (image *MachineImage) Mount() {
 func (image *MachineImage) Unmount() {
 	err := syscall.Unmount(image.target, 0)
 	if err != nil {
-		log.Warnf("Failed to mount %s: %v", image.target, err)
+		log.Warnf("Failed to unmount %s: %v", image.target, err)
 		return
 	}
 }

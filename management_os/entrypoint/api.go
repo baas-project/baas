@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strconv"
 
 	"github.com/baas-project/baas/pkg/model/images"
 
@@ -116,12 +115,9 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid string) error {
 	fileFormat := "--%s\r\nContent-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n%s\r\n\r\n"
 	filePart := fmt.Sprintf(fileFormat, boundary, fileName, fileHeader)
 
-	newVersionFormat := "--%s\r\nContent-Disposition: form-data; name=\"newVersion\"\r\n%s\r\n\r\n"
-	newVersionPart := fmt.Sprintf(newVersionFormat, boundary, strconv.FormatBool(true))
-
 	end := fmt.Sprintf("\r\n--%s\r\n", boundary)
 
-	body := io.MultiReader(strings.NewReader(newVersionPart), strings.NewReader(filePart), r, strings.NewReader(end))
+	body := io.MultiReader(strings.NewReader(filePart), r, strings.NewReader(end))
 
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", url, body)
@@ -132,6 +128,7 @@ func (a *APIClient) UploadDiskHTTP(r io.Reader, uuid string) error {
 	req.Header.Set("Content-Type", fmt.Sprintf("multipart/form-data; boundary=%s", boundary))
 	req.Header.Set("Origin", "http://localhost:9090")
 	req.Header.Set("type", "system")
+	req.Header.Set("X-BAAS-NewVersion", "true")
 	resp, err := client.Do(req)
 
 	if err != nil {
